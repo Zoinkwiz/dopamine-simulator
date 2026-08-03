@@ -227,12 +227,17 @@ public class DopamineState
 		points = 0d;
 		lifetimePoints = 0d;
 		sourceUpgrades.clear();
-		applyHeadStart();
+
+		// The reset is the only rethink there is. Handing every rank back here is
+		// what stops a rank being worn for a discount and then taken off again.
+		respec();
 	}
 
+	// Only ever raises, so a rank bought partway through a run tops the run up
+	// rather than dragging it back to what a fresh one would have started with.
 	public void applyHeadStart()
 	{
-		points = Perks.seedPoints(this);
+		points = Math.max(points, Perks.seedPoints(this));
 		int levels = Perks.headStartLevels(this);
 		if (levels > 0)
 		{
@@ -240,14 +245,22 @@ public class DopamineState
 			{
 				if (source != PointSource.CLICK)
 				{
-					sourceUpgrades.put(source.name(), levels);
+					raiseUpgradeTo(source, levels);
 				}
 			}
 		}
 		int clicks = Perks.headStartClickLevels(this);
 		if (clicks > 0)
 		{
-			sourceUpgrades.put(PointSource.CLICK.name(), clicks);
+			raiseUpgradeTo(PointSource.CLICK, clicks);
+		}
+	}
+
+	private void raiseUpgradeTo(PointSource source, int level)
+	{
+		if (getSourceUpgradeLevel(source) < level)
+		{
+			sourceUpgrades.put(source.name(), level);
 		}
 	}
 
@@ -286,6 +299,10 @@ public class DopamineState
 			return false;
 		}
 		perkRanks.put(perk.name(), rank + 1);
+
+		// A head start bought a moment after resetting has to arrive at once, or
+		// the rank reads as doing nothing until the run after next.
+		applyHeadStart();
 		return true;
 	}
 

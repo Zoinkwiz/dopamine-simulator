@@ -166,7 +166,9 @@ public class BannerService
 			state.setBannerPity(rarity, 0);
 			rewards.push(Reward.bannerWin(prize));
 			collection.grant(state, prize, rewards, false, featuredCopies(rarity));
-			roll(state, rarity);
+
+			// The card stays up. A banner is a window you can keep pulling at, so
+			// only the clock in rollIfExpired takes it down.
 			return prize;
 		}
 
