@@ -364,8 +364,15 @@ public class DopamineSimulatorPlugin extends Plugin
 			return;
 		}
 
-		GnomeFood food = GnomeFood.roll(random);
-		clickState.start(food, now);
+		serve(GnomeFood.roll(random));
+	}
+
+	private void serve(GnomeFood food)
+	{
+		DopamineState state = engine.getState();
+
+		// Before the payout is worked out, so a frenzy pays out on its own clicks.
+		clickState.start(food, System.currentTimeMillis());
 
 		long tick = state.getTick();
 		double others = Math.max(0d,
@@ -1051,6 +1058,27 @@ public class DopamineSimulatorPlugin extends Plugin
 				state -> "every card, upgrade, feat and pass season",
 				this::wipe);
 		}
+		else
+		{
+			GnomeFood food = GnomeFood.byCommand(event.getCommand());
+			if (food != null)
+			{
+				serveOnCommand(food);
+			}
+		}
+	}
+
+	private void serveOnCommand(GnomeFood food)
+	{
+		if (!isPlayable())
+		{
+			client.addChatMessage(ChatMessageType.GAMEMESSAGE, "",
+				"Dopamine Simulator: log in first.", null);
+			return;
+		}
+
+		serve(food);
+		persist();
 	}
 
 	private void runReset(String command, String what,
