@@ -73,7 +73,12 @@ public enum Rarity
 	}
 	public int copiesForMaxStars()
 	{
-		return starThresholds()[MAX_STARS - 1];
+		return copiesForStars(MAX_STARS);
+	}
+
+	public int copiesForStars(int stars)
+	{
+		return starThresholds()[Math.max(1, Math.min(MAX_STARS, stars)) - 1];
 	}
 	public int starsFor(int copies)
 	{

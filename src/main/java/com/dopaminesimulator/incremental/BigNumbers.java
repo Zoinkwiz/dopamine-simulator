@@ -64,4 +64,44 @@ public final class BigNumbers
 				: String.format("%.2f", scaled);
 		return formatted + SUFFIXES[tier];
 	}
+
+	/**
+	 * Reads back what {@link #format} writes, so "2.5m" is a number a player can
+	 * type. Returns NaN for anything that is not one.
+	 */
+	public static double parse(String text)
+	{
+		if (text == null)
+		{
+			return Double.NaN;
+		}
+		String trimmed = text.trim().replace(",", "");
+		if (trimmed.isEmpty())
+		{
+			return Double.NaN;
+		}
+
+		double scale = 1d;
+		for (int tier = SUFFIXES.length - 1; tier > 0; tier--)
+		{
+			String suffix = SUFFIXES[tier];
+			if (trimmed.length() > suffix.length()
+				&& trimmed.regionMatches(true, trimmed.length() - suffix.length(),
+					suffix, 0, suffix.length()))
+			{
+				scale = Math.pow(1000d, tier);
+				trimmed = trimmed.substring(0, trimmed.length() - suffix.length());
+				break;
+			}
+		}
+
+		try
+		{
+			return Double.parseDouble(trimmed) * scale;
+		}
+		catch (NumberFormatException ignored)
+		{
+			return Double.NaN;
+		}
+	}
 }

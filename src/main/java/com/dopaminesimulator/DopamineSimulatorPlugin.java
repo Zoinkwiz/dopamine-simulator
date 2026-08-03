@@ -25,6 +25,7 @@
 package com.dopaminesimulator;
 
 import com.dopaminesimulator.cards.Card;
+import com.dopaminesimulator.cards.CardCatalogue;
 import com.dopaminesimulator.cards.CardSet;
 import com.dopaminesimulator.cards.Rarity;
 import com.dopaminesimulator.cards.Region;
@@ -35,6 +36,7 @@ import com.dopaminesimulator.core.DopamineState;
 import com.dopaminesimulator.feats.FeatTrack;
 import com.dopaminesimulator.feats.Feat;
 import com.dopaminesimulator.feats.Feats;
+import com.dopaminesimulator.incremental.BigNumbers;
 import com.dopaminesimulator.incremental.InsightPerk;
 import com.dopaminesimulator.incremental.Perks;
 import com.dopaminesimulator.incremental.Prestige;
@@ -1060,6 +1062,14 @@ public class DopamineSimulatorPlugin extends Plugin
 				state -> "every card, upgrade, feat and pass season",
 				this::wipe);
 		}
+		else if ("adddopamine".equalsIgnoreCase(event.getCommand()))
+		{
+			addDopamine(event.getArguments());
+		}
+		else if ("completecards".equalsIgnoreCase(event.getCommand()))
+		{
+			completeCards(event.getArguments());
+		}
 		else
 		{
 			GnomeFood food = GnomeFood.byCommand(event.getCommand());
@@ -1068,6 +1078,96 @@ public class DopamineSimulatorPlugin extends Plugin
 				serveOnCommand(food);
 			}
 		}
+	}
+
+	/** What ::adddopamine hands out when it is not told an amount. */
+	private static final double DEV_POINTS = 1_000_000d;
+
+	// Development commands. Like ::resetdopamine they are not gated, so anyone
+	// running the plugin can type them.
+	private void addDopamine(String[] arguments)
+	{
+		if (!isPlayable())
+		{
+			client.addChatMessage(ChatMessageType.GAMEMESSAGE, "",
+				"Dopamine Simulator: log in first.", null);
+			return;
+		}
+
+		double amount = arguments.length > 0 ? BigNumbers.parse(arguments[0]) : DEV_POINTS;
+		if (Double.isNaN(amount) || amount <= 0d)
+		{
+			client.addChatMessage(ChatMessageType.GAMEMESSAGE, "",
+				"Dopamine Simulator: <col=ffb300>::adddopamine 2.5m</col>"
+					+ " takes a number, with an optional K/M/B suffix.", null);
+			return;
+		}
+
+		DopamineState state = engine.getState();
+		state.addPoints(amount);
+		persist();
+		refreshPanel();
+		client.addChatMessage(ChatMessageType.GAMEMESSAGE, "",
+			"Dopamine Simulator: added <col=ffb300>" + BigNumbers.format(amount)
+				+ "</col> points, for <col=ffb300>" + BigNumbers.format(state.getPoints())
+				+ "</col>.", null);
+	}
+
+	private void completeCards(String[] arguments)
+	{
+		if (!isPlayable())
+		{
+			client.addChatMessage(ChatMessageType.GAMEMESSAGE, "",
+				"Dopamine Simulator: log in first.", null);
+			return;
+		}
+
+		int stars = 1;
+		if (arguments.length > 0)
+		{
+			// "max" spares the reader from remembering what the top star is.
+			if ("max".equalsIgnoreCase(arguments[0]))
+			{
+				stars = Rarity.MAX_STARS;
+			}
+			else
+			{
+				double asked = BigNumbers.parse(arguments[0]);
+				if (Double.isNaN(asked) || asked < 1d || asked > Rarity.MAX_STARS)
+				{
+					client.addChatMessage(ChatMessageType.GAMEMESSAGE, "",
+						"Dopamine Simulator: <col=ffb300>::completecards</col> takes 1 to "
+							+ Rarity.MAX_STARS + " stars, or <col=ffb300>max</col>.", null);
+					return;
+				}
+				stars = (int) asked;
+			}
+		}
+
+		DopamineState state = engine.getState();
+		int filled = 0;
+		long copies = 0;
+		for (Card card : CardCatalogue.all())
+		{
+			// An unlock set counts ownership, not copies, so one is the whole card.
+			int wanted = card.getSet().isUnlockSet()
+				? 1 : card.getRarity().copiesForStars(stars);
+			int missing = wanted - state.getCopies(card.getId());
+			if (missing <= 0)
+			{
+				continue;
+			}
+			state.addCopies(card.getId(), missing);
+			filled++;
+			copies += missing;
+		}
+
+		persist();
+		refreshPanel();
+		client.addChatMessage(ChatMessageType.GAMEMESSAGE, "",
+			"Dopamine Simulator: topped up <col=ffb300>" + filled + "</col> cards to "
+				+ stars + (stars == 1 ? " star" : " stars")
+				+ " with <col=ffb300>" + copies + "</col> copies.", null);
 	}
 
 	private void serveOnCommand(GnomeFood food)
