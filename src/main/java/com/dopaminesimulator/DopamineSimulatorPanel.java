@@ -1503,15 +1503,18 @@ public class DopamineSimulatorPanel extends PluginPanel
 		block.setBackground(Skin.BG);
 		block.setAlignmentX(Component.LEFT_ALIGNMENT);
 
+		int free = state.getFreeInsight();
 		boolean maxed = Prestige.isMaxed(insight);
-		if (maxed)
+
+		// The count of what is left to spend, not of what the tree costs. A held
+		// budget nobody has touched used to read as having bought the lot.
+		if (free > 0)
 		{
-			block.add(sectionLabel("Insight", "Max prestige"));
+			block.add(sectionLabel("Insight", free + " insight left"));
 		}
-		else if (insight > 0 || ready)
+		else if (insight > 0)
 		{
-			block.add(sectionLabel("Insight",
-				state.getFreeInsight() + " of " + insight + "/" + Prestige.maximum()));
+			block.add(sectionLabel("Insight", "all " + insight + " spent"));
 		}
 		else
 		{
@@ -1532,12 +1535,6 @@ public class DopamineSimulatorPanel extends PluginPanel
 			block.add(Box.createVerticalStrut(6));
 		}
 
-		if (maxed)
-		{
-			block.add(hint("All perks bought. Resetting now gains nothing."));
-			return block;
-		}
-
 		if (!ready)
 		{
 			block.add(hint("Earn " + BigNumbers.format(Prestige.pointsUntilPrestige(lifetime))
@@ -1545,26 +1542,44 @@ public class DopamineSimulatorPanel extends PluginPanel
 			return block;
 		}
 
+		// Offered whenever a run qualifies, even when it adds no insight. Resetting
+		// is the only rethink there is, so it has to stay reachable to be one.
+		String why;
 		if (gain > 0)
 		{
-			block.add(hint("Clears points and upgrade levels. Cards, stars, dust and"
-				+ " collections are kept."));
-			block.add(Box.createVerticalStrut(4));
-
-			StoneButton go = new StoneButton("Reset for " + gain + " insight");
-			go.setAlignmentX(Component.LEFT_ALIGNMENT);
-			go.setMaximumSize(new Dimension(Integer.MAX_VALUE, 24));
-			go.setToolTipText("Insight is your best run, not a running total."
-				+ " Only a better run adds more.");
-			go.addActionListener(e -> plugin.prestige());
-			block.add(go);
-			return block;
+			why = "Clears points and upgrade levels.";
 		}
+		else if (maxed)
+		{
+			why = "Every insight there is has been earned, so this adds none. Resetting"
+				+ " still hands back every rank to spend again.";
+		}
+		else
+		{
+			why = "This run has not beaten your best, so it adds no insight. Resetting"
+				+ " still hands back every rank to spend again.";
+		}
+		block.add(hint(why + " Cards, stars, dust and collections are kept."));
+		block.add(Box.createVerticalStrut(4));
 
-		block.add(hint("Reach " + BigNumbers.format(Prestige.lifetimeForInsight(insight + 1))
-			+ " in one run for the next insight. "
-			+ BigNumbers.format(Prestige.lifetimeForInsight(insight + 1) - lifetime)
-			+ " to go."));
+		StoneButton go = new StoneButton(gain > 0 ? "Reset for " + gain + " insight" : "Reset");
+		go.setAlignmentX(Component.LEFT_ALIGNMENT);
+		go.setMaximumSize(new Dimension(Integer.MAX_VALUE, 24));
+		go.setToolTipText(maxed
+			? "Every insight there is has been earned. Resetting refunds your ranks."
+			: "Insight is your best run, not a running total."
+				+ " Only a better run adds more.");
+		go.addActionListener(e -> plugin.prestige());
+		block.add(go);
+
+		if (gain == 0 && !maxed)
+		{
+			block.add(Box.createVerticalStrut(4));
+			block.add(hint("Reach " + BigNumbers.format(Prestige.lifetimeForInsight(insight + 1))
+				+ " in one run for the next insight. "
+				+ BigNumbers.format(Prestige.lifetimeForInsight(insight + 1) - lifetime)
+				+ " to go."));
+		}
 		return block;
 	}
 
@@ -1592,6 +1607,7 @@ public class DopamineSimulatorPanel extends PluginPanel
 				r -> plugin.allocatePerk(perk));
 			row.setToolTipText(perk.getDescription()
 				+ "  •  " + perk.getCostPerRank() + " insight a rank"
+				+ "  •  kept until your next reset"
 				+ (full ? "  •  fully bought"
 					: "  •  now " + perk.effectAt(rank) + ", next " + perk.effectAt(rank + 1)));
 			row.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -1601,12 +1617,7 @@ public class DopamineSimulatorPanel extends PluginPanel
 
 		if (state.getSpentInsight() > 0)
 		{
-			StoneButton respec = new StoneButton("Rethink it");
-			respec.setAlignmentX(Component.LEFT_ALIGNMENT);
-			respec.setMaximumSize(new Dimension(Integer.MAX_VALUE, 22));
-			respec.setToolTipText("Reassign all insight. Free.");
-			respec.addActionListener(e -> plugin.respecPerks());
-			list.add(respec);
+			list.add(hint("Ranks stay put until you reset, which hands them all back."));
 		}
 		return list;
 	}

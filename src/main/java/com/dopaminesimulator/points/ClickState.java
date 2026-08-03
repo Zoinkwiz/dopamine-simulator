@@ -98,6 +98,13 @@ public class ClickState
 		return food == null ? 1d : food.incomeMultiplier();
 	}
 
+	// What a click is worth right now. Clicking is a source, so a dish that lifts
+	// every source lifts it too, on top of any dish aimed at clicking itself.
+	public double clickPayoutMultiplier(long nowMs)
+	{
+		return multiplier(nowMs) * incomeMultiplier(nowMs);
+	}
+
 	public double secondsRemaining(long nowMs)
 	{
 		return Math.max(0d, (surgeEndsAt - nowMs) / 1000d);

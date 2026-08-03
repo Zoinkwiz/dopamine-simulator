@@ -568,7 +568,7 @@ public class DopamineSimulatorPlugin extends Plugin
 		double others = Math.max(0d,
 			incomeTracker.totalPerHour(tick) - incomeTracker.perHour(PointSource.CLICK, tick));
 		double surge = clickState == null
-			? 1d : clickState.multiplier(System.currentTimeMillis());
+			? 1d : clickState.clickPayoutMultiplier(System.currentTimeMillis());
 		return Math.max(1d, PointSource.CLICK_COEFFICIENT
 			* Math.pow(others, PointSource.CLICK_EXPONENT)) * surge;
 	}
@@ -859,20 +859,6 @@ public class DopamineSimulatorPlugin extends Plugin
 				persist();
 				refreshPanel();
 			}
-		});
-	}
-
-	public void respecPerks()
-	{
-		clientThread.invoke(() ->
-		{
-			if (!isPlayable())
-			{
-				return;
-			}
-			engine.getState().respec();
-			persist();
-			refreshPanel();
 		});
 	}
 

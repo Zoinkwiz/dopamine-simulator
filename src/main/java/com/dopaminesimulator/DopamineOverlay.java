@@ -29,6 +29,7 @@ import com.dopaminesimulator.core.IncomeTracker;
 import com.dopaminesimulator.core.RewardQueue;
 import com.dopaminesimulator.incremental.BigNumbers;
 import com.dopaminesimulator.points.ClickState;
+import com.dopaminesimulator.points.GnomeFood;
 import com.dopaminesimulator.points.PointSource;
 import java.awt.Color;
 import java.awt.Dimension;
@@ -101,10 +102,14 @@ public class DopamineOverlay extends OverlayPanel
 		}
 		if (clicks != null && clicks.isSurging(now))
 		{
+			GnomeFood serving = clicks.getActive(now);
+
+			// Named, so a dish that quadruples everything says so somewhere.
+			double lift = clicks.clickPayoutMultiplier(now);
 			panelComponent.getChildren().add(LineComponent.builder()
-				.left(clicks.getActive(now) == null
-					? "SURGE" : clicks.getActive(now).getDisplayName())
-				.right(String.format("%.0fs", clicks.secondsRemaining(now)))
+				.left(serving == null ? "SURGE" : serving.getDisplayName())
+				.right((lift > 1d ? "x" + BigNumbers.format(lift) + "  " : "")
+					+ String.format("%.0fs", clicks.secondsRemaining(now)))
 				.leftColor(SURGE)
 				.rightColor(SURGE)
 				.build());
