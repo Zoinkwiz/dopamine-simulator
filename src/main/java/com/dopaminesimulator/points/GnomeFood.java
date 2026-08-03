@@ -24,6 +24,7 @@
  */
 package com.dopaminesimulator.points;
 
+import java.util.Locale;
 import java.util.Random;
 import lombok.Getter;
 import net.runelite.api.gameval.ItemID;
@@ -67,6 +68,9 @@ public enum GnomeFood
 	private final long durationMs;
 	private final String blurb;
 
+	/** Chat command that serves this dish on demand, e.g. {@code ::wormhole}. */
+	private final String command;
+
 	private static final int TOTAL_WEIGHT;
 
 	static
@@ -86,6 +90,19 @@ public enum GnomeFood
 		this.weight = weight;
 		this.durationMs = durationMs;
 		this.blurb = blurb;
+		this.command = displayName.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]", "");
+	}
+
+	public static GnomeFood byCommand(String command)
+	{
+		for (GnomeFood food : values())
+		{
+			if (food.command.equalsIgnoreCase(command))
+			{
+				return food;
+			}
+		}
+		return null;
 	}
 
 	public boolean lasts()
