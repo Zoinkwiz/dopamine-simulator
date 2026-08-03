@@ -379,8 +379,6 @@ bosses-yama
 bosses-zalcano
 bosses-zulrah
 construction-achievement-gallery
-construction-adamant-helm
-construction-advanced-chum-station
 construction-advanced-pet-arena
 construction-alchemical-chart
 construction-ancient-altar
@@ -392,7 +390,6 @@ construction-asgarnian-ale-barrel
 construction-astronomical-chart
 construction-baby-red-dragon
 construction-balance-beam
-construction-ballistic-attractor
 construction-bank-chest
 construction-banner-easel
 construction-banner-stand
@@ -402,15 +399,11 @@ construction-beer-barrel
 construction-bluebells
 construction-bone-cage
 construction-boss-lair-display
-construction-bosun-s-workbench
 construction-boundary-stones
 construction-boxing-glove-rack
 construction-boxing-ring
-construction-bronze-helm
 construction-brown-rug
 construction-butler
-construction-camphor-cargo-hold
-construction-camphor-repair-kit
 construction-cape-hanger
 construction-carved-oak-dining-bench
 construction-carved-oak-dining-table
@@ -430,8 +423,6 @@ construction-chapel-bells
 construction-chapel-organ
 construction-chapel-windchimes
 construction-chef-s-delight-barrel
-construction-chum-spreader
-construction-chum-station
 construction-cider-barrel
 construction-clay-attack-stone
 construction-clay-fireplace
@@ -445,7 +436,6 @@ construction-consecrated-pet-house-9-pets
 construction-cook
 construction-cooking-pot
 construction-costume-room
-construction-cotton-trawling-net
 construction-crab-traps
 construction-crafting-table-1
 construction-crafting-table-2
@@ -453,7 +443,6 @@ construction-crafting-table-3
 construction-crafting-table-4
 construction-crude-wooden-chair
 construction-crystal-ball
-construction-crystal-extractor
 construction-crystal-of-power
 construction-crystal-throne
 construction-crystalline-portal-nexus
@@ -475,14 +464,12 @@ construction-desecrated-pet-house-12-pets
 construction-desert-pet-habitat
 construction-dining-room
 construction-dragon-bitter-barrel
-construction-dragon-helm
 construction-dungeon
 construction-dungeon-candles
 construction-dungeon-entrance
 construction-dungeon-skull-torches
 construction-dungeon-torches
 construction-elemental-sphere
-construction-eternal-brazier
 construction-exit-portal
 construction-extra-weapons-rack
 construction-fairy-ring
@@ -491,8 +478,6 @@ construction-fancy-jewellery-box
 construction-fancy-range
 construction-fancy-rejuvenation-pool
 construction-fancy-teak-dresser
-construction-fathom-pearl
-construction-fathom-stone
 construction-fencing-ring
 construction-fire-of-dehumidification
 construction-fire-of-eternal-light
@@ -501,11 +486,9 @@ construction-fire-of-unseasonal-warmth
 construction-firepit
 construction-firepit-with-hook
 construction-firepit-with-pot
-construction-flags
 construction-forest-pet-habitat
 construction-formal-garden
 construction-furnace
-construction-gale-catcher
 construction-games-room
 construction-garden
 construction-garden-fence
@@ -542,7 +525,6 @@ construction-hallowed-sepulchre-repair-bridge
 construction-hanging-dungeon-skeleton
 construction-hangman-game
 construction-hellhound
-construction-hemp-trawling-net
 construction-high-level-plants
 construction-hobgoblin-guard
 construction-hoop-and-stick-game
@@ -554,14 +536,9 @@ construction-icon-of-saradomin
 construction-icon-of-zamorak
 construction-imp-statue
 construction-infernal-chart
-construction-inoculation-station
-construction-iron-helm
 construction-iron-railings
-construction-ironwood-cargo-hold
-construction-ironwood-repair-kit
 construction-jester-game
 construction-kalphite-soldier
-construction-keg
 construction-kitchen
 construction-large-chapel-statue
 construction-large-fountain
@@ -581,7 +558,6 @@ construction-lesser-magical-balance
 construction-limestone-altar
 construction-limestone-attack-stone
 construction-limestone-spiral-staircase
-construction-linen-trawling-net
 construction-loom
 construction-low-level-plant
 construction-lunar-altar
@@ -594,7 +570,6 @@ construction-mahogany-armchair
 construction-mahogany-armour-case
 construction-mahogany-bookcase
 construction-mahogany-cape-rack
-construction-mahogany-cargo-hold
 construction-mahogany-demon-lectern
 construction-mahogany-dining-bench
 construction-mahogany-dining-table
@@ -618,7 +593,6 @@ construction-mahogany-pet-house-7-pets
 construction-mahogany-pet-scratching-post
 construction-mahogany-portal-frame
 construction-mahogany-prize-chest
-construction-mahogany-repair-kit
 construction-mahogany-telescope
 construction-mahogany-throne
 construction-mahogany-toy-box
@@ -650,7 +624,6 @@ construction-medium-chapel-statue
 construction-medium-map
 construction-menagerie
 construction-mid-level-plants
-construction-mithril-helm
 construction-mounted-alchemical-hydra-head
 construction-mounted-amulet-of-glory
 construction-mounted-anti-dragon-shield
@@ -680,7 +653,6 @@ construction-oak-bed
 construction-oak-bookcase
 construction-oak-cage
 construction-oak-cape-rack
-construction-oak-cargo-hold
 construction-oak-chair
 construction-oak-chest-of-drawers
 construction-oak-clock
@@ -704,7 +676,6 @@ construction-oak-pet-feeder
 construction-oak-pet-house-3-pets
 construction-oak-pet-scratching-post
 construction-oak-prize-chest
-construction-oak-repair-kit
 construction-oak-shaving-stand
 construction-oak-shelves-1
 construction-oak-shelves-2
@@ -752,7 +723,6 @@ construction-pump-and-drain
 construction-pump-and-tub
 construction-quest-list
 construction-raging-echoes-rug
-construction-range
 construction-ranging-pedestals
 construction-redwood-fence
 construction-rejuvenation-pool
@@ -764,20 +734,15 @@ construction-rick
 construction-rocking-chair
 construction-rocnar
 construction-rope-bell-pull
-construction-rope-trawling-net
 construction-rosemary
 construction-roses
-construction-rosewood-cargo-hold
-construction-rosewood-repair-kit
 construction-round-wall-mounted-shield
 construction-rowboat
 construction-rug
 construction-rug-league-hall
 construction-rune-display-cases
 construction-rune-dragon
-construction-rune-helm
 construction-s-t-a-s-h-chart
-construction-salvaging-station
 construction-scrying-pool
 construction-servant-s-money-bag
 construction-shield-easel
@@ -814,7 +779,6 @@ construction-steel-cage
 construction-steel-candlesticks
 construction-steel-dragon
 construction-steel-framed-workbench
-construction-steel-helm
 construction-steel-plated-oak-door
 construction-steel-range
 construction-steel-torches-chapel
@@ -836,7 +800,6 @@ construction-teak-armour-case
 construction-teak-bed
 construction-teak-bell-pull
 construction-teak-cape-rack
-construction-teak-cargo-hold
 construction-teak-chest-of-drawers
 construction-teak-clock
 construction-teak-demon-lectern
@@ -858,7 +821,6 @@ construction-teak-pet-house-5-pets
 construction-teak-pet-scratching-post
 construction-teak-portal-frame
 construction-teak-prize-chest
-construction-teak-repair-kit
 construction-teak-shelves-1
 construction-teak-shelves-2
 construction-teak-staircase
@@ -869,7 +831,6 @@ construction-teak-treasure-chest
 construction-teak-wall-decoration
 construction-teak-wardrobe-bedroom
 construction-teak-wardrobe-costume-room
-construction-teleport-focus
 construction-teleport-trap
 construction-tentacle-pool
 construction-thorny-hedge
@@ -890,7 +851,6 @@ construction-trailblazer-rug
 construction-treasure-hunt-fairy-house
 construction-treasure-room
 construction-tree
-construction-trims
 construction-troll-guard
 construction-trophy-pedestal
 construction-volcanic-pet-habitat
@@ -900,10 +860,8 @@ construction-water-pump
 construction-weapons-rack
 construction-whetstone
 construction-willow-tree
-construction-wind-catcher
 construction-wooden-bed
 construction-wooden-bookcase
-construction-wooden-cargo-hold
 construction-wooden-chair
 construction-wooden-dining-bench
 construction-wooden-dining-table
@@ -911,7 +869,6 @@ construction-wooden-dungeon-treasure-crate
 construction-wooden-fence
 construction-wooden-kitchen-table
 construction-wooden-larder
-construction-wooden-repair-kit
 construction-wooden-shaving-stand
 construction-wooden-shelves-1
 construction-wooden-shelves-2
@@ -2804,6 +2761,7 @@ sailing-camphor-cargo-hold
 sailing-camphor-hull
 sailing-camphor-hull-hull-parts
 sailing-camphor-mast-and-canvas-sails
+sailing-camphor-repair-kit
 sailing-captain-siad-desert-mining-camp
 sailing-catherby
 sailing-charred-island
@@ -2837,12 +2795,14 @@ sailing-hemp-trawling-net
 sailing-hosidius
 sailing-inoculation-station
 sailing-iron-cannon
+sailing-iron-helm
 sailing-iron-keel
 sailing-iron-salvaging-hook
 sailing-ironwood-cargo-hold
 sailing-ironwood-hull
 sailing-ironwood-hull-hull-parts
 sailing-ironwood-mast-and-cotton-sails
+sailing-ironwood-repair-kit
 sailing-isle-of-bones
 sailing-isle-of-souls
 sailing-jatizso
@@ -2860,6 +2820,7 @@ sailing-mahogany-cargo-hold
 sailing-mahogany-hull
 sailing-mahogany-hull-hull-parts
 sailing-mahogany-mast-and-canvas-sails
+sailing-mahogany-repair-kit
 sailing-mercenary-shipwrecks
 sailing-merchant-shipwrecks
 sailing-minotaur-s-rest
@@ -2873,6 +2834,7 @@ sailing-oak-cargo-hold
 sailing-oak-hull
 sailing-oak-hull-hull-parts
 sailing-oak-mast-and-linen-sails
+sailing-oak-repair-kit
 sailing-oarswoman-olga-burgh-de-rott
 sailing-pirate-shipwrecks
 sailing-piscatoris
@@ -2892,6 +2854,7 @@ sailing-rosewood-cargo-hold
 sailing-rosewood-hull
 sailing-rosewood-hull-hull-parts
 sailing-rosewood-mast-and-cotton-sails
+sailing-rosewood-repair-kit
 sailing-ruins-of-unkah
 sailing-rune-cannon
 sailing-rune-helm
@@ -2918,6 +2881,7 @@ sailing-teak-cargo-hold
 sailing-teak-hull
 sailing-teak-hull-hull-parts
 sailing-teak-mast-and-canvas-sails
+sailing-teak-repair-kit
 sailing-tear-of-the-soul
 sailing-teleport-focus
 sailing-the-crown-jewel
@@ -2941,6 +2905,7 @@ sailing-wooden-cargo-hold
 sailing-wooden-hull
 sailing-wooden-hull-hull-parts
 sailing-wooden-mast-and-linen-sails
+sailing-wooden-repair-kit
 sailing-wyrmscraig
 sailing-ynysdail
 skills-agility-adamant
