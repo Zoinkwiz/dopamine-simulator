@@ -109,7 +109,7 @@ import net.runelite.http.api.loottracker.LootRecordType;
 @PluginDescriptor(
 	name = "Dopamine Simulator",
 	description = "Collect cards and buy upgrades as you play",
-	tags = {"cards", "collection", "progression", "packs", "meta", "idle"}
+	tags = {"cards", "collection", "progression", "packs", "meta", "tcg", "idle"}
 )
 public class DopamineSimulatorPlugin extends Plugin
 {
