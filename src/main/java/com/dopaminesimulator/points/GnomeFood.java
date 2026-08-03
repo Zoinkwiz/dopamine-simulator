@@ -66,9 +66,6 @@ public enum GnomeFood
 
 	public static final long SOUR_MS = 60_000L;
 
-	/** How long a trap dish sits on the plate with a bite still available. */
-	public static final long TRAP_WINDOW_MS = 5_000L;
-
 	public static final int CRUNCHIES_CLICKS = 60;
 
 	public static final double FRUIT_BLAST_PASS_XP = 30d;
@@ -121,19 +118,10 @@ public enum GnomeFood
 		return durationMs > 0L;
 	}
 
-	/**
-	 * A dish that does nothing on its own. It sits on the plate for
-	 * {@link #TRAP_WINDOW_MS} and sours whoever clicks it.
-	 */
+	/** The dish that pays nothing and sours whoever eats it. */
 	public boolean isTrap()
 	{
 		return this == WORM_BATTA;
-	}
-
-	/** How long this dish stays on the plate to be looked at. */
-	public long showForMs()
-	{
-		return isTrap() ? TRAP_WINDOW_MS : ClickState.SHOW_FOR_MS;
 	}
 
 	public double clickMultiplier()

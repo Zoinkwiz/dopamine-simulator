@@ -48,12 +48,24 @@ public class SurgeTest
 		return state;
 	}
 
+	/** A dish served and eaten, which is the only way one ever does anything. */
 	private ClickState serving(GnomeFood food)
+	{
+		ClickState clicks = plated(food);
+		if (food != null)
+		{
+			clicks.eat(NOW);
+		}
+		return clicks;
+	}
+
+	/** A dish sat in front of the player, not yet clicked. */
+	private ClickState plated(GnomeFood food)
 	{
 		ClickState clicks = new ClickState();
 		if (food != null)
 		{
-			clicks.start(food, NOW);
+			clicks.serve(food, NOW);
 		}
 		return clicks;
 	}
@@ -105,13 +117,58 @@ public class SurgeTest
 	}
 
 	@Test
+	public void noDishDoesAnythingUntilItIsEaten()
+	{
+		for (GnomeFood food : GnomeFood.values())
+		{
+			ClickState clicks = plated(food);
+			assertEquals(food + " must pay nothing while it sits on the plate", 1d,
+				clicks.clickPayoutMultiplier(NOW), 1e-9d);
+			assertTrue(food + " must not count as a running surge", !clicks.isSurging(NOW));
+			assertTrue(food + " must not have soured anybody", !clicks.isSoured(NOW));
+			assertEquals(food + " must be on the plate", food, clicks.getPlated(NOW));
+		}
+	}
+
+	@Test
+	public void aDishLeftAloneForTheWholeWindowIsLost()
+	{
+		for (GnomeFood food : GnomeFood.values())
+		{
+			ClickState clicks = plated(food);
+			long last = NOW + ClickState.SERVE_WINDOW_MS - 1L;
+			assertEquals(food + " must still be eatable at the last moment",
+				food, clicks.getPlated(last));
+
+			long after = NOW + ClickState.SERVE_WINDOW_MS;
+			assertEquals(food + " must be off the plate", null, clicks.getPlated(after));
+			assertEquals("a click after the window eats nothing", null, clicks.eat(after));
+			assertTrue("so nothing runs", !clicks.isSurging(after));
+			assertTrue("and nothing sours", !clicks.isSoured(after));
+			assertEquals(1d, clicks.clickPayoutMultiplier(after), 1e-9d);
+		}
+	}
+
+	@Test
+	public void aDishThatLastsRunsFromTheClickNotFromTheServing()
+	{
+		ClickState clicks = plated(GnomeFood.WORM_HOLE);
+		long ate = NOW + ClickState.SERVE_WINDOW_MS - 1L;
+		assertEquals(GnomeFood.WORM_HOLE, clicks.eat(ate));
+
+		long lastMs = ate + GnomeFood.WORM_HOLE.getDurationMs() - 1L;
+		assertTrue("it must run its full length from the bite", clicks.isSurging(lastMs));
+		assertEquals(GnomeFood.WORM_HOLE_MULTIPLIER,
+			clicks.clickPayoutMultiplier(lastMs), 1e-9d);
+		assertTrue("and stop there",
+			!clicks.isSurging(ate + GnomeFood.WORM_HOLE.getDurationMs()));
+	}
+
+	@Test
 	public void aWormBattaOnlyCostsThePlayerWhoBitesIt()
 	{
-		ClickState clicks = serving(GnomeFood.WORM_BATTA);
-		assertEquals("serving it must cost nothing on its own", 1d,
-			clicks.clickPayoutMultiplier(NOW), 1e-9d);
-
-		assertEquals("the bite is what sours", GnomeFood.WORM_BATTA, clicks.bite(NOW));
+		ClickState clicks = plated(GnomeFood.WORM_BATTA);
+		assertEquals("the bite is what sours", GnomeFood.WORM_BATTA, clicks.eat(NOW));
 		assertEquals("and it halves the click that took it",
 			GnomeFood.SOUR_MULTIPLIER, clicks.clickPayoutMultiplier(NOW), 1e-9d);
 
@@ -123,37 +180,28 @@ public class SurgeTest
 	}
 
 	@Test
-	public void aWormBattaLeftAloneForItsWindowCostsNothing()
+	public void oneServingCanOnlyBeEatenOnce()
 	{
-		ClickState clicks = serving(GnomeFood.WORM_BATTA);
-		assertTrue("it must be biteable while it is shown",
-			clicks.isTrapArmed(NOW + GnomeFood.TRAP_WINDOW_MS - 1L));
+		for (GnomeFood food : GnomeFood.values())
+		{
+			ClickState clicks = plated(food);
+			assertEquals(food, clicks.eat(NOW));
 
-		long after = NOW + GnomeFood.TRAP_WINDOW_MS;
-		assertTrue("off the plate, it must not be biteable", !clicks.isTrapArmed(after));
-		assertEquals("a click after the window bites nothing", null, clicks.bite(after));
-		assertTrue("so nothing sours", !clicks.isSoured(after));
-	}
-
-	@Test
-	public void oneWormBattaCanOnlyCostOneBite()
-	{
-		ClickState clicks = serving(GnomeFood.WORM_BATTA);
-		clicks.bite(NOW);
-
-		// A clicker gets clicked. The second one must not push the sour out to a
-		// minute from now, or a fast clicker would never get out of it.
-		assertEquals(null, clicks.bite(NOW + 100L));
-		assertTrue("the sour still ends a minute after the bite",
-			!clicks.isSoured(NOW + GnomeFood.SOUR_MS));
+			// A clicker gets clicked. A second click must not eat the same dish
+			// again, or a trap would never let a fast clicker go.
+			assertEquals(food + " was eaten twice", null, clicks.eat(NOW + 100L));
+			assertTrue("the sour still ends a minute after the bite",
+				!clicks.isSoured(NOW + GnomeFood.SOUR_MS));
+		}
 	}
 
 	@Test
 	public void aSourHalvesTheDishItIsEatenWith()
 	{
-		ClickState clicks = serving(GnomeFood.WORM_BATTA);
-		clicks.bite(NOW);
-		clicks.start(GnomeFood.WORM_HOLE, NOW);
+		ClickState clicks = plated(GnomeFood.WORM_BATTA);
+		clicks.eat(NOW);
+		clicks.serve(GnomeFood.WORM_HOLE, NOW);
+		clicks.eat(NOW);
 
 		assertEquals("a worm hole eaten while soured pays half what it says",
 			GnomeFood.WORM_HOLE_MULTIPLIER * GnomeFood.SOUR_MULTIPLIER,
@@ -165,7 +213,9 @@ public class SurgeTest
 	{
 		for (GnomeFood food : GnomeFood.values())
 		{
-			if (food.lasts())
+			// The trap has no duration either, but a sour is exactly the thing it
+			// leaves behind. aWormBattaOnlyCostsThePlayerWhoBitesIt covers it.
+			if (food.lasts() || food.isTrap())
 			{
 				continue;
 			}

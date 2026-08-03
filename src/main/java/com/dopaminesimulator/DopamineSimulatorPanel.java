@@ -429,23 +429,49 @@ public class DopamineSimulatorPanel extends PluginPanel
 			? plugin.getGameIcons().forClick(state.getLifetimePoints())
 			: plugin.getGameIcons().forFood(serving));
 		clickButton.setSurging(surging);
-		clickButton.setDanger(dangerLabel(clicks, serving, now));
+		clickButton.setDanger(dangerLabel(clicks, now));
+		clickButton.setCallout(calloutLabel(clicks, now));
 		clickButton.setStatus(null);
 		return clickButton;
 	}
 
 	/** The red label on the plate: a warning first, then what the bite cost. */
-	private String dangerLabel(ClickState clicks, GnomeFood serving, long now)
+	private String dangerLabel(ClickState clicks, long now)
 	{
-		if (serving != null && serving.isTrap())
+		if (clicks == null)
+		{
+			return null;
+		}
+		GnomeFood plated = clicks.getPlated(now);
+		if (plated != null && plated.isTrap())
 		{
 			return "DON'T EAT";
 		}
-		if (clicks != null && clicks.isSoured(now))
+		if (clicks.isSoured(now))
 		{
 			return "SOURED " + String.format("%.0fs", clicks.sourSecondsRemaining(now));
 		}
 		return null;
+	}
+
+	/**
+	 * A plated dish is worth nothing until it is clicked, so the button has to say
+	 * so, and count down the window while it does.
+	 */
+	private String calloutLabel(ClickState clicks, long now)
+	{
+		if (clicks == null)
+		{
+			return null;
+		}
+		GnomeFood plated = clicks.getPlated(now);
+		if (plated != null)
+		{
+			// A trap gets the red warning instead, from dangerLabel.
+			return plated.isTrap()
+				? null : "EAT " + String.format("%.0fs", clicks.plateSecondsRemaining(now));
+		}
+		return clicks.isSurging(now) ? "SURGE" : null;
 	}
 	private double pointsPerClick()
 	{

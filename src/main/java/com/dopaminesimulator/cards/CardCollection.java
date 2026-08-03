@@ -156,7 +156,7 @@ public final class CardCollection
 		define("The Desert Awakening", CardSet.BOSSES, "The four Desert Treasure II bosses.",
 			BossesCards.DUKE_SUCELLUS, BossesCards.THE_LEVIATHAN, BossesCards.THE_WHISPERER, BossesCards.VARDORVIS);
 		define("Raids", CardSet.BOSSES, "All three raids.", BossesCards.CHAMBERS_OF_XERIC,
-			BossesCards.CHAMBERS_OF_XERIC_CHALLENGE_MODE, BossesCards.THEATRE_OF_BLOOD, BossesCards.TOMBS_OF_AMASCUT);
+			BossesCards.THEATRE_OF_BLOOD, BossesCards.TOMBS_OF_AMASCUT);
 		define("Slayer Bosses", CardSet.BOSSES, "Bosses that appear as Slayer tasks.",
 			BossesCards.ABYSSAL_SIRE, BossesCards.CERBERUS, BossesCards.KRAKEN, BossesCards.THERMONUCLEAR_SMOKE_DEVIL,
 			BossesCards.ALCHEMICAL_HYDRA, BossesCards.GROTESQUE_GUARDIANS);

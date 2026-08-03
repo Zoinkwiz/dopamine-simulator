@@ -49,6 +49,15 @@ public class SurgeInfoBox extends InfoBox
 	public String getText()
 	{
 		long now = System.currentTimeMillis();
+		GnomeFood plated = clickState.getPlated(now);
+		if (plated != null)
+		{
+			setTooltip(plated.isTrap()
+				? plated.getDisplayName() + ": leave it. " + plated.getBlurb()
+				: plated.getDisplayName() + ": click to eat it. " + plated.getBlurb());
+			return String.format("%.0f", clickState.plateSecondsRemaining(now));
+		}
+
 		GnomeFood food = clickState.getActive(now);
 		if (food != null)
 		{
@@ -62,7 +71,13 @@ public class SurgeInfoBox extends InfoBox
 	@Override
 	public Color getTextColor()
 	{
-		return clickState.isSurging(System.currentTimeMillis()) ? SURGE : SOUR;
+		long now = System.currentTimeMillis();
+		GnomeFood plated = clickState.getPlated(now);
+		if (plated != null)
+		{
+			return plated.isTrap() ? SOUR : SURGE;
+		}
+		return clickState.isSurging(now) ? SURGE : SOUR;
 	}
 
 	@Override
@@ -70,6 +85,7 @@ public class SurgeInfoBox extends InfoBox
 	{
 		long now = System.currentTimeMillis();
 		return config.showPackInfobox()
-			&& (clickState.isSurging(now) || clickState.isSoured(now));
+			&& (clickState.isPlated(now) || clickState.isSurging(now)
+				|| clickState.isSoured(now));
 	}
 }

@@ -71,6 +71,7 @@ public class ClickButton extends JComponent
 	private BufferedImage icon;
 	private String status;
 	private String danger;
+	private String callout;
 	private boolean surging;
 	private boolean hovered;
 	private long pressedAt;
@@ -166,6 +167,12 @@ public class ClickButton extends JComponent
 		{
 			wake();
 		}
+	}
+
+	/** The gold word over the payout: what this click would do beyond paying. */
+	public void setCallout(String callout)
+	{
+		this.callout = callout;
 	}
 
 	private void bindKeys()
@@ -378,9 +385,9 @@ public class ClickButton extends JComponent
 		{
 			payout = danger + "  " + payout;
 		}
-		else if (surging)
+		else if (callout != null)
 		{
-			payout = "SURGE  " + payout;
+			payout = callout + "  " + payout;
 		}
 		Skin.centred(g, payout, 0, width, height - 4, tint());
 	}

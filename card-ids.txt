@@ -332,7 +332,6 @@ bosses-bryophyta
 bosses-callisto
 bosses-cerberus
 bosses-chambers-of-xeric
-bosses-chambers-of-xeric-challenge-mode
 bosses-chaos-elemental
 bosses-chaos-fanatic
 bosses-commander-zilyana

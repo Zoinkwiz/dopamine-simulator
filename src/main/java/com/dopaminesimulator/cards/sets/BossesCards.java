@@ -82,7 +82,6 @@ public enum BossesCards implements CardGroup
 	ARAXXOR("Araxxor", Rarity.EPIC, -1, SpriteID.IconBoss25x25.ARAXXOR),
 	THE_CORRUPTED_GAUNTLET("The Corrupted Gauntlet", Rarity.EPIC, -1, SpriteID.IconBoss25x25.THE_CORRUPTED_GAUNTLET),
 	CHAMBERS_OF_XERIC("Chambers of Xeric", Rarity.LEGENDARY, -1, SpriteID.IconBoss25x25.CHAMBERS_OF_XERIC),
-	CHAMBERS_OF_XERIC_CHALLENGE_MODE("Chambers of Xeric: Challenge Mode", Rarity.LEGENDARY, ItemID.TWISTED_BOW, -1),
 	THEATRE_OF_BLOOD("Theatre of Blood", Rarity.LEGENDARY, -1, SpriteID.IconBoss25x25.THEATRE_OF_BLOOD),
 	TOMBS_OF_AMASCUT("Tombs of Amascut", Rarity.LEGENDARY, -1, SpriteID.IconBoss25x25.TOMBS_OF_AMASCUT),
 	YAMA("Yama", Rarity.LEGENDARY, -1, SpriteID.IconBoss25x25.YAMA),

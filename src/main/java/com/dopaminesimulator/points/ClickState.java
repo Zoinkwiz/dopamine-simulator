@@ -35,13 +35,19 @@ public class ClickState
 
 	public static final int MAX_LEVEL = 20;
 
-	public static final long SHOW_FOR_MS = 4_000L;
+	/**
+	 * How long a dish sits on the plate. Nothing it does reaches the player until
+	 * they click it inside this window, and a dish left alone is simply lost.
+	 */
+	public static final long SERVE_WINDOW_MS = 10_000L;
 
+	private GnomeFood plated;
+	private long platedUntil;
+
+	private GnomeFood active;
 	private long surgeEndsAt;
-	private long showUntil;
 	private long lastSurgeStartedAt;
 	private long sourEndsAt;
-	private GnomeFood active;
 
 	public static double surgeChancePerTick(int clickLevel)
 	{
@@ -74,43 +80,64 @@ public class ClickState
 		return isSurging(nowMs) ? active : null;
 	}
 
-	public void start(GnomeFood food, long nowMs)
+	/** Puts a dish on the plate. It does nothing at all until it is eaten. */
+	public void serve(GnomeFood food, long nowMs)
 	{
-		active = food;
-		lastSurgeStartedAt = nowMs;
-		surgeEndsAt = food.lasts() ? nowMs + food.getDurationMs() : 0L;
-		showUntil = Math.max(surgeEndsAt, nowMs + food.showForMs());
+		plated = food;
+		platedUntil = nowMs + SERVE_WINDOW_MS;
 	}
 
+	/** The dish waiting to be clicked, if the window has not run out. */
+	public GnomeFood getPlated(long nowMs)
+	{
+		return nowMs < platedUntil ? plated : null;
+	}
+
+	public boolean isPlated(long nowMs)
+	{
+		return getPlated(nowMs) != null;
+	}
+
+	public double plateSecondsRemaining(long nowMs)
+	{
+		return Math.max(0d, (platedUntil - nowMs) / 1000d);
+	}
+
+	/** What the click button is showing: the plate first, then whatever is running. */
 	public GnomeFood getShown(long nowMs)
 	{
-		return nowMs < showUntil ? active : null;
-	}
-
-	/** A trap dish is on the plate and the next click would bite it. */
-	public boolean isTrapArmed(long nowMs)
-	{
-		GnomeFood shown = getShown(nowMs);
-		return shown != null && shown.isTrap();
+		GnomeFood waiting = getPlated(nowMs);
+		return waiting != null ? waiting : getActive(nowMs);
 	}
 
 	/**
-	 * Springs an armed trap, souring every source for {@link GnomeFood#SOUR_MS}.
-	 * Returns the dish that was bitten, or null if this click bit nothing.
+	 * Eats whatever is on the plate. A dish that lasts starts running from here
+	 * rather than from when it was served, and a trap sours instead. Returns the
+	 * dish eaten so the caller can pay it out, or null if the plate was empty.
 	 */
-	public GnomeFood bite(long nowMs)
+	public GnomeFood eat(long nowMs)
 	{
-		if (!isTrapArmed(nowMs))
+		GnomeFood food = getPlated(nowMs);
+		if (food == null)
 		{
 			return null;
 		}
 
-		// Cleared off the plate, so one dish can only ever cost one bite.
-		GnomeFood bitten = active;
-		active = null;
-		showUntil = nowMs;
-		sourEndsAt = nowMs + GnomeFood.SOUR_MS;
-		return bitten;
+		// Cleared off the plate, so one serving is only ever eaten once.
+		plated = null;
+		platedUntil = nowMs;
+
+		if (food.isTrap())
+		{
+			sourEndsAt = nowMs + GnomeFood.SOUR_MS;
+		}
+		else if (food.lasts())
+		{
+			active = food;
+			lastSurgeStartedAt = nowMs;
+			surgeEndsAt = nowMs + food.getDurationMs();
+		}
+		return food;
 	}
 
 	public boolean isSoured(long nowMs)
@@ -156,10 +183,11 @@ public class ClickState
 
 	public void clear()
 	{
+		plated = null;
+		platedUntil = 0L;
+		active = null;
 		surgeEndsAt = 0L;
-		showUntil = 0L;
 		lastSurgeStartedAt = 0L;
 		sourEndsAt = 0L;
-		active = null;
 	}
 }

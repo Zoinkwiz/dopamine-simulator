@@ -101,6 +101,17 @@ public class DopamineOverlay extends OverlayPanel
 				.build());
 			renderTopSources(state, income);
 		}
+		GnomeFood plated = clicks == null ? null : clicks.getPlated(now);
+		if (plated != null)
+		{
+			panelComponent.getChildren().add(LineComponent.builder()
+				.left(plated.getDisplayName())
+				.right((plated.isTrap() ? "leave  " : "eat  ")
+					+ String.format("%.0fs", clicks.plateSecondsRemaining(now)))
+				.leftColor(plated.isTrap() ? SOUR : SURGE)
+				.rightColor(plated.isTrap() ? SOUR : SURGE)
+				.build());
+		}
 		if (clicks != null && clicks.isSurging(now))
 		{
 			GnomeFood serving = clicks.getActive(now);

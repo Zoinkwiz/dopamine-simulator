@@ -357,9 +357,9 @@ public class DopamineSimulatorPlugin extends Plugin
 		DopamineState state = engine.getState();
 		long now = System.currentTimeMillis();
 
-		// A trap only costs if it is still on the plate, so nothing may take its place.
+		// A plated dish is waiting on a click, so nothing may take its place.
 		if (state.getLifetimePoints() < ClickState.SURGE_UNLOCK_AT
-			|| clickState.isSurging(now) || clickState.isTrapArmed(now))
+			|| clickState.isSurging(now) || clickState.isPlated(now))
 		{
 			return;
 		}
@@ -373,22 +373,50 @@ public class DopamineSimulatorPlugin extends Plugin
 		serve(GnomeFood.roll(random));
 	}
 
+	/**
+	 * Puts a dish in front of the player. Nothing is paid out here: the dish is
+	 * only worth something to whoever clicks it before the window runs out.
+	 */
 	private void serve(GnomeFood food)
 	{
+		clickState.serve(food, System.currentTimeMillis());
+
+		long seconds = ClickState.SERVE_WINDOW_MS / 1000L;
+		client.addChatMessage(ChatMessageType.GAMEMESSAGE, "",
+			food.isTrap()
+				? "<col=ff4040>" + food.getDisplayName() + "</col>! " + food.getBlurb()
+					+ ". Leave it alone."
+				: "<col=ffb300>" + food.getDisplayName() + "</col>! " + food.getBlurb()
+					+ ", if you click it within " + seconds + "s.", null);
+		refreshPanel();
+	}
+
+	/** Pays out whatever was on the plate, if this click came in time. */
+	private void eat(long now)
+	{
+		GnomeFood food = clickState == null ? null : clickState.eat(now);
+		if (food == null)
+		{
+			return;
+		}
+
+		if (food.isTrap())
+		{
+			client.addChatMessage(ChatMessageType.GAMEMESSAGE, "",
+				"<col=ff4040>You bite the " + food.getDisplayName().toLowerCase(Locale.ROOT)
+					+ "</col>. Everything pays half for "
+					+ GnomeFood.SOUR_MS / 1000L + " seconds.", null);
+			return;
+		}
+
 		DopamineState state = engine.getState();
-
-		// Before the payout is worked out, so a frenzy pays out on its own clicks.
-		clickState.start(food, System.currentTimeMillis());
-
 		long tick = state.getTick();
 		double others = Math.max(0d,
 			incomeTracker.totalPerHour(tick) - incomeTracker.perHour(PointSource.CLICK, tick));
 		String got = foodService.apply(state, food, others, clickPayout(), rewards);
-		String colour = food.isTrap() ? "ff4040" : "ffb300";
 		client.addChatMessage(ChatMessageType.GAMEMESSAGE, "",
-			"<col=" + colour + ">" + food.getDisplayName() + "</col>! "
-				+ (got == null ? food.getBlurb() : got + "."), null);
-		refreshPanel();
+			"You eat the <col=ffb300>" + food.getDisplayName().toLowerCase(Locale.ROOT)
+				+ "</col>. " + (got == null ? food.getBlurb() : got) + ".", null);
 	}
 
 	private void checkSourceUnlocks()
@@ -588,16 +616,9 @@ public class DopamineSimulatorPlugin extends Plugin
 				return;
 			}
 
-			// Before the payout, so the click that bites is the first one paid half.
-			GnomeFood bitten = clickState == null
-				? null : clickState.bite(System.currentTimeMillis());
-			if (bitten != null)
-			{
-				client.addChatMessage(ChatMessageType.GAMEMESSAGE, "",
-					"<col=ff4040>You bite the " + bitten.getDisplayName().toLowerCase(Locale.ROOT)
-						+ "</col>. Everything pays half for "
-						+ GnomeFood.SOUR_MS / 1000L + " seconds.", null);
-			}
+			// Before the payout, so a dish that lifts clicks, or sours them, is
+			// already running for the click that ate it.
+			eat(System.currentTimeMillis());
 			engine.accept(DopamineEvent.click(clickPayout()));
 			refreshPanel();
 		});
