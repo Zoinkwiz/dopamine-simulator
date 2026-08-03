@@ -101,6 +101,7 @@ import net.runelite.client.ui.ClientToolbar;
 import net.runelite.client.ui.NavigationButton;
 import net.runelite.client.ui.overlay.OverlayManager;
 import net.runelite.client.ui.overlay.infobox.InfoBoxManager;
+import net.runelite.client.util.AsyncBufferedImage;
 import net.runelite.client.util.ImageUtil;
 import net.runelite.http.api.loottracker.LootRecordType;
 
@@ -1149,18 +1150,22 @@ public class DopamineSimulatorPlugin extends Plugin
 
 	private void applyPluginIcon()
 	{
-		BufferedImage cookie = itemManager.getImage(ItemID.CHOCCHIP_CRUNCHIES);
+		AsyncBufferedImage cookie = itemManager.getImage(ItemID.CHOCCHIP_CRUNCHIES);
 		if (cookie == null)
 		{
 			return;
 		}
 
-		BufferedImage large = ImageUtil.resizeImage(cookie, 32, 32);
-		SurgeInfoBox box = surgeInfoBox;
-		if (box != null)
+		// Gilding reads the pixels, and those arrive with the item image rather
+		// than with the call for it.
+		cookie.onLoaded(() ->
 		{
-			box.setImage(large);
-		}
+			SurgeInfoBox box = surgeInfoBox;
+			if (box != null)
+			{
+				box.setImage(ImageUtil.resizeImage(GameIcons.golden(cookie), 32, 32));
+			}
+		});
 
 		BufferedImage small = ImageUtil.resizeImage(cookie, 16, 16);
 		SwingUtilities.invokeLater(() ->
