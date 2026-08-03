@@ -66,6 +66,7 @@ import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
@@ -354,7 +355,9 @@ public class DopamineSimulatorPlugin extends Plugin
 		DopamineState state = engine.getState();
 		long now = System.currentTimeMillis();
 
-		if (state.getLifetimePoints() < ClickState.SURGE_UNLOCK_AT || clickState.isSurging(now))
+		// A trap only costs if it is still on the plate, so nothing may take its place.
+		if (state.getLifetimePoints() < ClickState.SURGE_UNLOCK_AT
+			|| clickState.isSurging(now) || clickState.isTrapArmed(now))
 		{
 			return;
 		}
@@ -379,8 +382,9 @@ public class DopamineSimulatorPlugin extends Plugin
 		double others = Math.max(0d,
 			incomeTracker.totalPerHour(tick) - incomeTracker.perHour(PointSource.CLICK, tick));
 		String got = foodService.apply(state, food, others, clickPayout(), rewards);
+		String colour = food.isTrap() ? "ff4040" : "ffb300";
 		client.addChatMessage(ChatMessageType.GAMEMESSAGE, "",
-			"<col=ffb300>" + food.getDisplayName() + "</col>! "
+			"<col=" + colour + ">" + food.getDisplayName() + "</col>! "
 				+ (got == null ? food.getBlurb() : got + "."), null);
 		refreshPanel();
 	}
@@ -580,6 +584,17 @@ public class DopamineSimulatorPlugin extends Plugin
 			if (!isPlayable())
 			{
 				return;
+			}
+
+			// Before the payout, so the click that bites is the first one paid half.
+			GnomeFood bitten = clickState == null
+				? null : clickState.bite(System.currentTimeMillis());
+			if (bitten != null)
+			{
+				client.addChatMessage(ChatMessageType.GAMEMESSAGE, "",
+					"<col=ff4040>You bite the " + bitten.getDisplayName().toLowerCase(Locale.ROOT)
+						+ "</col>. Everything pays half for "
+						+ GnomeFood.SOUR_MS / 1000L + " seconds.", null);
 			}
 			engine.accept(DopamineEvent.click(clickPayout()));
 			refreshPanel();

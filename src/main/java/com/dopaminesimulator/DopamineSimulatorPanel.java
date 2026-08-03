@@ -422,14 +422,30 @@ public class DopamineSimulatorPanel extends PluginPanel
 			clickButton.setAlignmentX(Component.LEFT_ALIGNMENT);
 		}
 
-		GnomeFood serving = plugin.getClickState() == null
-			? null : plugin.getClickState().getShown(System.currentTimeMillis());
+		ClickState clicks = plugin.getClickState();
+		long now = System.currentTimeMillis();
+		GnomeFood serving = clicks == null ? null : clicks.getShown(now);
 		clickButton.setIcon(serving == null
 			? plugin.getGameIcons().forClick(state.getLifetimePoints())
 			: plugin.getGameIcons().forFood(serving));
 		clickButton.setSurging(surging);
+		clickButton.setDanger(dangerLabel(clicks, serving, now));
 		clickButton.setStatus(null);
 		return clickButton;
+	}
+
+	/** The red label on the plate: a warning first, then what the bite cost. */
+	private String dangerLabel(ClickState clicks, GnomeFood serving, long now)
+	{
+		if (serving != null && serving.isTrap())
+		{
+			return "DON'T EAT";
+		}
+		if (clicks != null && clicks.isSoured(now))
+		{
+			return "SOURED " + String.format("%.0fs", clicks.sourSecondsRemaining(now));
+		}
+		return null;
 	}
 	private double pointsPerClick()
 	{

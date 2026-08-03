@@ -30,7 +30,7 @@ public class ClickState
 
 	public static final double BASE_SURGE_CHANCE_PER_TICK = 0.00125d;
 
-	// Bounded: four of the seven dishes pay a share of total income.
+	// Bounded: four of the eight dishes pay a share of total income.
 	public static final double SURGE_RATE_CAP = 1.75d;
 
 	public static final int MAX_LEVEL = 20;
@@ -40,6 +40,7 @@ public class ClickState
 	private long surgeEndsAt;
 	private long showUntil;
 	private long lastSurgeStartedAt;
+	private long sourEndsAt;
 	private GnomeFood active;
 
 	public static double surgeChancePerTick(int clickLevel)
@@ -78,12 +79,53 @@ public class ClickState
 		active = food;
 		lastSurgeStartedAt = nowMs;
 		surgeEndsAt = food.lasts() ? nowMs + food.getDurationMs() : 0L;
-		showUntil = Math.max(surgeEndsAt, nowMs + SHOW_FOR_MS);
+		showUntil = Math.max(surgeEndsAt, nowMs + food.showForMs());
 	}
 
 	public GnomeFood getShown(long nowMs)
 	{
 		return nowMs < showUntil ? active : null;
+	}
+
+	/** A trap dish is on the plate and the next click would bite it. */
+	public boolean isTrapArmed(long nowMs)
+	{
+		GnomeFood shown = getShown(nowMs);
+		return shown != null && shown.isTrap();
+	}
+
+	/**
+	 * Springs an armed trap, souring every source for {@link GnomeFood#SOUR_MS}.
+	 * Returns the dish that was bitten, or null if this click bit nothing.
+	 */
+	public GnomeFood bite(long nowMs)
+	{
+		if (!isTrapArmed(nowMs))
+		{
+			return null;
+		}
+
+		// Cleared off the plate, so one dish can only ever cost one bite.
+		GnomeFood bitten = active;
+		active = null;
+		showUntil = nowMs;
+		sourEndsAt = nowMs + GnomeFood.SOUR_MS;
+		return bitten;
+	}
+
+	public boolean isSoured(long nowMs)
+	{
+		return nowMs < sourEndsAt;
+	}
+
+	public double sourMultiplier(long nowMs)
+	{
+		return isSoured(nowMs) ? GnomeFood.SOUR_MULTIPLIER : 1d;
+	}
+
+	public double sourSecondsRemaining(long nowMs)
+	{
+		return Math.max(0d, (sourEndsAt - nowMs) / 1000d);
 	}
 
 	public double multiplier(long nowMs)
@@ -92,10 +134,12 @@ public class ClickState
 		return food == null ? 1d : food.clickMultiplier();
 	}
 
+	// A sour rides on top of whatever is being served, so a dish eaten during one
+	// is still worth eating, just worth half of what it says.
 	public double incomeMultiplier(long nowMs)
 	{
 		GnomeFood food = getActive(nowMs);
-		return food == null ? 1d : food.incomeMultiplier();
+		return (food == null ? 1d : food.incomeMultiplier()) * sourMultiplier(nowMs);
 	}
 
 	// What a click is worth right now. Clicking is a source, so a dish that lifts
@@ -115,6 +159,7 @@ public class ClickState
 		surgeEndsAt = 0L;
 		showUntil = 0L;
 		lastSurgeStartedAt = 0L;
+		sourEndsAt = 0L;
 		active = null;
 	}
 }

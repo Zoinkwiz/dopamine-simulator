@@ -92,6 +92,11 @@ public class GnomeFoodService
 				state.addPoints(points);
 				return String.format("%.0f minutes of income", share * 60d);
 			}
+			case WORM_BATTA:
+
+				// Serving it costs nothing. Biting it does, and that is handled on
+				// the click itself, so this dish pays out nowhere.
+				return null;
 			default:
 
 				return null;

@@ -34,6 +34,7 @@ import net.runelite.client.ui.overlay.infobox.InfoBox;
 public class SurgeInfoBox extends InfoBox
 {
 	private static final Color SURGE = new Color(0xFF, 0xE0, 0x82);
+	private static final Color SOUR = new Color(0xFF, 0x6B, 0x60);
 	private final DopamineSimulatorConfig config;
 	private final ClickState clickState;
 	SurgeInfoBox(BufferedImage image, Plugin plugin, DopamineSimulatorConfig config,
@@ -52,19 +53,23 @@ public class SurgeInfoBox extends InfoBox
 		if (food != null)
 		{
 			setTooltip(food.getDisplayName() + ": " + food.getBlurb());
+			return String.format("%.0f", clickState.secondsRemaining(now));
 		}
-		return String.format("%.0f", clickState.secondsRemaining(now));
+		setTooltip("Soured: every source pays half");
+		return String.format("%.0f", clickState.sourSecondsRemaining(now));
 	}
 
 	@Override
 	public Color getTextColor()
 	{
-		return SURGE;
+		return clickState.isSurging(System.currentTimeMillis()) ? SURGE : SOUR;
 	}
 
 	@Override
 	public boolean render()
 	{
-		return config.showPackInfobox() && clickState.isSurging(System.currentTimeMillis());
+		long now = System.currentTimeMillis();
+		return config.showPackInfobox()
+			&& (clickState.isSurging(now) || clickState.isSoured(now));
 	}
 }

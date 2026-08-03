@@ -105,6 +105,62 @@ public class SurgeTest
 	}
 
 	@Test
+	public void aWormBattaOnlyCostsThePlayerWhoBitesIt()
+	{
+		ClickState clicks = serving(GnomeFood.WORM_BATTA);
+		assertEquals("serving it must cost nothing on its own", 1d,
+			clicks.clickPayoutMultiplier(NOW), 1e-9d);
+
+		assertEquals("the bite is what sours", GnomeFood.WORM_BATTA, clicks.bite(NOW));
+		assertEquals("and it halves the click that took it",
+			GnomeFood.SOUR_MULTIPLIER, clicks.clickPayoutMultiplier(NOW), 1e-9d);
+
+		long lastSourMs = NOW + GnomeFood.SOUR_MS - 1L;
+		assertTrue("the sour runs for the full minute", clicks.isSoured(lastSourMs));
+		assertEquals(GnomeFood.SOUR_MULTIPLIER, clicks.incomeMultiplier(lastSourMs), 1e-9d);
+		assertTrue("and then lets go", !clicks.isSoured(NOW + GnomeFood.SOUR_MS));
+		assertEquals(1d, clicks.clickPayoutMultiplier(NOW + GnomeFood.SOUR_MS), 1e-9d);
+	}
+
+	@Test
+	public void aWormBattaLeftAloneForItsWindowCostsNothing()
+	{
+		ClickState clicks = serving(GnomeFood.WORM_BATTA);
+		assertTrue("it must be biteable while it is shown",
+			clicks.isTrapArmed(NOW + GnomeFood.TRAP_WINDOW_MS - 1L));
+
+		long after = NOW + GnomeFood.TRAP_WINDOW_MS;
+		assertTrue("off the plate, it must not be biteable", !clicks.isTrapArmed(after));
+		assertEquals("a click after the window bites nothing", null, clicks.bite(after));
+		assertTrue("so nothing sours", !clicks.isSoured(after));
+	}
+
+	@Test
+	public void oneWormBattaCanOnlyCostOneBite()
+	{
+		ClickState clicks = serving(GnomeFood.WORM_BATTA);
+		clicks.bite(NOW);
+
+		// A clicker gets clicked. The second one must not push the sour out to a
+		// minute from now, or a fast clicker would never get out of it.
+		assertEquals(null, clicks.bite(NOW + 100L));
+		assertTrue("the sour still ends a minute after the bite",
+			!clicks.isSoured(NOW + GnomeFood.SOUR_MS));
+	}
+
+	@Test
+	public void aSourHalvesTheDishItIsEatenWith()
+	{
+		ClickState clicks = serving(GnomeFood.WORM_BATTA);
+		clicks.bite(NOW);
+		clicks.start(GnomeFood.WORM_HOLE, NOW);
+
+		assertEquals("a worm hole eaten while soured pays half what it says",
+			GnomeFood.WORM_HOLE_MULTIPLIER * GnomeFood.SOUR_MULTIPLIER,
+			clicks.clickPayoutMultiplier(NOW), 1e-9d);
+	}
+
+	@Test
 	public void theInstantDishesDoNotLeaveAMultiplierRunning()
 	{
 		for (GnomeFood food : GnomeFood.values())

@@ -136,24 +136,36 @@ public class GameIcons
 		}
 		if (foodRequested.add(food))
 		{
+			// A trap is toned red instead, so the one dish worth avoiding never
+			// looks like the seven worth eating.
+			Color[] ramp = food.isTrap() ? RED_RAMP : GOLD_RAMP;
 			image.onLoaded(() ->
 			{
-				foodIcons.put(food, golden(image));
+				foodIcons.put(food, toned(image, ramp));
 				onFoodGilded.run();
 			});
 		}
 		return foodIcons.getOrDefault(food, image);
 	}
 
-	private static final Color GOLD_SHADOW = new Color(0x3C, 0x26, 0x00);
-	private static final Color GOLD_MID = new Color(0xD4, 0xAF, 0x37);
-	private static final Color GOLD_HIGHLIGHT = new Color(0xFF, 0xF4, 0xC8);
+	private static final Color[] GOLD_RAMP = {
+		new Color(0x3C, 0x26, 0x00), new Color(0xD4, 0xAF, 0x37), new Color(0xFF, 0xF4, 0xC8)
+	};
+
+	private static final Color[] RED_RAMP = {
+		new Color(0x2E, 0x06, 0x06), new Color(0xC0, 0x30, 0x2A), new Color(0xFF, 0xC4, 0xB4)
+	};
 
 	/**
 	 * Re-tones an icon onto a gold ramp. Shape and shading survive because each
 	 * pixel keeps its alpha and picks its colour by how bright it started.
 	 */
 	public static BufferedImage golden(BufferedImage source)
+	{
+		return toned(source, GOLD_RAMP);
+	}
+
+	public static BufferedImage toned(BufferedImage source, Color[] ramp)
 	{
 		int width = source.getWidth();
 		int height = source.getHeight();
@@ -171,17 +183,17 @@ public class GameIcons
 				double luma = (0.299d * ((argb >> 16) & 0xFF)
 					+ 0.587d * ((argb >> 8) & 0xFF)
 					+ 0.114d * (argb & 0xFF)) / 255d;
-				out.setRGB(x, y, (alpha << 24) | ramp(luma));
+				out.setRGB(x, y, (alpha << 24) | ramp(luma, ramp));
 			}
 		}
 		return out;
 	}
 
-	private static int ramp(double luma)
+	private static int ramp(double luma, Color[] ramp)
 	{
 		boolean dark = luma < 0.5d;
-		Color from = dark ? GOLD_SHADOW : GOLD_MID;
-		Color to = dark ? GOLD_MID : GOLD_HIGHLIGHT;
+		Color from = dark ? ramp[0] : ramp[1];
+		Color to = dark ? ramp[1] : ramp[2];
 		double t = dark ? luma * 2d : (luma - 0.5d) * 2d;
 		return (lerp(from.getRed(), to.getRed(), t) << 16)
 			| (lerp(from.getGreen(), to.getGreen(), t) << 8)

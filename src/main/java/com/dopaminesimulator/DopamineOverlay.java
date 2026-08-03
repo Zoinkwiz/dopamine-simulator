@@ -51,6 +51,7 @@ public class DopamineOverlay extends OverlayPanel
 {
 	private static final Color POINTS = Skin.ORANGE;
 	private static final Color SURGE = new Color(0xFF, 0xE0, 0x82);
+	private static final Color SOUR = Skin.RED;
 	private static final int ICON_SIZE = 16;
 	private final DopamineSimulatorPlugin plugin;
 	private final DopamineSimulatorConfig config;
@@ -112,6 +113,16 @@ public class DopamineOverlay extends OverlayPanel
 					+ String.format("%.0fs", clicks.secondsRemaining(now)))
 				.leftColor(SURGE)
 				.rightColor(SURGE)
+				.build());
+		}
+		if (clicks != null && clicks.isSoured(now))
+		{
+			panelComponent.getChildren().add(LineComponent.builder()
+				.left("Soured")
+				.right("x" + GnomeFood.SOUR_MULTIPLIER + "  "
+					+ String.format("%.0fs", clicks.sourSecondsRemaining(now)))
+				.leftColor(SOUR)
+				.rightColor(SOUR)
 				.build());
 		}
 		if (!rewards.isEmpty())

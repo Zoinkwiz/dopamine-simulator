@@ -70,6 +70,7 @@ public class ClickButton extends JComponent
 	private final Timer animator;
 	private BufferedImage icon;
 	private String status;
+	private String danger;
 	private boolean surging;
 	private boolean hovered;
 	private long pressedAt;
@@ -107,7 +108,7 @@ public class ClickButton extends JComponent
 		{
 			particles.removeIf(Particle::expired);
 			repaint();
-			if (particles.isEmpty() && !hovered && !surging
+			if (particles.isEmpty() && !hovered && !surging && danger == null
 				&& System.currentTimeMillis() - pressedAt > PRESS_LIFETIME_MS)
 			{
 				animator.stop();
@@ -149,6 +150,19 @@ public class ClickButton extends JComponent
 	{
 		this.surging = surging;
 		if (surging)
+		{
+			wake();
+		}
+	}
+
+	/**
+	 * Turns the plate red and labels it, for a dish that should not be clicked or
+	 * for the sour left by one that was. Null puts it back to gold.
+	 */
+	public void setDanger(String danger)
+	{
+		this.danger = danger;
+		if (danger != null)
 		{
 			wake();
 		}
@@ -260,6 +274,21 @@ public class ClickButton extends JComponent
 		g.dispose();
 	}
 
+	/** Anything worth pulsing over: a dish being served, or one that soured. */
+	private boolean loud()
+	{
+		return surging || danger != null;
+	}
+
+	private Color tint()
+	{
+		if (danger != null)
+		{
+			return Skin.RED;
+		}
+		return surging ? Skin.YELLOW : Skin.GOLD;
+	}
+
 	private double currentScale()
 	{
 		double scale = hovered ? 1.04d : 1.0d;
@@ -268,7 +297,7 @@ public class ClickButton extends JComponent
 		{
 			scale *= 0.91d + 0.09d * (sincePress / (double) PRESS_LIFETIME_MS);
 		}
-		if (surging)
+		if (loud())
 		{
 			scale *= 1.03d + 0.03d * Math.sin(System.currentTimeMillis() / 120d);
 		}
@@ -277,12 +306,12 @@ public class ClickButton extends JComponent
 
 	private void drawGlow(Graphics2D g, int centreX, int centreY, int plate)
 	{
-		float radius = plate * (surging ? 1.35f : 1.0f);
-		Color tint = surging ? Skin.YELLOW : Skin.GOLD;
+		float radius = plate * (loud() ? 1.35f : 1.0f);
+		Color tint = tint();
 		g.setPaint(new RadialGradientPaint(
 			new Point2D.Float(centreX, centreY), radius,
 			new float[]{0f, 1f},
-			new Color[]{Skin.withAlpha(tint, surging ? 120 : hovered ? 70 : 45),
+			new Color[]{Skin.withAlpha(tint, loud() ? 120 : hovered ? 70 : 45),
 				Skin.withAlpha(tint, 0)},
 			MultipleGradientPaint.CycleMethod.NO_CYCLE));
 		g.fillOval((int) (centreX - radius), (int) (centreY - radius),
@@ -299,11 +328,11 @@ public class ClickButton extends JComponent
 		g.fillOval(x, y, plate, plate);
 
 		g.setStroke(new BasicStroke(2f));
-		g.setPaint(new GradientPaint(x, y, surging ? Skin.YELLOW : Skin.GOLD,
-			x, y + plate, Skin.GOLD_DEEP));
+		g.setPaint(new GradientPaint(x, y, tint(),
+			x, y + plate, danger != null ? Skin.RED.darker() : Skin.GOLD_DEEP));
 		g.drawOval(x, y, plate - 1, plate - 1);
 
-		if (!surging)
+		if (!loud())
 		{
 			return;
 		}
@@ -312,7 +341,7 @@ public class ClickButton extends JComponent
 		g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER,
 			(float) (0.25d + 0.5d * pulse)));
 		g.setStroke(new BasicStroke(1.5f));
-		g.setColor(Skin.YELLOW);
+		g.setColor(tint());
 		int spread = (int) (5 + 7 * pulse);
 		g.drawOval(x - spread, y - spread, plate + spread * 2, plate + spread * 2);
 		g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1f));
@@ -344,10 +373,16 @@ public class ClickButton extends JComponent
 			return;
 		}
 		g.setFont(Skin.heading());
-		Skin.centred(g, surging
-				? "SURGE  +" + BigNumbers.format(pointsPerClick.getAsDouble())
-				: "+" + BigNumbers.format(pointsPerClick.getAsDouble()),
-			0, width, height - 4, surging ? Skin.YELLOW : Skin.GOLD);
+		String payout = "+" + BigNumbers.format(pointsPerClick.getAsDouble());
+		if (danger != null)
+		{
+			payout = danger + "  " + payout;
+		}
+		else if (surging)
+		{
+			payout = "SURGE  " + payout;
+		}
+		Skin.centred(g, payout, 0, width, height - 4, tint());
 	}
 
 	private void drawParticles(Graphics2D g, int centreX, int centreY)
@@ -362,8 +397,7 @@ public class ClickButton extends JComponent
 				Math.max(0f, 1f - progress)));
 			int x = centreX - metrics.stringWidth(particle.text) / 2
 				+ (int) (particle.driftX * progress);
-			Skin.text(g, particle.text, x, centreY - (int) (progress * 46),
-				surging ? Skin.YELLOW : Skin.GOLD);
+			Skin.text(g, particle.text, x, centreY - (int) (progress * 46), tint());
 		}
 		g.setComposite(before);
 	}

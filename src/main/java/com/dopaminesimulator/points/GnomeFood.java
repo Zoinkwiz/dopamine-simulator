@@ -48,6 +48,10 @@ public enum GnomeFood
 	FRUIT_BLAST("Fruit blast", ItemID.FRUIT_BLAST, 10, 0L,
 		"Pass XP"),
 
+	// The one dish that is worth nothing. It only costs the player who bites.
+	WORM_BATTA("Worm batta", ItemID.WORM_BATTA, 8, 0L,
+		"Bite it and everything pays half for 60s"),
+
 	TANGLED_TOADS_LEGS("Tangled toads' legs", ItemID.TANGLED_TOADS_LEGS, 7, 0L,
 		"A free pack"),
 
@@ -57,6 +61,13 @@ public enum GnomeFood
 	public static final double FRENZY_MULTIPLIER = 5d;
 
 	public static final double WORM_HOLE_MULTIPLIER = 4d;
+
+	public static final double SOUR_MULTIPLIER = 0.5d;
+
+	public static final long SOUR_MS = 60_000L;
+
+	/** How long a trap dish sits on the plate with a bite still available. */
+	public static final long TRAP_WINDOW_MS = 5_000L;
 
 	public static final int CRUNCHIES_CLICKS = 60;
 
@@ -108,6 +119,21 @@ public enum GnomeFood
 	public boolean lasts()
 	{
 		return durationMs > 0L;
+	}
+
+	/**
+	 * A dish that does nothing on its own. It sits on the plate for
+	 * {@link #TRAP_WINDOW_MS} and sours whoever clicks it.
+	 */
+	public boolean isTrap()
+	{
+		return this == WORM_BATTA;
+	}
+
+	/** How long this dish stays on the plate to be looked at. */
+	public long showForMs()
+	{
+		return isTrap() ? TRAP_WINDOW_MS : ClickState.SHOW_FOR_MS;
 	}
 
 	public double clickMultiplier()
