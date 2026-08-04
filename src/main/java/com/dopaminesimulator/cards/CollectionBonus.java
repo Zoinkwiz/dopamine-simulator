@@ -51,7 +51,8 @@ public final class CollectionBonus
 			CardSet.FARMING);
 		feed(PointSource.TRAVEL, CardSet.DIARIES, CardSet.AGILITY, CardSet.SAILING,
 			CardSet.AREAS);
-		feed(PointSource.WEALTH, CardSet.ITEMS, CardSet.THIEVING, CardSet.HUNTER);
+		feed(PointSource.WEALTH, CardSet.ITEMS, CardSet.RAIDS_DROPS, CardSet.THIEVING,
+			CardSet.HUNTER);
 		feed(PointSource.CLICK, CardSet.MINIGAMES, CardSet.CRAFTING, CardSet.FLETCHING,
 			CardSet.FIREMAKING);
 		feed(PointSource.IDLING, CardSet.QUESTS, CardSet.FISHING, CardSet.WOODCUTTING);
