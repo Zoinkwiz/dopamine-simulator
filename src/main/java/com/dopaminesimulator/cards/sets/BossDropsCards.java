@@ -31,9 +31,9 @@ import com.dopaminesimulator.cards.Rarity;
 import net.runelite.api.gameval.ItemID;
 import net.runelite.api.gameval.SpriteID;
 
-public enum BossesCollCards implements CardGroup
+public enum BossDropsCards implements CardGroup
 {
-	// General items that are on multiple clogs
+	// Drops that appear on more than one boss's collection log.
 	ABYSSAL_WHIP("Abyssal whip", Rarity.RARE, ItemID.ABYSSAL_WHIP, -1), // Abyssal Sire and Abyssal Demons
 	ABYSSAL_HEAD("Abyssal head", Rarity.RARE, ItemID.POH_TROPHYDROP_ABYSSALDEMON, -1), // Abyssal Sire and Abyssal Demons
 	ABYSSAL_DAGGER("Abyssal dagger", Rarity.RARE, ItemID.ABYSSAL_DAGGER, -1), // Abyssal Sire and Abyssal Demons
@@ -71,7 +71,6 @@ public enum BossesCollCards implements CardGroup
 	BLUDGEON_CLAW("Bludgeon claw", Rarity.RARE, ItemID.ABYSSAL_BLUDGEON_2, -1),
 	BLUDGEON_AXON("Bludgeon axon", Rarity.RARE, ItemID.ABYSSAL_BLUDGEON_3, -1),
 	JAR_OF_MIASMA("Jar of miasma", Rarity.RARE, ItemID.JAR_OF_MIASMA, -1),
-
 	// Alchemical Hydra
 	IKKLE_HYDRA("Ikkle hydra", Rarity.EPIC, ItemID.HYDRAPET, -1),
 	HYDRAS_CLAW("Hydra's claw", Rarity.EPIC, ItemID.HYDRA_CLAW, -1),
@@ -208,7 +207,6 @@ public enum BossesCollCards implements CardGroup
 	BANDOS_TASSETS("Bandos tassets", Rarity.EPIC, ItemID.BANDOS_SKIRT, -1),
 	BANDOS_BOOTS("Bandos boots", Rarity.RARE, ItemID.BANDOS_BOOTS, -1),
 	BANDOS_HILT("Bandos hilt", Rarity.EPIC, ItemID.GODWARS_GODSWORD_HILT_BANDOS, -1),
-
 	// Giant Mole
 	BABY_MOLE("Baby mole", Rarity.EPIC, ItemID.MOLEPET, -1),
 	MOLE_SKIN("Mole skin", Rarity.UNCOMMON, ItemID.MOLE_SKIN, -1),
@@ -267,14 +265,14 @@ public enum BossesCollCards implements CardGroup
 	VENATOR_VESTIGE("Venator vestige", Rarity.EPIC, ItemID.VENATOR_VESTIGE, -1),
 	SMOKE_QUARTZ("Smoke quartz", Rarity.RARE, ItemID.SMOKE_QUARTZ, -1),
 	SCARRED_TABLET("Scarred tablet", Rarity.UNCOMMON, ItemID.LEVIATHAN_TABLET, -1),
-	/*
-	// The Mad Angel (Temporarily set as note)
-	HALLOWFELL("Hallowfell", Rarity.COMMON, ItemID.HALLOWFELL, -1),
-	ARDEAGLAIS_TELEPORT("Ardeaglais teleport", Rarity.COMMON, ItemID.TELEPORTSCROLL_ARDEAGLAIS, -1),
-	GRANITE_DUST_1("Granite dust", Rarity.COMMON, ItemID.GRANITE_DUST, -1),
-	AGGY("Aggy", Rarity.COMMON, ItemID.MADANGELPET, -1),
-	JAR_OF_LIGHT("Jar of light", Rarity.COMMON, ItemID.JAR_OF_LIGHT, -1),
-	*/
+	// TODO: The Mad Angel. Left commented because HALLOWFELL, TELEPORTSCROLL_ARDEAGLAIS,
+	// MADANGELPET and JAR_OF_LIGHT do not exist in the RuneLite API yet, so this will
+	// not compile. Uncomment once they land, and set rarities to match the set.
+	// HALLOWFELL("Hallowfell", Rarity.COMMON, ItemID.HALLOWFELL, -1),
+	// ARDEAGLAIS_TELEPORT("Ardeaglais teleport", Rarity.COMMON, ItemID.TELEPORTSCROLL_ARDEAGLAIS, -1),
+	// GRANITE_DUST_MAD_ANGEL("Granite dust", Rarity.COMMON, ItemID.GRANITE_DUST, -1),
+	// AGGY("Aggy", Rarity.COMMON, ItemID.MADANGELPET, -1),
+	// JAR_OF_LIGHT("Jar of light", Rarity.COMMON, ItemID.JAR_OF_LIGHT, -1),
 	// Maggot King
 	MAGGOT_MARQUESS("Maggot marquess", Rarity.EPIC, ItemID.MAGGOTKINGPET, -1),
 	CRIMSON_KISTEN("Crimson kisten", Rarity.EPIC, ItemID.CRIMSON_KISTEN, -1),
@@ -287,7 +285,7 @@ public enum BossesCollCards implements CardGroup
 	BLUE_MOON_CHESTPLATE("Blue moon chestplate", Rarity.RARE, ItemID.FROST_MOON_CHESTPLATE, -1),
 	BLUE_MOON_TASSETS("Blue moon tassets", Rarity.RARE, ItemID.FROST_MOON_TASSETS, -1),
 	BLUE_MOON_HELM("Blue moon helm", Rarity.RARE, ItemID.FROST_MOON_HELM, -1),
-	BLUE_MOON_SPEAR("Blue moon spear", Rarity.RARE, ItemID.FROSTMOON_SPEAR , -1),
+	BLUE_MOON_SPEAR("Blue moon spear", Rarity.RARE, ItemID.FROSTMOON_SPEAR, -1),
 	BLOOD_MOON_CHESTPLATE("Blood moon chestplate", Rarity.RARE, ItemID.BLOOD_MOON_CHESTPLATE, -1),
 	BLOOD_MOON_TASSETS("Blood moon tassets", Rarity.RARE, ItemID.BLOOD_MOON_TASSETS, -1),
 	BLOOD_MOON_HELM("Blood moon helm", Rarity.RARE, ItemID.BLOOD_MOON_HELM, -1),
@@ -422,7 +420,7 @@ public enum BossesCollCards implements CardGroup
 	BARREL_OF_DEMONIC_TALLOW_FULL("Barrel of demonic tallow (full)", Rarity.UNCOMMON, ItemID.DEMONIC_TALLOW_BARREL_FULL, -1),
 	// Zalcano
 	SMOLCANO("Smolcano", Rarity.EPIC, ItemID.ZALCANOPET, -1),
-	CRYSTAL_TOOL_SEED("Crystal tool seed", Rarity.RARE, ItemID.PRIF_TOOL_SEED , -1),
+	CRYSTAL_TOOL_SEED("Crystal tool seed", Rarity.RARE, ItemID.PRIF_TOOL_SEED, -1),
 	ZALCANO_SHARD("Zalcano shard", Rarity.RARE, ItemID.ZALCANO_PICKAXE_KIT, -1),
 	// Zulrah
 	PET_SNAKELING("Pet snakeling", Rarity.EPIC, ItemID.SNAKEPET, -1),
@@ -435,12 +433,11 @@ public enum BossesCollCards implements CardGroup
 	ZUL_ANDRA_TELEPORT("Zul-andra teleport", Rarity.UNCOMMON, ItemID.TELEPORTSCROLL_ZULANDRA, -1),
 	ZULRAHS_SCALES("Zulrah's scales", Rarity.UNCOMMON, ItemID.SNAKEBOSS_SCALE, -1);
 
-
 	private final Card card;
 
-	BossesCollCards(String name, Rarity rarity, int itemId, int spriteId)
+	BossDropsCards(String name, Rarity rarity, int itemId, int spriteId)
 	{
-		this.card = CardGroup.build(CardSet.BossesCollCards, name, rarity, itemId, spriteId);
+		this.card = CardGroup.build(CardSet.BOSS_DROPS, name, rarity, itemId, spriteId);
 	}
 
 	@Override
@@ -449,4 +446,3 @@ public enum BossesCollCards implements CardGroup
 		return card;
 	}
 }
-;
