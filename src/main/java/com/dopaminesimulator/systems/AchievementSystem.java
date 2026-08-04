@@ -27,8 +27,6 @@ package com.dopaminesimulator.systems;
 import com.dopaminesimulator.cards.Card;
 import com.dopaminesimulator.cards.CardCatalogue;
 import com.dopaminesimulator.cards.CardCollection;
-import com.dopaminesimulator.cards.CardOrigin;
-import com.dopaminesimulator.cards.CardOrigins;
 import com.dopaminesimulator.cards.Dust;
 import com.dopaminesimulator.cards.Rarity;
 import com.dopaminesimulator.core.DopamineEvent;
@@ -62,8 +60,6 @@ public class AchievementSystem implements DopamineSystem
 	private static final int DEDICATION_RANK = 10;
 	private static final int WILDCARDS_PER_ACHIEVEMENT = 1;
 
-	private final CollectionService collection;
-
 	private final Set<String> skillsThisSession = new HashSet<>();
 	private final Set<EventType> earnersThisSession = EnumSet.noneOf(EventType.class);
 	private long sessionTicks;
@@ -72,16 +68,6 @@ public class AchievementSystem implements DopamineSystem
 	private long sessionDamage;
 	private long sessionClicks;
 	private int killsSinceHit;
-
-	public AchievementSystem()
-	{
-		this(new CollectionService());
-	}
-
-	public AchievementSystem(CollectionService collection)
-	{
-		this.collection = collection;
-	}
 
 	public void newSession()
 	{
@@ -277,15 +263,6 @@ public class AchievementSystem implements DopamineSystem
 
 			state.addDust((long) WILDCARDS_PER_ACHIEVEMENT * Dust.PER_WILDCARD);
 			rewards.push(Reward.achievement(achievement));
-
-			// The sealed elites come from here and nowhere else: nth achievement,
-			// nth elite. Achievements run out, so these never reach ten stars.
-			Card sealed = CardOrigins.achievementCard(state.getAchievements().size());
-			if (sealed != null)
-			{
-				collection.grant(state, sealed, rewards, false,
-					CardOrigin.ACHIEVEMENT.copiesPerAward(sealed.getRarity()));
-			}
 		}
 	}
 }

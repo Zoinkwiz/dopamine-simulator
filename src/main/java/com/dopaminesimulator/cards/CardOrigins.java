@@ -29,7 +29,6 @@ import com.dopaminesimulator.cards.sets.BossesCards;
 import com.dopaminesimulator.cards.sets.MinigamesCards;
 import com.dopaminesimulator.cards.sets.RaidsDropsCards;
 import com.dopaminesimulator.cards.sets.SkillsCards;
-import com.dopaminesimulator.cards.sets.SlayerCards;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
@@ -155,22 +154,6 @@ public final class CardOrigins
 		SkillsCards.RUNECRAFT_RUNE,
 		SkillsCards.SAILING_RUNE);
 
-	/**
-	 * Sealed behind achievements: the tasks nobody wants, which is what an
-	 * achievement is. Twenty-two achievements against five cards, so finishing the
-	 * list finishes the sub-collection.
-	 *
-	 * These were the diary elites at first. Diaries and Areas both feed TRAVEL, so
-	 * sealing both put +180% of one point source behind two systems at once while
-	 * three other sources got nothing. Slayer feeds RECOVERY, which had none.
-	 */
-	private static final List<Card> SEALED = claim(CardOrigin.ACHIEVEMENT,
-		SlayerCards.DARK_BEAST,
-		SlayerCards.SMOKE_DEVIL,
-		SlayerCards.ARAXYTE,
-		SlayerCards.HYDRA,
-		SlayerCards.SKILLCAPE);
-
 	/** The trophies for burning a maxed collection down. */
 	private static final List<Card> ASCENDANT = claim(CardOrigin.ASCENSION,
 		BossesCards.CHAMBERS_OF_XERIC,
@@ -212,11 +195,6 @@ public final class CardOrigins
 	public static Card prestigeCard(int prestigeCount)
 	{
 		return rotate(MASTERY, prestigeCount);
-	}
-
-	public static Card achievementCard(int achievementsEarned)
-	{
-		return rotate(SEALED, achievementsEarned);
 	}
 
 	public static Card ascensionCard(int totalAscensions)

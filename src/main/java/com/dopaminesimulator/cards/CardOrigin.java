@@ -52,10 +52,6 @@ public enum CardOrigin
 		"Awarded for prestiging. One skill per reset.",
 		new Color(0xFF, 0xD5, 0x4F)),
 
-	ACHIEVEMENT("Sealed", "Achievements only",
-		"Awarded for earning an achievement.",
-		new Color(0x66, 0xBB, 0x6A)),
-
 	ASCENSION("Ascendant", "Ascension only",
 		"Awarded for ascending a maxed collection.",
 		new Color(0xAB, 0x47, 0xBC));
@@ -95,8 +91,6 @@ public enum CardOrigin
 			case PRESTIGE:
 			case ASCENSION:
 				return Math.max(1, track * 3 / 10);
-			case ACHIEVEMENT:
-				return Math.max(1, track / 3);
 			default:
 				return 1;
 		}

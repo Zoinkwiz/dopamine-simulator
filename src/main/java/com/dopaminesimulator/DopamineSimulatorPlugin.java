@@ -149,7 +149,7 @@ public class DopamineSimulatorPlugin extends Plugin
 
 	private String pendingResetCommand;
 
-	private AchievementSystem achievementSystem = new AchievementSystem();
+	private final AchievementSystem achievementSystem = new AchievementSystem();
 
 	@Inject
 	private DopamineSimulatorConfig config;
@@ -221,7 +221,6 @@ public class DopamineSimulatorPlugin extends Plugin
 		incomeTracker = new IncomeTracker();
 		clickState = new ClickState();
 		collection = new CollectionService();
-		achievementSystem = new AchievementSystem(collection);
 		packService = new PackService(random, collection);
 		foodService = new GnomeFoodService(random, packService);
 		passService = new PassService(random, packService, collection);
