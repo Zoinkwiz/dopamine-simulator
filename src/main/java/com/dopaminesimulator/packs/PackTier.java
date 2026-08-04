@@ -33,27 +33,31 @@ import java.awt.Color;
 public enum PackTier
 {
 
+	// One card each, priced at what a card used to cost inside a multi-card pack.
+	// Same throughput, but the wait between one reveal and the next stops growing
+	// with the tier: it used to run from half an hour at Scrap to nearly four at
+	// Mythic, where three cards arriving at once is really one thing happening.
 	SCRAP("Scrap Pack", 1_000d, 1, 1, 1.0d, null, Rarity.COMMON, false, 0d,
 		new Color(0x9E, 0x9E, 0x9E),
 		"1 card. Common."),
-	STANDARD("Standard Pack", 2_600d, 2, 1, 1.25d, null, Rarity.UNCOMMON, false, 2_000d,
+	STANDARD("Standard Pack", 1_300d, 1, 1, 1.25d, null, Rarity.UNCOMMON, false, 2_000d,
 		new Color(0x64, 0xB5, 0xF6),
-		"2 cards. Common or Uncommon."),
-	GILDED("Gilded Pack", 10_000d, 3, 1, 1.0d, Rarity.UNCOMMON, Rarity.RARE, false, 15_000d,
+		"1 card. Common or Uncommon."),
+	GILDED("Gilded Pack", 3_300d, 1, 1, 1.0d, Rarity.UNCOMMON, Rarity.RARE, false, 15_000d,
 		new Color(0x66, 0xBB, 0x6A),
-		"3 cards. Uncommon or Rare."),
-	CURATED("Curated Pack", 32_000d, 3, 3, 1.0d, Rarity.UNCOMMON, Rarity.RARE, true,
+		"1 card. Uncommon or Rare."),
+	CURATED("Curated Pack", 10_600d, 1, 3, 1.0d, Rarity.UNCOMMON, Rarity.RARE, true,
 		60_000d, new Color(0x26, 0xC6, 0xDA),
-		"3 cards from a chosen set. Uncommon or Rare."),
-	PRISMATIC("Prismatic Pack", 150_000d, 4, 4, 1.5d, Rarity.RARE, Rarity.EPIC,
+		"1 card from a chosen set. Uncommon or Rare."),
+	PRISMATIC("Prismatic Pack", 37_500d, 1, 4, 1.5d, Rarity.RARE, Rarity.EPIC,
 		false, 250_000d, new Color(0xAB, 0x47, 0xBC),
-		"4 cards. Rare or Epic."),
-	ASCENDANT("Ascendant Pack", 700_000d, 5, 4, 1.6d, Rarity.EPIC,
+		"1 card. Rare or Epic."),
+	ASCENDANT("Ascendant Pack", 140_000d, 1, 4, 1.6d, Rarity.EPIC,
 		Rarity.LEGENDARY, false, 1_500_000d, new Color(0xFF, 0xB3, 0x00),
-		"5 cards. Epic or Legendary."),
-	MYTHIC("Mythic Pack", 1_750_000d, 3, 2, 1.0d, Rarity.LEGENDARY, Rarity.LEGENDARY,
+		"1 card. Epic or Legendary."),
+	MYTHIC("Mythic Pack", 580_000d, 1, 2, 1.0d, Rarity.LEGENDARY, Rarity.LEGENDARY,
 		false, 6_000_000d, new Color(0xFF, 0x70, 0x43),
-		"3 cards. Always Legendary.");
+		"1 card. Always Legendary.");
 	public static final int MAX_COPIES = 5;
 
 	private final String displayName;
