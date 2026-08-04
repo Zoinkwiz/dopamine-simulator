@@ -27,6 +27,7 @@ package com.dopaminesimulator.cards;
 import lombok.Getter;
 
 import com.dopaminesimulator.cards.sets.DiariesCards;
+import com.dopaminesimulator.cards.sets.BossDropsCards;
 import com.dopaminesimulator.cards.sets.BossesCards;
 import com.dopaminesimulator.cards.sets.ItemsCards;
 import com.dopaminesimulator.cards.sets.MinigamesCards;
@@ -194,46 +195,53 @@ public final class CardCollection
 			ItemsCards.OSMUMTEN_S_FANG, ItemsCards.LIGHTBEARER, ItemsCards.ELIDINIS_WARD, ItemsCards.MASORI_MASK,
 			ItemsCards.MASORI_BODY, ItemsCards.TUMEKEN_S_SHADOW);
 
-		define("God Wars Uniques", CardSet.ITEMS, "Drops from the four God Wars generals.",
-			ItemsCards.ARMADYL_CHESTPLATE, ItemsCards.ARMADYL_HELMET, ItemsCards.ARMADYL_CROSSBOW,
-			ItemsCards.BANDOS_CHESTPLATE, ItemsCards.BANDOS_TASSETS, ItemsCards.SARADOMIN_SWORD, ItemsCards.ZAMORAKIAN_SPEAR,
-			ItemsCards.STAFF_OF_THE_DEAD);
+		define("God Wars Uniques", CardSet.BOSS_DROPS, "Drops from the four God Wars generals.",
+			BossDropsCards.ARMADYL_CHESTPLATE, BossDropsCards.ARMADYL_HELMET, BossDropsCards.ARMADYL_CROSSBOW,
+			BossDropsCards.BANDOS_CHESTPLATE, BossDropsCards.BANDOS_TASSETS, BossDropsCards.SARADOMIN_SWORD,
+			BossDropsCards.ZAMORAKIAN_SPEAR, BossDropsCards.STAFF_OF_THE_DEAD);
 
-		define("The Nex Drop Table", CardSet.ITEMS, "Drops from Nex.", ItemsCards.TORVA_FULL_HELM,
-			ItemsCards.TORVA_PLATEBODY, ItemsCards.ZARYTE_VAMBRACES);
+		define("The Nex Drop Table", CardSet.BOSS_DROPS, "Drops from Nex.",
+			BossDropsCards.TORVA_FULL_HELM_DAMAGED, BossDropsCards.TORVA_PLATEBODY_DAMAGED,
+			BossDropsCards.TORVA_PLATELEGS_DAMAGED, BossDropsCards.ZARYTE_VAMBRACES, BossDropsCards.NIHIL_HORN,
+			BossDropsCards.ANCIENT_HILT);
 
-		define("The Nightmare", CardSet.ITEMS, "Drops from the Nightmare.", ItemsCards.INQUISITOR_S_MACE,
-			ItemsCards.NIGHTMARE_STAFF, ItemsCards.HARMONISED_ORB, ItemsCards.VOLATILE_ORB, ItemsCards.ELDRITCH_ORB);
+		define("The Nightmare", CardSet.BOSS_DROPS, "Drops from the Nightmare.",
+			BossDropsCards.INQUISITORS_MACE, BossDropsCards.NIGHTMARE_STAFF, BossDropsCards.HARMONISED_ORB,
+			BossDropsCards.VOLATILE_ORB, BossDropsCards.ELDRITCH_ORB);
 
-		define("Desert Treasure II Drops", CardSet.ITEMS, "Drops from the Forgotten Four.",
-			ItemsCards.ULTOR_VESTIGE, ItemsCards.MAGUS_VESTIGE, ItemsCards.VENATOR_VESTIGE, ItemsCards.BELLATOR_VESTIGE,
-			ItemsCards.AWAKENER_S_ORB, ItemsCards.VIRTUS_MASK, ItemsCards.VIRTUS_ROBE_TOP);
+		define("Desert Treasure II Drops", CardSet.BOSS_DROPS, "Drops from the Forgotten Four.",
+			BossDropsCards.ULTOR_VESTIGE, BossDropsCards.MAGUS_VESTIGE, BossDropsCards.VENATOR_VESTIGE,
+			BossDropsCards.BELLATOR_VESTIGE, BossDropsCards.AWAKENERS_ORB, BossDropsCards.VIRTUS_MASK,
+			BossDropsCards.VIRTUS_ROBE_TOP, BossDropsCards.VIRTUS_ROBE_BOTTOM);
 
-		define("Araxxor", CardSet.ITEMS, "Drops from Araxxor.", ItemsCards.NOXIOUS_HALBERD,
-			ItemsCards.ARAXYTE_FANG, ItemsCards.AMULET_OF_RANCOUR);
+		define("Araxxor", CardSet.BOSS_DROPS, "Drops from Araxxor.", BossDropsCards.ARAXYTE_FANG,
+			BossDropsCards.NOXIOUS_POINT, BossDropsCards.NOXIOUS_BLADE, BossDropsCards.NOXIOUS_POMMEL,
+			BossDropsCards.JAR_OF_VENOM);
 
-		define("Slayer Boss Drops", CardSet.ITEMS, "Uniques from bosses that appear as Slayer tasks.",
-			ItemsCards.ABYSSAL_WHIP, ItemsCards.ABYSSAL_DAGGER, ItemsCards.ABYSSAL_BLUDGEON, ItemsCards.KRAKEN_TENTACLE,
-			ItemsCards.HYDRA_S_CLAW, ItemsCards.HYDRA_TAIL, ItemsCards.HYDRA_LEATHER, ItemsCards.OCCULT_NECKLACE,
-			ItemsCards.SMOKE_BATTLESTAFF, ItemsCards.GRANITE_HAMMER);
+		define("Slayer Boss Drops", CardSet.BOSS_DROPS, "Uniques from bosses that appear as Slayer tasks.",
+			BossDropsCards.ABYSSAL_WHIP, BossDropsCards.ABYSSAL_DAGGER, BossDropsCards.KRAKEN_TENTACLE,
+			BossDropsCards.HYDRAS_CLAW, BossDropsCards.HYDRA_TAIL, BossDropsCards.HYDRA_LEATHER,
+			BossDropsCards.OCCULT_NECKLACE, BossDropsCards.SMOKE_BATTLESTAFF, BossDropsCards.GRANITE_HAMMER);
 
-		define("Cerberus", CardSet.ITEMS,
-			"The three crystals, the boots they upgrade, and the smouldering stone.",
-			ItemsCards.PRIMORDIAL_CRYSTAL, ItemsCards.PEGASIAN_CRYSTAL, ItemsCards.ETERNAL_CRYSTAL,
-			ItemsCards.PRIMORDIAL_BOOTS, ItemsCards.PEGASIAN_BOOTS, ItemsCards.ETERNAL_BOOTS, ItemsCards.SMOULDERING_STONE);
+		define("Cerberus", CardSet.BOSS_DROPS,
+			"The three crystals, the smouldering stone, and what else the hellhound keeps.",
+			BossDropsCards.PRIMORDIAL_CRYSTAL, BossDropsCards.PEGASIAN_CRYSTAL, BossDropsCards.ETERNAL_CRYSTAL,
+			BossDropsCards.SMOULDERING_STONE, BossDropsCards.HELLPUPPY, BossDropsCards.JAR_OF_SOULS,
+			BossDropsCards.KEY_MASTER_TELEPORT);
 
-		define("Wilderness Boss Rings", CardSet.ITEMS, "The three rings from the Wilderness bosses.",
-			ItemsCards.RING_OF_THE_GODS, ItemsCards.TREASONOUS_RING, ItemsCards.TYRANNICAL_RING);
+		define("Wilderness Boss Rings", CardSet.BOSS_DROPS, "The three rings from the Wilderness bosses.",
+			BossDropsCards.RING_OF_THE_GODS, BossDropsCards.TREASONOUS_RING, BossDropsCards.TYRANNICAL_RING);
 
-		define("Zulrah", CardSet.ITEMS, "Zulrah's drops and the blowpipe they build.",
-			ItemsCards.TANZANITE_FANG, ItemsCards.MAGIC_FANG, ItemsCards.SERPENTINE_VISAGE, ItemsCards.UNCUT_ONYX,
-			ItemsCards.ZULRAH_S_SCALES, ItemsCards.TOXIC_BLOWPIPE);
+		define("Zulrah", CardSet.BOSS_DROPS, "Zulrah's drop table.", BossDropsCards.TANZANITE_FANG,
+			BossDropsCards.MAGIC_FANG, BossDropsCards.SERPENTINE_VISAGE, BossDropsCards.UNCUT_ONYX,
+			BossDropsCards.ZULRAHS_SCALES, BossDropsCards.JAR_OF_SWAMP);
 
 		define("Dragon Equipment", CardSet.ITEMS, "Dragon gear.", ItemsCards.DRAGON_SCIMITAR,
-			ItemsCards.DRAGON_PICKAXE, ItemsCards.DRAGON_HARPOON, ItemsCards.DRAGON_CLAWS, ItemsCards.DRAGON_HUNTER_CROSSBOW);
+			ItemsCards.DRAGON_CLAWS, ItemsCards.DRAGON_HUNTER_CROSSBOW);
 
-		define("Skilling Boss Drops", CardSet.ITEMS, "Uniques from Tempoross, Wintertodt and Hespori.",
-			ItemsCards.DRAGON_HARPOON, ItemsCards.TOME_OF_FIRE, ItemsCards.TOME_OF_WATER);
+		define("Skilling Boss Drops", CardSet.BOSS_DROPS, "Uniques from Tempoross, Wintertodt and Hespori.",
+			BossDropsCards.DRAGON_HARPOON, BossDropsCards.TOME_OF_WATER_EMPTY, BossDropsCards.TOME_OF_FIRE_EMPTY,
+			BossDropsCards.BOTTOMLESS_COMPOST_BUCKET, BossDropsCards.TINY_TEMPOR, BossDropsCards.PHOENIX);
 		define("The Rune Pouch", CardSet.ITEMS, "Every rune.", ItemsCards.AIR_RUNE, ItemsCards.WATER_RUNE,
 			ItemsCards.EARTH_RUNE, ItemsCards.FIRE_RUNE, ItemsCards.MIND_RUNE, ItemsCards.BODY_RUNE, ItemsCards.CHAOS_RUNE,
 			ItemsCards.COSMIC_RUNE, ItemsCards.NATURE_RUNE, ItemsCards.LAW_RUNE, ItemsCards.DEATH_RUNE, ItemsCards.BLOOD_RUNE,

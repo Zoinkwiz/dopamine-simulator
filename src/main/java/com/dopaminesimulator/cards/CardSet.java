@@ -33,6 +33,7 @@ public enum CardSet
 	QUESTS("Quests", "Every quest in the game"),
 	SKILLS("Skills", "Skill unlocks"),
 	BOSSES("Bosses", "Including raids"),
+	BOSS_DROPS("Boss Drops", "Collection log drops from every boss"),
 	ITEMS("Items", "Gear and common items"),
 	MINIGAMES("Minigames", "Minigames and their rewards"),
 	SLAYER("Slayer", "Task monsters and slayer unlocks"),
@@ -65,9 +66,7 @@ public enum CardSet
 	SPELLS_STANDARD("Standard Spells", "The standard spellbook"),
 	SPELLS_ANCIENT("Ancient Magicks", "The ancient spellbook"),
 	SPELLS_LUNAR("Lunar Spells", "The lunar spellbook"),
-	SPELLS_ARCEUUS("Arceuus Spells", "The Arceuus spellbook"),
-
-	BossesCollCards("Collection Log Bosses", "Collection log of all bosses");
+	SPELLS_ARCEUUS("Arceuus Spells", "The Arceuus spellbook");
 
 	private final String displayName;
 	private final String description;
@@ -91,6 +90,7 @@ public enum CardSet
 			case QUESTS: return SpriteID.SideIcons.QUEST;
 			case SKILLS: return SpriteID.SideIcons.STATS;
 			case BOSSES: return SpriteID.PvpwIcons.PLAYER_KILLER_SKULL;
+			case BOSS_DROPS: return SpriteID.IconActivities25x25.COLLECTIONS_LOGGED;
 			case ITEMS: return SpriteID.SideIcons.INVENTORY;
 			case MINIGAMES: return SpriteID.SideIcons.MINIGAMES;
 			case DIARIES: return SpriteID.SideIcons.ACHIEVEMENT_DIARIES;
