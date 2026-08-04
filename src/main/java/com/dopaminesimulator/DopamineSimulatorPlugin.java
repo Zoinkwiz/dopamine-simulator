@@ -603,21 +603,29 @@ public class DopamineSimulatorPlugin extends Plugin
 	 */
 	private void trackPeakIncome()
 	{
-		DopamineState state = engine.getState();
+		raisePeak(engine.getState(), incomeTracker, clickState == null
+			? 1d : clickState.incomeMultiplier(System.currentTimeMillis()));
+	}
+
+	/**
+	 * Static and free of the client so the behaviour that matters — that the peak
+	 * survives a break, and that a surge cannot be banked into it — can be driven
+	 * directly rather than only by playing.
+	 */
+	static void raisePeak(DopamineState state, IncomeTracker tracker, double foodMultiplier)
+	{
 		long tick = state.getTick();
-		if (!incomeTracker.hasSettled(tick))
+		if (!tracker.hasSettled(tick))
 		{
 			return;
 		}
 
 		double live = Math.max(0d,
-			incomeTracker.totalPerHour(tick) - incomeTracker.perHour(PointSource.CLICK, tick));
+			tracker.totalPerHour(tick) - tracker.perHour(PointSource.CLICK, tick));
 
 		// Divided back out, or a 60s Worm hole banks its 4x into the peak for the
 		// rest of the run. The surge is applied at payout time instead, once.
-		double food = clickState == null
-			? 1d : clickState.incomeMultiplier(System.currentTimeMillis());
-		double sustained = food <= 0d ? live : live / food;
+		double sustained = foodMultiplier <= 0d ? live : live / foodMultiplier;
 		if (sustained > state.getPeakPassivePerHour())
 		{
 			state.setPeakPassivePerHour(sustained);
