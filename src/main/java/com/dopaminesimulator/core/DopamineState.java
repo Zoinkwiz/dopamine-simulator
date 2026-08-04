@@ -28,6 +28,7 @@ import com.dopaminesimulator.cards.Card;
 import com.dopaminesimulator.cards.CardCatalogue;
 import com.dopaminesimulator.cards.CardSet;
 import com.dopaminesimulator.cards.Dust;
+import com.dopaminesimulator.cards.LegacyCardIds;
 import com.dopaminesimulator.cards.Rarity;
 import com.dopaminesimulator.feats.FeatTrack;
 import com.dopaminesimulator.packs.PackTier;
@@ -150,6 +151,7 @@ public class DopamineState
 			shards = new EnumMap<>(Rarity.class);
 		}
 		migrateToDust();
+		migrateMovedCards();
 		if (ascensions == null)
 		{
 			ascensions = new HashMap<>();
@@ -343,6 +345,36 @@ public class DopamineState
 	public void setBannerPity(Rarity rarity, int value)
 	{
 		bannerPityByRarity.put(rarity, value);
+	}
+
+	/**
+	 * Rewrites the save keys of cards that changed set. Runs before anything reads
+	 * the collection, so a card that moved is still the card the player owns rather
+	 * than a count pointing at nothing.
+	 */
+	private void migrateMovedCards()
+	{
+		for (Map.Entry<String, String> moved : LegacyCardIds.all().entrySet())
+		{
+			String from = moved.getKey();
+			String to = moved.getValue();
+
+			Integer copies = cardCounts.remove(from);
+			if (copies != null && copies > 0)
+			{
+				// Merged, because a save can hold both if the player owned the old
+				// card and then pulled the new one before updating.
+				cardCounts.merge(to, copies, Integer::sum);
+			}
+			if (shinyCards.remove(from))
+			{
+				shinyCards.add(to);
+			}
+			if (gildedCards.remove(from))
+			{
+				gildedCards.add(to);
+			}
+		}
 	}
 
 	private void migrateToDust()
