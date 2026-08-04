@@ -74,14 +74,21 @@ public class PackRevealOverlay extends Overlay
 	private static final long HEADLINE_LEAD_MS = 900L;
 	private static final long RAPID_STAGGER_MS = 190L;
 	private static final long RAPID_DEAL_MS = 90L;
-	private static final long RAPID_FLIP_MS = 110L;
+	static final long RAPID_FLIP_MS = 110L;
 	private static final long RAPID_HOLD_MS = 260L;
 	private static final long BANNER_ENTRANCE_MS = 260L;
 	private static final double BANNER_TOP = 0.06d;
 	private static final long BANNER_SPARK_MS = 620L;
 	private static final int BANNER_SPARKS = 10;
 	private static final Color ACHIEVEMENT = new Color(0xFF, 0xB3, 0x00);
-	private static final long FLIP_MS = 300L;
+	static final long FLIP_MS = 300L;
+
+	/**
+	 * Below this, a flip is not a flip. Half of it is card back and the card is
+	 * squashed edge-on for the rest, so a bulk reveal reads as a stutter of grey
+	 * rectangles rather than cards. Anything this quick is dealt face up instead.
+	 */
+	private static final long FACE_UP_BELOW_MS = 160L;
 	private static final long HOLD_MS = 1300L;
 	private static final long MAJOR_HOLD_MS = 2400L;
 	private static final long FADE_MS = 450L;
@@ -109,6 +116,10 @@ public class PackRevealOverlay extends Overlay
 		private final long holdMs;
 		private final long dealMs;
 		private final long flipMs;
+
+		// Derived, not passed in: every caller that wants a fast reveal already says
+		// so by asking for a short flip, and the wish showcase keeps its full one.
+		private final boolean dealtFaceUp;
 
 		private final Card card;
 		private final int stars;
@@ -143,6 +154,7 @@ public class PackRevealOverlay extends Overlay
 			this.holdMs = holdMs;
 			this.dealMs = dealMs;
 			this.flipMs = flipMs;
+			this.dealtFaceUp = flipMs < FACE_UP_BELOW_MS;
 		}
 		private long age()
 		{
@@ -215,7 +227,7 @@ public class PackRevealOverlay extends Overlay
 			return;
 		}
 
-		long stagger = Math.max(MIN_STAGGER_MS, STAGGER_MS - pending * 25L);
+		long stagger = staggerFor(pending);
 		nextAvailableSlot = startAt + stagger;
 
 		boolean shiny = reward.isShiny();
@@ -249,7 +261,7 @@ public class PackRevealOverlay extends Overlay
 		long hold = Math.max(MIN_HOLD_MS,
 			Math.round((major ? MAJOR_HOLD_MS : HOLD_MS) * speed));
 		long deal = Math.max(MIN_DEAL_MS, Math.round(DEAL_MS * speed));
-		long flip = Math.max(MIN_FLIP_MS, Math.round(FLIP_MS * speed));
+		long flip = flipMsFor(stagger);
 
 		cards.addLast(new RevealCard(reward.getTitle(), variantDetail(reward, shiny, gilded),
 			reward.getRarity(), colour, major, startAt, reward.getCard(), stars, shiny, gilded, Math.max(1, reward.getCopies()),
@@ -258,6 +270,22 @@ public class PackRevealOverlay extends Overlay
 			reward.getType() == RewardType.BANNER_WIN,
 			(int) reward.getAmount(),
 			hold, deal, flip));
+	}
+
+	// The queue tightens as it fills: more waiting cards, less time each.
+	static long staggerFor(int pending)
+	{
+		return Math.max(MIN_STAGGER_MS, STAGGER_MS - pending * 25L);
+	}
+
+	static long flipMsFor(long stagger)
+	{
+		return Math.max(MIN_FLIP_MS, Math.round(FLIP_MS * (stagger / (double) STAGGER_MS)));
+	}
+
+	static boolean dealsFaceUp(long flipMs)
+	{
+		return flipMs < FACE_UP_BELOW_MS;
 	}
 
 	public void pushBatch(List<Reward> ordered)
@@ -651,16 +679,32 @@ public class PackRevealOverlay extends Overlay
 			sounds.cardDealt();
 		}
 
-		long flipAge = age - card.dealMs;
-		double flipProgress = flipAge <= 0 ? 0d : clamp01(flipAge / (double) card.flipMs);
-		double scaleX = Math.abs(Math.cos(Math.PI * flipProgress));
-		boolean faceUp = flipProgress >= 0.5d;
-		if (faceUp && !card.revealSoundPlayed)
+		double scaleX;
+		boolean faceUp;
+		if (card.dealtFaceUp)
+		{
+			// Already turned over on the way in. The card still flies up into its
+			// slot, so a bulk open reads as a hand of cards going past rather than
+			// a row of backs that turn over after you have stopped looking. flipMs
+			// is left in the lifetime on purpose: it becomes extra legible time.
+			scaleX = 1d;
+			faceUp = true;
+		}
+		else
+		{
+			long flipAge = age - card.dealMs;
+			double flipProgress = flipAge <= 0 ? 0d : clamp01(flipAge / (double) card.flipMs);
+			scaleX = Math.max(0.06d, Math.abs(Math.cos(Math.PI * flipProgress)));
+			faceUp = flipProgress >= 0.5d;
+		}
+
+		// Face-up cards hold the reveal until they land, so it still lines up with
+		// the card arriving rather than firing while it is off the bottom.
+		if (faceUp && !card.revealSoundPlayed && (!card.dealtFaceUp || dealProgress >= 1d))
 		{
 			card.revealSoundPlayed = true;
 			sounds.cardRevealed(card.rarity == null ? Rarity.COMMON : card.rarity);
 		}
-		scaleX = Math.max(0.06d, scaleX);
 		graphics.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha));
 		AffineTransform beforeCard = graphics.getTransform();
 		graphics.translate(slotX + CARD_WIDTH / 2d, y + CARD_HEIGHT / 2d);
