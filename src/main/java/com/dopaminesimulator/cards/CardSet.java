@@ -92,6 +92,7 @@ public enum CardSet
 			case SKILLS: return SpriteID.SideIcons.STATS;
 			case BOSSES: return SpriteID.PvpwIcons.PLAYER_KILLER_SKULL;
 			case BOSS_DROPS: return SpriteID.IconActivities25x25.COLLECTIONS_LOGGED;
+			case RAIDS_DROPS: return SpriteID.IconBoss25x25.CHAMBERS_OF_XERIC;
 			case ITEMS: return SpriteID.SideIcons.INVENTORY;
 			case MINIGAMES: return SpriteID.SideIcons.MINIGAMES;
 			case DIARIES: return SpriteID.SideIcons.ACHIEVEMENT_DIARIES;
