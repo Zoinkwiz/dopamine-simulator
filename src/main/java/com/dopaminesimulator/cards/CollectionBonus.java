@@ -44,8 +44,9 @@ public final class CollectionBonus
 
 		feed(PointSource.EXPERIENCE, CardSet.SKILLS, CardSet.SMITHING, CardSet.MINING,
 			CardSet.RUNECRAFT, CardSet.SPELLS_LUNAR);
-		feed(PointSource.COMBAT, CardSet.BOSSES, CardSet.ATTACK, CardSet.STRENGTH,
-			CardSet.RANGED, CardSet.MAGIC, CardSet.SPELLS_STANDARD, CardSet.SPELLS_ANCIENT);
+		feed(PointSource.COMBAT, CardSet.BOSSES, CardSet.BOSS_DROPS, CardSet.ATTACK,
+			CardSet.STRENGTH, CardSet.RANGED, CardSet.MAGIC, CardSet.SPELLS_STANDARD,
+			CardSet.SPELLS_ANCIENT);
 		feed(PointSource.RECOVERY, CardSet.SLAYER, CardSet.COOKING, CardSet.HERBLORE,
 			CardSet.FARMING);
 		feed(PointSource.TRAVEL, CardSet.DIARIES, CardSet.AGILITY, CardSet.SAILING,
