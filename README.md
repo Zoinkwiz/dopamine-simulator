@@ -20,6 +20,11 @@ Use your points to also buy card packs. Different rarities, shinies, gilded, and
 
 <img width="910" height="796" alt="image" src="https://github.com/user-attachments/assets/acd714a8-9d39-4164-9f3f-2cc03a6b3e72" />
 
+## Limited Cards
+
+Not every card is in the packs. The raid megarares only ever come off a banner, the region cards
+only from finishing a season pass, and the skill mastery cards only from prestiging.
+
 ## Battle Pass
 
 Do you crave time-limited reward systems that incentivise you to cram in lots of gaming? Lucky you, here's a battle pass system! Gain exp, unlock packs and rewards. You can spend your currency to unlock the premium track too.
