@@ -65,7 +65,9 @@ public enum CardSet
 	SPELLS_STANDARD("Standard Spells", "The standard spellbook"),
 	SPELLS_ANCIENT("Ancient Magicks", "The ancient spellbook"),
 	SPELLS_LUNAR("Lunar Spells", "The lunar spellbook"),
-	SPELLS_ARCEUUS("Arceuus Spells", "The Arceuus spellbook");
+	SPELLS_ARCEUUS("Arceuus Spells", "The Arceuus spellbook"),
+
+	BossesCollCards("Bosses", "Collection log of all bosses");
 
 	private final String displayName;
 	private final String description;
