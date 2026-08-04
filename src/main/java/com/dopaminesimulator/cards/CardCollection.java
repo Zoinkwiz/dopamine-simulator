@@ -24,16 +24,9 @@
  */
 package com.dopaminesimulator.cards;
 
+import com.dopaminesimulator.cards.sets.*;
 import lombok.Getter;
 
-import com.dopaminesimulator.cards.sets.DiariesCards;
-import com.dopaminesimulator.cards.sets.BossDropsCards;
-import com.dopaminesimulator.cards.sets.BossesCards;
-import com.dopaminesimulator.cards.sets.ItemsCards;
-import com.dopaminesimulator.cards.sets.MinigamesCards;
-import com.dopaminesimulator.cards.sets.QuestsCards;
-import com.dopaminesimulator.cards.sets.SkillsCards;
-import com.dopaminesimulator.cards.sets.SlayerCards;
 import com.dopaminesimulator.core.DopamineState;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -182,18 +175,29 @@ public final class CardCollection
 		define("Every Ore", CardSet.ITEMS, "Every type of ore.", ItemsCards.COPPER_ORE, ItemsCards.TIN_ORE,
 			ItemsCards.IRON_ORE, ItemsCards.COAL, ItemsCards.GOLD_ORE, ItemsCards.MITHRIL_ORE, ItemsCards.ADAMANTITE_ORE,
 			ItemsCards.RUNITE_ORE);
-		define("Chambers of Xeric", CardSet.ITEMS, "Uniques from the Chambers of Xeric.",
-			ItemsCards.KODAI_WAND, ItemsCards.ANCESTRAL_HAT, ItemsCards.ANCESTRAL_ROBE_TOP, ItemsCards.ELDER_MAUL,
-			ItemsCards.DRAGON_CLAWS, ItemsCards.TWISTED_BUCKLER, ItemsCards.DRAGON_HUNTER_CROSSBOW, ItemsCards.DINH_S_BULWARK,
-			ItemsCards.DEXTEROUS_PRAYER_SCROLL, ItemsCards.ARCANE_PRAYER_SCROLL, ItemsCards.TWISTED_BOW);
-
-		define("Theatre of Blood", CardSet.ITEMS, "Uniques from the Theatre of Blood.",
-			ItemsCards.GHRAZI_RAPIER, ItemsCards.SANGUINESTI_STAFF, ItemsCards.JUSTICIAR_FACEGUARD,
-			ItemsCards.JUSTICIAR_CHESTGUARD, ItemsCards.AVERNIC_DEFENDER, ItemsCards.SCYTHE_OF_VITUR);
-
-		define("Tombs of Amascut", CardSet.ITEMS, "Uniques from the Tombs of Amascut.",
-			ItemsCards.OSMUMTEN_S_FANG, ItemsCards.LIGHTBEARER, ItemsCards.ELIDINIS_WARD, ItemsCards.MASORI_MASK,
-			ItemsCards.MASORI_BODY, ItemsCards.TUMEKEN_S_SHADOW);
+		define("Chambers of Xeric", CardSet.RAIDS_DROPS, "Drops from the Chambers of Xeric.", RaidsDropsCards.OLM_PET,
+			RaidsDropsCards.METAMORPHIC_DUST, RaidsDropsCards.TWISTED_BOW, RaidsDropsCards.ELDER_MAUL, RaidsDropsCards.KODAI_INSIGNIA,
+			RaidsDropsCards.DRAGON_CLAWS, RaidsDropsCards.ANCESTRAL_HAT, RaidsDropsCards.ANCESTRAL_ROBE_TOP, RaidsDropsCards.ANCESTRAL_ROBE_BOTTOM,
+			RaidsDropsCards.DINHS_BULWARK, RaidsDropsCards.RAIDS_PRAYERSCROLL, RaidsDropsCards.RAIDS_PRAYERSCROLL_AUGURY,
+			RaidsDropsCards.DRAGON_HUNTER_CROSSBOW, RaidsDropsCards.TWISTED_BUCKLER, RaidsDropsCards.RAIDS_PRAYERSCROLL_PRESERVE,
+			RaidsDropsCards.RAIDS_ANCIENT_RELIC, RaidsDropsCards.ONYX, RaidsDropsCards.ANCESTRAL_ROBES_TWISTED_KIT,
+			RaidsDropsCards.COX_CHALLENGE_CAPE_T1, RaidsDropsCards.COX_CHALLENGE_CAPE_T2, RaidsDropsCards.COX_CHALLENGE_CAPE_T3,
+			RaidsDropsCards.COX_CHALLENGE_CAPE_T4, RaidsDropsCards.COX_CHALLENGE_CAPE_T5);
+		define("Theatre of Blood", CardSet.RAIDS_DROPS, "Drops from the Theatre of Blood.", RaidsDropsCards.VERZIKPET,
+			RaidsDropsCards.SCYTHE_OF_VITUR_UNCHARGED, RaidsDropsCards.GHRAZI_RAPIER, RaidsDropsCards.SANGUINESTI_STAFF_UNCHARGED,
+			RaidsDropsCards.JUSTICIAR_FACEGUARD, RaidsDropsCards.JUSTICIAR_CHESTGUARD, RaidsDropsCards.JUSTICIAR_LEG_GUARDS,
+			RaidsDropsCards.INFERNAL_DEFENDER_HILT, RaidsDropsCards.VIAL_BLOOD, RaidsDropsCards.SINHAZA_SHROUD_TIER1,
+			RaidsDropsCards.SINHAZA_SHROUD_TIER2, RaidsDropsCards.SINHAZA_SHROUD_TIER3, RaidsDropsCards.SINHAZA_SHROUD_TIER4,
+			RaidsDropsCards.SINHAZA_SHROUD_TIER5, RaidsDropsCards.SANGUINE_DUST, RaidsDropsCards.HOLY_ORNAMENT_KIT,
+			RaidsDropsCards.SANGUINE_ORNAMENT_KIT);
+		define("Tombs of Amascut", CardSet.RAIDS_DROPS, "Drops from the Tombs of Amascut.", RaidsDropsCards.WARDENPET_TUMEKEN,
+			RaidsDropsCards.TUMEKENS_SHADOW_UNCHARGED, RaidsDropsCards.ELIDINIS_WARD, RaidsDropsCards.MASORI_MASK, RaidsDropsCards.MASORI_BODY,
+			RaidsDropsCards.MASORI_CHAPS, RaidsDropsCards.LIGHTBEARER, RaidsDropsCards.OSMUMTENS_FANG, RaidsDropsCards.THREAD_OF_ELIDINIS,
+			RaidsDropsCards.BREACH_OF_THE_SCARAB, RaidsDropsCards.EYE_OF_THE_CORRUPTOR, RaidsDropsCards.JEWEL_OF_THE_SUN, RaidsDropsCards.JEWEL_OF_AMASCUT,
+			RaidsDropsCards.ELIDINIS_WARD_ORNAMENT_KIT, RaidsDropsCards.OSMUMTENS_FANG_ORNAMENT_KIT, RaidsDropsCards.AVAS_ASSEMBLER_ORNAMENT_KIT,
+			RaidsDropsCards.TOA_RUNE_CACHE, RaidsDropsCards.ICTHLARINS_SHROUD_1, RaidsDropsCards.ICTHLARINS_SHROUD_2, RaidsDropsCards.ICTHLARINS_SHROUD_3,
+			RaidsDropsCards.ICTHLARINS_SHROUD_4, RaidsDropsCards.ICTHLARINS_SHROUD_5, RaidsDropsCards.TOA_PET_MORPH_AKKHA, RaidsDropsCards.TOA_PET_MORPH_BABA,
+			RaidsDropsCards.TOA_PET_MORPH_KEPHRI, RaidsDropsCards.TOA_PET_MORPH_ZEBAK, RaidsDropsCards.TOA_PET_MORPH_WARDENS);
 
 		define("God Wars Uniques", CardSet.BOSS_DROPS, "Drops from the four God Wars generals.",
 			BossDropsCards.ARMADYL_CHESTPLATE, BossDropsCards.ARMADYL_HELMET, BossDropsCards.ARMADYL_CROSSBOW,
@@ -236,8 +240,7 @@ public final class CardCollection
 			BossDropsCards.MAGIC_FANG, BossDropsCards.SERPENTINE_VISAGE, BossDropsCards.UNCUT_ONYX,
 			BossDropsCards.ZULRAHS_SCALES, BossDropsCards.JAR_OF_SWAMP);
 
-		define("Dragon Equipment", CardSet.ITEMS, "Dragon gear.", ItemsCards.DRAGON_SCIMITAR,
-			ItemsCards.DRAGON_CLAWS, ItemsCards.DRAGON_HUNTER_CROSSBOW);
+		define("Dragon Equipment", CardSet.ITEMS, "Dragon gear.", ItemsCards.DRAGON_SCIMITAR);
 
 		define("Skilling Boss Drops", CardSet.BOSS_DROPS, "Uniques from Tempoross, Wintertodt and Hespori.",
 			BossDropsCards.DRAGON_HARPOON, BossDropsCards.TOME_OF_WATER_EMPTY, BossDropsCards.TOME_OF_FIRE_EMPTY,
@@ -270,6 +273,7 @@ public final class CardCollection
 			MinigamesCards.GUARDIANS_OF_THE_RIFT);
 		define("The Caves", CardSet.MINIGAMES, "The Fight Caves and the Inferno.", MinigamesCards.FIGHT_CAVES,
 			MinigamesCards.INFERNO);
+
 	}
 	private static void define(String name, CardSet set, String description, CardGroup... members)
 	{
