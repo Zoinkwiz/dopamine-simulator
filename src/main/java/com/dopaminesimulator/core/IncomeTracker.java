@@ -36,6 +36,13 @@ public class IncomeTracker implements PointListener
 {
 	private static final long WINDOW_TICKS = 3000L;
 
+	/**
+	 * A rate measured over a handful of ticks is not a rate. One big loot drop in a
+	 * two-tick window reads as millions an hour, and anything that banks a
+	 * high-water mark off that would bank the artefact for the rest of the run.
+	 */
+	private static final long SETTLED_TICKS = 300L;
+
 	@Value
 	public static class Entry
 	{
@@ -114,6 +121,12 @@ public class IncomeTracker implements PointListener
 	public double totalPerHour(long currentTick)
 	{
 		return perHour(null, currentTick);
+	}
+
+	/** Whether the window has spanned long enough for its rate to mean anything. */
+	public boolean hasSettled(long currentTick)
+	{
+		return !empty && currentTick - oldestTick >= SETTLED_TICKS;
 	}
 
 	public Map<PointSource, Double> breakdown(long currentTick)

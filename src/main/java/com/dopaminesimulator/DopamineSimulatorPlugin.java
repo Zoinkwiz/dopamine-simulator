@@ -308,6 +308,7 @@ public class DopamineSimulatorPlugin extends Plugin
 			return;
 		}
 		engine.accept(DopamineEvent.tick());
+		trackPeakIncome();
 		rollSeasons();
 		trackMovement();
 		trackHealth();
@@ -595,15 +596,41 @@ public class DopamineSimulatorPlugin extends Plugin
 		return engine != null && client.getGameState() == GameState.LOGGED_IN;
 	}
 
+	/**
+	 * Raises the run's high-water mark of passive income. Only ever raises, so the
+	 * click button keeps its value across a break instead of collapsing to its floor
+	 * the moment the last half hour of earnings ages out of the window.
+	 */
+	private void trackPeakIncome()
+	{
+		DopamineState state = engine.getState();
+		long tick = state.getTick();
+		if (!incomeTracker.hasSettled(tick))
+		{
+			return;
+		}
+
+		double live = Math.max(0d,
+			incomeTracker.totalPerHour(tick) - incomeTracker.perHour(PointSource.CLICK, tick));
+
+		// Divided back out, or a 60s Worm hole banks its 4x into the peak for the
+		// rest of the run. The surge is applied at payout time instead, once.
+		double food = clickState == null
+			? 1d : clickState.incomeMultiplier(System.currentTimeMillis());
+		double sustained = food <= 0d ? live : live / food;
+		if (sustained > state.getPeakPassivePerHour())
+		{
+			state.setPeakPassivePerHour(sustained);
+		}
+	}
+
 	public double clickPayout()
 	{
 		if (!isPlayable())
 		{
 			return 1d;
 		}
-		long tick = engine.getState().getTick();
-		double others = Math.max(0d,
-			incomeTracker.totalPerHour(tick) - incomeTracker.perHour(PointSource.CLICK, tick));
+		double others = engine.getState().getPeakPassivePerHour();
 		double surge = clickState == null
 			? 1d : clickState.clickPayoutMultiplier(System.currentTimeMillis());
 		return Math.max(1d, PointSource.CLICK_COEFFICIENT

@@ -51,6 +51,18 @@ public class DopamineState
 {
 	private double points;
 	private double lifetimePoints;
+
+	/**
+	 * The best sustained passive income this run has reached, per hour, with food
+	 * surges divided back out. This is what a click is paid from.
+	 *
+	 * It is a high-water mark rather than a live rate because a live rate measures
+	 * the last half hour, not how strong the build is: it decays while idle and the
+	 * first click back prunes the window, which left the button paying its floor of
+	 * one exactly when a player returned. A build does not get weaker while nobody
+	 * is looking at it. Resets on prestige, along with the income it describes.
+	 */
+	private double peakPassivePerHour;
 	private Map<String, Integer> sourceUpgrades = new HashMap<>();
 
 	private long tick;
@@ -226,6 +238,7 @@ public class DopamineState
 		prestigeCount++;
 		points = 0d;
 		lifetimePoints = 0d;
+		peakPassivePerHour = 0d;
 		sourceUpgrades.clear();
 
 		// The reset is the only rethink there is. Handing every rank back here is
