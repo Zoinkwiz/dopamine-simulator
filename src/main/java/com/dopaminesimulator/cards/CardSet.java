@@ -34,6 +34,7 @@ public enum CardSet
 	SKILLS("Skills", "Skill unlocks"),
 	BOSSES("Bosses", "Including raids"),
 	BOSS_DROPS("Boss Drops", "Collection log drops from every boss"),
+	RAIDS_DROPS("Raids Drops", "Collection log drops from every raid"),
 	ITEMS("Items", "Gear and common items"),
 	MINIGAMES("Minigames", "Minigames and their rewards"),
 	SLAYER("Slayer", "Task monsters and slayer unlocks"),

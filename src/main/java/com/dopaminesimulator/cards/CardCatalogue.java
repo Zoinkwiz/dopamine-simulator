@@ -47,6 +47,7 @@ import com.dopaminesimulator.cards.sets.MiningCards;
 import com.dopaminesimulator.cards.sets.PrayerCards;
 import com.dopaminesimulator.cards.sets.QuestsCards;
 import com.dopaminesimulator.cards.sets.RangedCards;
+import com.dopaminesimulator.cards.sets.RaidsDropsCards;
 import com.dopaminesimulator.cards.sets.RunecraftCards;
 import com.dopaminesimulator.cards.sets.SailingCards;
 import com.dopaminesimulator.cards.sets.SkillsCards;
@@ -175,6 +176,10 @@ public final class CardCatalogue
 			all.add(entry.getCard());
 		}
 		for (CardGroup entry : QuestsCards.values())
+		{
+			all.add(entry.getCard());
+		}
+		for (CardGroup entry : RaidsDropsCards.values())
 		{
 			all.add(entry.getCard());
 		}
