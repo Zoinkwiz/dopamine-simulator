@@ -200,13 +200,15 @@ public class PackService
 		if (pool == null || pool.isEmpty())
 		{
 			pool = tier.isTargetsSet() && targetSet != null
-				? CardCatalogue.bySetAndRarity(targetSet, rarity)
-				: CardCatalogue.byRarity(rarity);
+				? CardCatalogue.packPool(targetSet, rarity)
+				: CardCatalogue.packPool(rarity);
 		}
 
+		// Both fallbacks stay inside the pack pool. Reaching for the whole catalogue
+		// here is what would put a Mythic Invocation card in a Scrap Pack.
 		if (pool.isEmpty())
 		{
-			pool = CardCatalogue.byRarity(rarity);
+			pool = CardCatalogue.packPool(rarity);
 		}
 
 		return pool.get(random.nextInt(pool.size()));

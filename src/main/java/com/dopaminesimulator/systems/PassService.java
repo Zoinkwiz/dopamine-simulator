@@ -26,6 +26,7 @@ package com.dopaminesimulator.systems;
 
 import com.dopaminesimulator.cards.Card;
 import com.dopaminesimulator.cards.CardCatalogue;
+import com.dopaminesimulator.cards.CardOrigin;
 import com.dopaminesimulator.cards.CardSet;
 import com.dopaminesimulator.cards.Dust;
 import com.dopaminesimulator.cards.Region;
@@ -43,11 +44,13 @@ public class PassService
 {
 	private final Random random;
 	private final PackService packs;
+	private final CollectionService collection;
 
-	public PassService(Random random, PackService packs)
+	public PassService(Random random, PackService packs, CollectionService collection)
 	{
 		this.random = random;
 		this.packs = packs;
+		this.collection = collection;
 	}
 
 	public boolean rollIfExpired(DopamineState state, long nowMs)
@@ -186,6 +189,13 @@ public class PassService
 				break;
 			case WILDCARD:
 				state.addDust(reward.getAmount() * Dust.PER_WILDCARD);
+				break;
+			case CARD:
+				if (reward.getCard() != null)
+				{
+					collection.grant(state, reward.getCard(), rewards, false,
+						CardOrigin.PASS.copiesPerAward(reward.getCard().getRarity()));
+				}
 				break;
 			default:
 				break;

@@ -26,6 +26,8 @@ package com.dopaminesimulator;
 
 import com.dopaminesimulator.cards.Card;
 import com.dopaminesimulator.cards.CardCatalogue;
+import com.dopaminesimulator.cards.CardOrigin;
+import com.dopaminesimulator.cards.CardOrigins;
 import com.dopaminesimulator.cards.CardSet;
 import com.dopaminesimulator.cards.Rarity;
 import com.dopaminesimulator.cards.Region;
@@ -147,7 +149,7 @@ public class DopamineSimulatorPlugin extends Plugin
 
 	private String pendingResetCommand;
 
-	private final AchievementSystem achievementSystem = new AchievementSystem();
+	private AchievementSystem achievementSystem = new AchievementSystem();
 
 	@Inject
 	private DopamineSimulatorConfig config;
@@ -219,9 +221,10 @@ public class DopamineSimulatorPlugin extends Plugin
 		incomeTracker = new IncomeTracker();
 		clickState = new ClickState();
 		collection = new CollectionService();
+		achievementSystem = new AchievementSystem(collection);
 		packService = new PackService(random, collection);
 		foodService = new GnomeFoodService(random, packService);
-		passService = new PassService(random, packService);
+		passService = new PassService(random, packService, collection);
 		bannerService = new BannerService(random, packService, collection);
 
 		floatingTextOverlay = new FloatingTextOverlay(client, config, gameIcons);
@@ -873,6 +876,15 @@ public class DopamineSimulatorPlugin extends Plugin
 
 			int gained = Prestige.gainFrom(lifetime, state.getInsight());
 			state.prestige(Prestige.insightFor(lifetime));
+
+			// One mastery card per reset, from a track that exists nowhere else.
+			// The stars it banks feed straight back into how fast the next run grows.
+			Card mastery = CardOrigins.prestigeCard(state.getPrestigeCount());
+			if (mastery != null)
+			{
+				collection.grant(state, mastery, rewards, false,
+					CardOrigin.PRESTIGE.copiesPerAward(mastery.getRarity()));
+			}
 			incomeTracker.reset();
 			announcedSources.clear();
 			if (revealOverlay != null)
@@ -884,7 +896,9 @@ public class DopamineSimulatorPlugin extends Plugin
 			client.addChatMessage(ChatMessageType.GAMEMESSAGE, "",
 				"Dopamine Simulator: reset with <col=ffb300>" + state.getInsight()
 					+ "</col> insight" + (gained > 0 ? ", " + gained + " new" : "")
-					+ ". Cards kept.", null);
+					+ ". Cards kept."
+					+ (mastery == null ? "" : " Mastery: <col=ffb300>"
+						+ mastery.getName() + "</col>."), null);
 		});
 	}
 
@@ -955,11 +969,22 @@ public class DopamineSimulatorPlugin extends Plugin
 				state.clearCopies(card.getId());
 			}
 			state.ascend(collectionName);
+
+			// Granted after the burn, so a trophy that happens to sit inside the
+			// collection being ascended is not cleared on its way in.
+			Card trophy = CardOrigins.ascensionCard(state.getTotalAscensions());
+			if (trophy != null)
+			{
+				this.collection.grant(state, trophy, rewards, false,
+					CardOrigin.ASCENSION.copiesPerAward(trophy.getRarity()));
+			}
 			persist();
 			refreshPanel();
 			client.addChatMessage(ChatMessageType.GAMEMESSAGE, "",
 				"Dopamine Simulator: " + collectionName + " ascended to "
-					+ state.getAscension(collectionName) + ".", null);
+					+ state.getAscension(collectionName) + "."
+					+ (trophy == null ? "" : " Trophy: <col=ffb300>"
+						+ trophy.getName() + "</col>."), null);
 		});
 	}
 

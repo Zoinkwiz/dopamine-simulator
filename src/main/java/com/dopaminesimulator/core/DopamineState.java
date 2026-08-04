@@ -356,6 +356,17 @@ public class DopamineState
 		return ascensions.getOrDefault(collection, 0);
 	}
 
+	// Every ascension ever, across every collection. Drives the ascendant rotation.
+	public int getTotalAscensions()
+	{
+		int total = 0;
+		for (Integer level : ascensions.values())
+		{
+			total += level == null ? 0 : level;
+		}
+		return total;
+	}
+
 	public void ascend(String collection)
 	{
 		ascensions.merge(collection, 1, Integer::sum);

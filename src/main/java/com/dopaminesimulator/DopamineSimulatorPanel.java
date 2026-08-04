@@ -28,6 +28,8 @@ import com.dopaminesimulator.cards.Card;
 import com.dopaminesimulator.cards.CardAffinity;
 import com.dopaminesimulator.cards.CardCatalogue;
 import com.dopaminesimulator.cards.CardCollection;
+import com.dopaminesimulator.cards.CardOrigin;
+import com.dopaminesimulator.cards.CardOrigins;
 import com.dopaminesimulator.cards.CardSet;
 import com.dopaminesimulator.cards.Dust;
 import com.dopaminesimulator.cards.CollectionBonus;
@@ -1302,11 +1304,27 @@ public class DopamineSimulatorPanel extends PluginPanel
 		meta.setForeground(Skin.MUTED);
 		meta.setAlignmentX(Component.LEFT_ALIGNMENT);
 		text.add(meta);
+
+		// Without this the panel sends people to buy Curated packs for cards that
+		// packs cannot contain.
+		CardOrigin origin = CardOrigins.of(card);
+		if (origin.isExclusive())
+		{
+			JLabel source = new JLabel(origin.getDisplayName() + "  •  "
+				+ origin.getShortHint());
+			source.setFont(FontManager.getRunescapeSmallFont());
+			source.setForeground(origin.getColour());
+			source.setAlignmentX(Component.LEFT_ALIGNMENT);
+			text.add(source);
+		}
 		text.add(Box.createVerticalStrut(6));
 		if (!owned)
 		{
-			text.add(hint("Not owned. A Curated pack aimed at "
-				+ card.getSet().getDisplayName() + " is the best source.", detailTextWidth()));
+			text.add(hint(origin.isExclusive()
+				? "Not owned. " + origin.getDescription()
+				: "Not owned. A Curated pack aimed at "
+					+ card.getSet().getDisplayName() + " is the best source.",
+				detailTextWidth()));
 			detail.add(text, BorderLayout.CENTER);
 			return capHeight(detail);
 		}

@@ -24,6 +24,7 @@
  */
 package com.dopaminesimulator.pass;
 
+import com.dopaminesimulator.cards.CardOrigins;
 import com.dopaminesimulator.cosmetics.CardBack;
 import java.awt.Color;
 import lombok.Getter;
@@ -103,9 +104,12 @@ public enum PassTheme
 
 	public PassReward premium(int tier, int season)
 	{
+		// The top of the premium track is the season's own card, and the only place
+		// in the game it exists. Every theme ends the same way on purpose: whatever
+		// else a season is about, finishing it is what a region is worth.
 		if (tier == BattlePass.TIERS)
 		{
-			return PassReward.shiny();
+			return PassReward.card(CardOrigins.seasonCard(season));
 		}
 
 		switch (this)

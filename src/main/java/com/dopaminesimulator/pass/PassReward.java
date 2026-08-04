@@ -24,6 +24,8 @@
  */
 package com.dopaminesimulator.pass;
 
+import com.dopaminesimulator.cards.Card;
+import com.dopaminesimulator.cards.CardOrigin;
 import com.dopaminesimulator.cards.Dust;
 import com.dopaminesimulator.cards.Rarity;
 import com.dopaminesimulator.cosmetics.CardBack;
@@ -40,34 +42,41 @@ public class PassReward
 	Rarity rarity;
 	long amount;
 
+	Card card;
+
 	public static PassReward packs(PackTier tier, int count)
 	{
-		return new PassReward(PassRewardKind.PACK, tier, null, count);
+		return new PassReward(PassRewardKind.PACK, tier, null, count, null);
 	}
 
 	public static PassReward shards(Rarity rarity, long amount)
 	{
-		return new PassReward(PassRewardKind.SHARDS, null, rarity, amount);
+		return new PassReward(PassRewardKind.SHARDS, null, rarity, amount, null);
 	}
 
 	public static PassReward shiny()
 	{
-		return new PassReward(PassRewardKind.SHINY, null, null, 1);
+		return new PassReward(PassRewardKind.SHINY, null, null, 1, null);
 	}
 
 	public static PassReward gilded()
 	{
-		return new PassReward(PassRewardKind.GILDED, null, null, 1);
+		return new PassReward(PassRewardKind.GILDED, null, null, 1, null);
 	}
 
 	public static PassReward cardBack(CardBack back)
 	{
-		return new PassReward(PassRewardKind.CARD_BACK, null, null, back.ordinal());
+		return new PassReward(PassRewardKind.CARD_BACK, null, null, back.ordinal(), null);
 	}
 
 	public static PassReward wildcards(int count)
 	{
-		return new PassReward(PassRewardKind.WILDCARD, null, null, count);
+		return new PassReward(PassRewardKind.WILDCARD, null, null, count, null);
+	}
+
+	public static PassReward card(Card card)
+	{
+		return new PassReward(PassRewardKind.CARD, null, card.getRarity(), 1, card);
 	}
 
 	public CardBack back()
@@ -90,6 +99,8 @@ public class PassReward
 				return "Gild a card";
 			case CARD_BACK:
 				return back().getDisplayName() + " card back";
+			case CARD:
+				return card.getName();
 			default:
 				return BigNumbers.format(amount * Dust.PER_WILDCARD) + " dust";
 		}
@@ -107,6 +118,8 @@ public class PassReward
 				return new Color(0x7C, 0xE6, 0xD6);
 			case CARD_BACK:
 				return back().getTrim();
+			case CARD:
+				return CardOrigin.PASS.getColour();
 			case WILDCARD:
 				return new Color(0xC9, 0xB8, 0xE8);
 			default:

@@ -31,5 +31,8 @@ public enum PassRewardKind
 	SHINY,
 	GILDED,
 	CARD_BACK,
-	WILDCARD
+	WILDCARD,
+
+	/** A named season card. The only way any of them is ever handed out. */
+	CARD
 }

@@ -26,6 +26,8 @@ package com.dopaminesimulator.systems;
 
 import com.dopaminesimulator.cards.Card;
 import com.dopaminesimulator.cards.CardCatalogue;
+import com.dopaminesimulator.cards.CardOrigin;
+import com.dopaminesimulator.cards.CardOrigins;
 import com.dopaminesimulator.cards.CardSet;
 import com.dopaminesimulator.cards.Rarity;
 import com.dopaminesimulator.core.DopamineState;
@@ -44,6 +46,22 @@ public class BannerService
 	public static final double SOFT_PITY_STEP = 0.035d;
 
 	public static final Rarity[] BANNERS = {Rarity.RARE, Rarity.EPIC, Rarity.LEGENDARY};
+
+	static
+	{
+		// Every banner needs its own exclusives. A banner rarity with an empty pool
+		// used to fall back to ordinary pack cards, which quietly made that banner a
+		// worse pack. Fail at startup instead of at the pull.
+		for (Rarity rarity : BANNERS)
+		{
+			if (CardCatalogue.byOriginAndRarity(CardOrigin.GACHA, rarity).isEmpty())
+			{
+				throw new IllegalStateException("The " + rarity + " banner has no gacha"
+					+ " cards to feature. Give it a pool in CardOrigins or drop the"
+					+ " banner: it cannot fall back to pack cards.");
+			}
+		}
+	}
 
 	private final Random random;
 	private final PackService packs;
@@ -97,7 +115,7 @@ public class BannerService
 
 	public int featuredCopies(Rarity rarity)
 	{
-		return Math.max(1, rarity.copiesForMaxStars() * 6 / 10);
+		return CardOrigin.GACHA.copiesPerAward(rarity);
 	}
 
 	public int featuredStars(Rarity rarity)
@@ -129,7 +147,10 @@ public class BannerService
 	{
 		String id = state.getBannerCard(rarity);
 		Card card = id == null ? null : CardCatalogue.byId(id);
-		return card == null ? roll(state, rarity) : card;
+
+		// A save written before the pools split names a card this banner no longer
+		// offers. Re-roll it rather than hand out another source's exclusive.
+		return card == null || !fits(card, rarity) ? roll(state, rarity) : card;
 	}
 
 	public double rateAt(int pity)
@@ -178,9 +199,25 @@ public class BannerService
 
 	public Card roll(DopamineState state, Rarity rarity)
 	{
-		List<Card> pool = CardCatalogue.byRarity(rarity);
+		List<Card> pool = featuredPool(rarity);
 		Card chosen = pool.get(random.nextInt(pool.size()));
 		state.setBannerCard(rarity, chosen.getId());
 		return chosen;
+	}
+
+	/**
+	 * Every banner features its own gacha exclusives and nothing else. There is no
+	 * fallback to the pack pool on purpose: a banner that could quietly feature an
+	 * ordinary card would make the whole mechanic a lottery for things you could
+	 * have bought. The static block above is what guarantees the pool is there.
+	 */
+	public List<Card> featuredPool(Rarity rarity)
+	{
+		return CardCatalogue.byOriginAndRarity(CardOrigin.GACHA, rarity);
+	}
+
+	private boolean fits(Card card, Rarity rarity)
+	{
+		return card.getRarity() == rarity && CardOrigins.of(card) == CardOrigin.GACHA;
 	}
 }

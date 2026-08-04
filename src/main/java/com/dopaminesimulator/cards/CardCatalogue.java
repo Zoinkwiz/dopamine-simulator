@@ -322,6 +322,91 @@ public final class CardCatalogue
 		return Collections.unmodifiableMap(index);
 	}
 
+	/**
+	 * What a pack is allowed to hand out: everything except cards a source has
+	 * claimed in {@link CardOrigins}. Every pool a pack draws from goes through
+	 * here, fallbacks included, or an exclusive leaks straight back into packs.
+	 */
+	public static List<Card> packPool(Rarity rarity)
+	{
+		return PACK_BY_RARITY.getOrDefault(rarity, Collections.emptyList());
+	}
+
+	public static List<Card> packPool(CardSet set, Rarity rarity)
+	{
+		return PACK_BY_SET_AND_RARITY
+			.getOrDefault(set, Collections.emptyMap())
+			.getOrDefault(rarity, Collections.emptyList());
+	}
+
+	public static List<Card> byOriginAndRarity(CardOrigin origin, Rarity rarity)
+	{
+		return BY_ORIGIN_AND_RARITY
+			.getOrDefault(origin, Collections.emptyMap())
+			.getOrDefault(rarity, Collections.emptyList());
+	}
+
+	private static final Map<Rarity, List<Card>> PACK_BY_RARITY;
+	private static final Map<CardSet, Map<Rarity, List<Card>>> PACK_BY_SET_AND_RARITY;
+	private static final Map<CardOrigin, Map<Rarity, List<Card>>> BY_ORIGIN_AND_RARITY;
+
+	static
+	{
+		Map<Rarity, List<Card>> packByRarity = new EnumMap<>(Rarity.class);
+		Map<CardSet, Map<Rarity, List<Card>>> packBySet = new EnumMap<>(CardSet.class);
+		Map<CardOrigin, Map<Rarity, List<Card>>> byOrigin = new EnumMap<>(CardOrigin.class);
+		for (Rarity rarity : Rarity.values())
+		{
+			packByRarity.put(rarity, new ArrayList<>());
+		}
+
+		for (Card card : CARDS)
+		{
+			CardOrigin origin = CardOrigins.of(card);
+			byOrigin
+				.computeIfAbsent(origin, k -> new EnumMap<>(Rarity.class))
+				.computeIfAbsent(card.getRarity(), k -> new ArrayList<>())
+				.add(card);
+			if (origin.isExclusive())
+			{
+				continue;
+			}
+			packByRarity.get(card.getRarity()).add(card);
+			packBySet
+				.computeIfAbsent(card.getSet(), k -> new EnumMap<>(Rarity.class))
+				.computeIfAbsent(card.getRarity(), k -> new ArrayList<>())
+				.add(card);
+		}
+
+		// A rarity with nothing left in it would send every roll of that tier to a
+		// fallback, which is how exclusives escape.
+		for (Rarity rarity : Rarity.values())
+		{
+			if (packByRarity.get(rarity).isEmpty())
+			{
+				throw new IllegalStateException("Every " + rarity + " card has been claimed"
+					+ " as a source exclusive, so packs have nothing to roll at that tier.");
+			}
+		}
+
+		PACK_BY_RARITY = lock(packByRarity);
+		PACK_BY_SET_AND_RARITY = lockNested(packBySet);
+		BY_ORIGIN_AND_RARITY = lockNested(byOrigin);
+	}
+
+	private static <K extends Enum<K>> Map<K, List<Card>> lock(Map<K, List<Card>> source)
+	{
+		source.replaceAll((k, v) -> Collections.unmodifiableList(v));
+		return Collections.unmodifiableMap(source);
+	}
+
+	private static <K extends Enum<K>, I extends Enum<I>> Map<K, Map<I, List<Card>>> lockNested(
+		Map<K, Map<I, List<Card>>> source)
+	{
+		source.replaceAll((k, v) -> lock(v));
+		return Collections.unmodifiableMap(source);
+	}
+
 	public static int size()
 	{
 		return CARDS.size();

@@ -134,6 +134,10 @@ public enum Region
 	}
 
 	// Cached: a pack used to rebuild this for every card it drew.
+	//
+	// Only ever pack cards. Regions claim by keyword, so without this filter a
+	// seasonal or mythic card whose name happens to mention an area would be
+	// dropped by that region's pass packs.
 	public List<Card> pool()
 	{
 		if (pool == null)
@@ -141,7 +145,7 @@ public enum Region
 			List<Card> mine = new ArrayList<>();
 			for (Card card : CardCatalogue.all())
 			{
-				if (claims(card))
+				if (claims(card) && !CardOrigins.isExclusive(card))
 				{
 					mine.add(card);
 				}
