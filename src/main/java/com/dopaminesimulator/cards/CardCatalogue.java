@@ -24,40 +24,8 @@
  */
 package com.dopaminesimulator.cards;
 
-import com.dopaminesimulator.cards.sets.AgilityCards;
-import com.dopaminesimulator.cards.sets.AreasCards;
-import com.dopaminesimulator.cards.sets.AttackCards;
-import com.dopaminesimulator.cards.sets.BossesCards;
-import com.dopaminesimulator.cards.sets.ConstructionCards;
-import com.dopaminesimulator.cards.sets.CookingCards;
-import com.dopaminesimulator.cards.sets.CraftingCards;
-import com.dopaminesimulator.cards.sets.DefenceCards;
-import com.dopaminesimulator.cards.sets.DiariesCards;
-import com.dopaminesimulator.cards.sets.FarmingCards;
-import com.dopaminesimulator.cards.sets.FiremakingCards;
-import com.dopaminesimulator.cards.sets.FishingCards;
-import com.dopaminesimulator.cards.sets.FletchingCards;
-import com.dopaminesimulator.cards.sets.HerbloreCards;
-import com.dopaminesimulator.cards.sets.HunterCards;
-import com.dopaminesimulator.cards.sets.ItemsCards;
-import com.dopaminesimulator.cards.sets.MagicCards;
-import com.dopaminesimulator.cards.sets.MinigamesCards;
-import com.dopaminesimulator.cards.sets.MiningCards;
-import com.dopaminesimulator.cards.sets.PrayerCards;
-import com.dopaminesimulator.cards.sets.QuestsCards;
-import com.dopaminesimulator.cards.sets.RangedCards;
-import com.dopaminesimulator.cards.sets.RunecraftCards;
-import com.dopaminesimulator.cards.sets.SailingCards;
-import com.dopaminesimulator.cards.sets.SkillsCards;
-import com.dopaminesimulator.cards.sets.SlayerCards;
-import com.dopaminesimulator.cards.sets.SmithingCards;
-import com.dopaminesimulator.cards.sets.SpellsAncientCards;
-import com.dopaminesimulator.cards.sets.SpellsArceuusCards;
-import com.dopaminesimulator.cards.sets.SpellsLunarCards;
-import com.dopaminesimulator.cards.sets.SpellsStandardCards;
-import com.dopaminesimulator.cards.sets.StrengthCards;
-import com.dopaminesimulator.cards.sets.ThievingCards;
-import com.dopaminesimulator.cards.sets.WoodcuttingCards;
+import com.dopaminesimulator.cards.sets.*;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
@@ -222,6 +190,10 @@ public final class CardCatalogue
 			all.add(entry.getCard());
 		}
 		for (CardGroup entry : WoodcuttingCards.values())
+		{
+			all.add(entry.getCard());
+		}
+		for (CardGroup entry : BossesCollCards.values())
 		{
 			all.add(entry.getCard());
 		}

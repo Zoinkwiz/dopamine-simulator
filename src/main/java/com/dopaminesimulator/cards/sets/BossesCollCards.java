@@ -40,7 +40,7 @@ public enum BossesCollCards implements CardGroup
 	HYDRA_TAIL("Hydra tail", Rarity.RARE, ItemID.HYDRA_TAIL, -1), // Alchemical Hydra and Hydra
 	HYDRAS_FANG("Hydra's fang", Rarity.RARE, ItemID.HYDRA_FANG, -1), // Alchemical Hydra and Hydra
 	HYDRAS_EYE("Hydra's eye", Rarity.RARE, ItemID.HYDRA_EYE, -1), // Alchemical Hydra and Hydra
-	HYDRAS_HEART("Hydra's heart", Rarity.RARE, ItemID.HYDRA_EYE, -1), // Alchemical Hydra and Hydra
+	HYDRAS_HEART("Hydra's heart", Rarity.RARE, ItemID.HYDRA_HEART, -1), // Alchemical Hydra and Hydra
 	DRAGON_KNIFE("Dragon knife", Rarity.UNCOMMON, ItemID.DRAGON_KNIFE, -1), // Alchemical Hydra, Hydra, Wyrm and Drake
 	DRAGON_THROWNAXE("Dragon thrownaxe", Rarity.UNCOMMON, ItemID.DRAGON_THROWNAXE, -1), // Alchemical Hydra, Hydra, Wyrm and Drake
 	ARAXYTE_VENOM_SAC("Araxyte venom sac", Rarity.UNCOMMON, ItemID.ARAXYTE_VENOM_SACK, -1), // Araxxor and Araxytes
