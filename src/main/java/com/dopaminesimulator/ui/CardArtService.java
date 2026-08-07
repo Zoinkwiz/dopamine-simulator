@@ -45,7 +45,7 @@ public class CardArtService
 	private final Map<String, BufferedImage> sprites = new ConcurrentHashMap<>();
 	private final Set<String> requested = ConcurrentHashMap.newKeySet();
 	private final Set<String> settled = ConcurrentHashMap.newKeySet();
-	private final Map<String, Runnable> spriteWaiters = new ConcurrentHashMap<>();
+	private final Map<String, Runnable> waiters = new ConcurrentHashMap<>();
 	private final Map<CardSet, BufferedImage> badges = new ConcurrentHashMap<>();
 	private final Set<CardSet> badgesRequested = ConcurrentHashMap.newKeySet();
 	@Inject
@@ -78,27 +78,44 @@ public class CardArtService
 
 	public void onLoaded(Card card, Runnable callback)
 	{
+		String id = card.getId();
+		if (settled.contains(id))
+		{
+			return;
+		}
 		if (card.getSpriteId() > 0)
 		{
-			if (!sprites.containsKey(card.getId()))
-			{
-				requestSprite(card, callback);
-			}
+			requestSprite(card, callback);
 			return;
 		}
-		if (card.getItemId() <= 0 || settled.contains(card.getId()))
+		if (card.getItemId() <= 0)
 		{
 			return;
 		}
-		AsyncBufferedImage image = items.computeIfAbsent(card.getId(),
-			id -> itemManager.getImage(card.getItemId()));
-		if (image != null)
+		AsyncBufferedImage image = items.computeIfAbsent(id,
+			key -> itemManager.getImage(card.getItemId()));
+		if (image == null)
 		{
-			image.onLoaded(() ->
-			{
-				settled.add(card.getId());
-				callback.run();
-			});
+			return;
+		}
+		waiters.put(id, callback);
+		if (!requested.add(id))
+		{
+			return;
+		}
+		image.onLoaded(() ->
+		{
+			settled.add(id);
+			deliver(id);
+		});
+	}
+
+	private void deliver(String id)
+	{
+		Runnable waiting = waiters.remove(id);
+		if (waiting != null)
+		{
+			waiting.run();
 		}
 	}
 
@@ -125,25 +142,20 @@ public class CardArtService
 
 	private void requestSprite(Card card, Runnable callback)
 	{
+		String id = card.getId();
 		if (callback != null)
 		{
-			spriteWaiters.put(card.getId(), callback);
+			waiters.put(id, callback);
 		}
-		if (!requested.add(card.getId()))
+		if (!requested.add(id))
 		{
 			return;
 		}
 		spriteManager.getSpriteAsync(card.getSpriteId(), 0, image ->
 		{
-			if (image != null)
-			{
-				sprites.put(card.getId(), image);
-			}
-			Runnable waiting = spriteWaiters.remove(card.getId());
-			if (waiting != null)
-			{
-				waiting.run();
-			}
+			sprites.put(id, image);
+			settled.add(id);
+			deliver(id);
 		});
 	}
 }

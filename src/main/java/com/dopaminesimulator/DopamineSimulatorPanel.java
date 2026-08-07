@@ -126,6 +126,7 @@ public class DopamineSimulatorPanel extends PluginPanel
 	private static final int CARD_MAX_COLUMNS = 10;
 	private static final Color GOLD = Skin.ORANGE;
 	private static final Object ALL_SETS = new Object();
+	private static final int RESIZE_SETTLE_MS = 150;
 	private enum Tab
 	{
 		PLAY, SHOP, CARDS, FEATS
@@ -137,6 +138,7 @@ public class DopamineSimulatorPanel extends PluginPanel
 	private Timer cascadeTimer;
 	private ClickButton clickButton;
 	private final Timer surgeTimer;
+	private final Timer resizeTimer;
 	private final JPanel playContent = new JPanel();
 	private final JPanel shopContent = new JPanel();
 	private final JPanel cardsContent = new JPanel();
@@ -196,6 +198,14 @@ public class DopamineSimulatorPanel extends PluginPanel
 
 		add(tabGroup, BorderLayout.NORTH);
 		add(scrollPane, BorderLayout.CENTER);
+		resizeTimer = new Timer(RESIZE_SETTLE_MS, e ->
+		{
+			if (selectedTab == Tab.CARDS)
+			{
+				rebuild();
+			}
+		});
+		resizeTimer.setRepeats(false);
 		scrollPane.getViewport().addComponentListener(new ComponentAdapter()
 		{
 			private int lastColumns = -1;
@@ -208,7 +218,7 @@ public class DopamineSimulatorPanel extends PluginPanel
 					lastColumns = columns;
 					if (selectedTab == Tab.CARDS)
 					{
-						rebuild();
+						resizeTimer.restart();
 					}
 				}
 			}
@@ -1949,6 +1959,7 @@ public class DopamineSimulatorPanel extends PluginPanel
 	public void dispose()
 	{
 		surgeTimer.stop();
+		resizeTimer.stop();
 		if (cascadeTimer != null)
 		{
 			cascadeTimer.stop();
