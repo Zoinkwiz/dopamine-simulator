@@ -25,6 +25,8 @@
 package com.dopaminesimulator.ui;
 
 import com.dopaminesimulator.incremental.BigNumbers;
+import lombok.Setter;
+
 import java.awt.AlphaComposite;
 import java.awt.BasicStroke;
 import java.awt.Color;
@@ -45,11 +47,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.function.DoubleSupplier;
-import java.awt.event.ActionEvent;
-import java.awt.event.FocusAdapter;
-import java.awt.event.FocusEvent;
-import javax.swing.AbstractAction;
-import javax.swing.KeyStroke;
 import javax.accessibility.AccessibleContext;
 import javax.accessibility.AccessibleRole;
 import javax.swing.JComponent;
@@ -68,10 +65,13 @@ public class ClickButton extends JComponent
 	private final Random random = new Random();
 	private final List<Particle> particles = new ArrayList<>();
 	private final Timer animator;
-	private BufferedImage icon;
-	private String status;
+	@Setter
+    private BufferedImage icon;
+	@Setter
+    private String status;
 	private String danger;
-	private String callout;
+    @Setter
+    private String callout;
 	private boolean surging;
 	private boolean hovered;
 	private long pressedAt;
@@ -132,22 +132,13 @@ public class ClickButton extends JComponent
 			@Override
 			public void mousePressed(MouseEvent e)
 			{
-				requestFocusInWindow();
 				press();
 			}
 		});
-		bindKeys();
-	}
-	public void setIcon(BufferedImage icon)
-	{
-		this.icon = icon;
+		setFocusable(false);
 	}
 
-	public void setStatus(String status)
-	{
-		this.status = status;
-	}
-	public void setSurging(boolean surging)
+    public void setSurging(boolean surging)
 	{
 		this.surging = surging;
 		if (surging)
@@ -169,43 +160,7 @@ public class ClickButton extends JComponent
 		}
 	}
 
-	/** The gold word over the payout: what this click would do beyond paying. */
-	public void setCallout(String callout)
-	{
-		this.callout = callout;
-	}
-
-	private void bindKeys()
-	{
-		setFocusable(true);
-		getInputMap(WHEN_FOCUSED).put(KeyStroke.getKeyStroke("SPACE"), "press");
-		getInputMap(WHEN_FOCUSED).put(KeyStroke.getKeyStroke("ENTER"), "press");
-		getActionMap().put("press", new AbstractAction()
-		{
-			@Override
-			public void actionPerformed(ActionEvent e)
-			{
-				press();
-			}
-		});
-		addFocusListener(new FocusAdapter()
-		{
-			@Override
-			public void focusGained(FocusEvent e)
-			{
-				repaint();
-			}
-
-			@Override
-			public void focusLost(FocusEvent e)
-			{
-				repaint();
-			}
-		});
-	}
-
-	@Override
-	// A bare JComponent has none, and asking for one without this throws.
+    @Override
 	public AccessibleContext getAccessibleContext()
 	{
 		if (accessibleContext == null)
@@ -265,14 +220,6 @@ public class ClickButton extends JComponent
 		int plate = (int) (Math.min(width, height - 16) * 0.78d * currentScale());
 
 		drawGlow(g, centreX, centreY, plate);
-		if (isFocusOwner())
-		{
-
-			g.setStroke(new BasicStroke(1.5f));
-			g.setColor(Skin.withAlpha(Skin.GOLD, 170));
-			int ring = plate + 8;
-			g.drawOval(centreX - ring / 2, centreY - ring / 2, ring, ring);
-		}
 		drawPlate(g, centreX, centreY, plate);
 		drawIcon(g, centreX, centreY, plate);
 		drawLabel(g, width, height);
@@ -281,7 +228,6 @@ public class ClickButton extends JComponent
 		g.dispose();
 	}
 
-	/** Anything worth pulsing over: a dish being served, or one that soured. */
 	private boolean loud()
 	{
 		return surging || danger != null;
