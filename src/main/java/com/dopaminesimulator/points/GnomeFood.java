@@ -66,7 +66,7 @@ public enum GnomeFood
 
 	public static final long SOUR_MS = 60_000L;
 
-	public static final int CRUNCHIES_CLICKS = 60;
+	public static final int CRUNCHIES_CLICKS = 200;
 
 	public static final double FRUIT_BLAST_PASS_XP = 30d;
 
