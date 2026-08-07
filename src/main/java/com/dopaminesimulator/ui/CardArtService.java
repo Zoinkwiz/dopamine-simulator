@@ -44,6 +44,8 @@ public class CardArtService
 	private final Map<String, AsyncBufferedImage> items = new ConcurrentHashMap<>();
 	private final Map<String, BufferedImage> sprites = new ConcurrentHashMap<>();
 	private final Set<String> requested = ConcurrentHashMap.newKeySet();
+	private final Set<String> settled = ConcurrentHashMap.newKeySet();
+	private final Map<String, Runnable> spriteWaiters = new ConcurrentHashMap<>();
 	private final Map<CardSet, BufferedImage> badges = new ConcurrentHashMap<>();
 	private final Set<CardSet> badgesRequested = ConcurrentHashMap.newKeySet();
 	@Inject
@@ -73,19 +75,18 @@ public class CardArtService
 			id -> itemManager.getImage(card.getItemId()));
 		return image == null || image.getWidth() <= 0 ? null : image;
 	}
+
 	public void onLoaded(Card card, Runnable callback)
 	{
 		if (card.getSpriteId() > 0)
 		{
-			if (sprites.containsKey(card.getId()))
+			if (!sprites.containsKey(card.getId()))
 			{
-				callback.run();
-				return;
+				requestSprite(card, callback);
 			}
-			requestSprite(card, callback);
 			return;
 		}
-		if (card.getItemId() <= 0)
+		if (card.getItemId() <= 0 || settled.contains(card.getId()))
 		{
 			return;
 		}
@@ -93,7 +94,11 @@ public class CardArtService
 			id -> itemManager.getImage(card.getItemId()));
 		if (image != null)
 		{
-			image.onLoaded(callback);
+			image.onLoaded(() ->
+			{
+				settled.add(card.getId());
+				callback.run();
+			});
 		}
 	}
 
@@ -120,7 +125,11 @@ public class CardArtService
 
 	private void requestSprite(Card card, Runnable callback)
 	{
-		if (callback == null && !requested.add(card.getId()))
+		if (callback != null)
+		{
+			spriteWaiters.put(card.getId(), callback);
+		}
+		if (!requested.add(card.getId()))
 		{
 			return;
 		}
@@ -130,9 +139,10 @@ public class CardArtService
 			{
 				sprites.put(card.getId(), image);
 			}
-			if (callback != null)
+			Runnable waiting = spriteWaiters.remove(card.getId());
+			if (waiting != null)
 			{
-				callback.run();
+				waiting.run();
 			}
 		});
 	}
