@@ -85,7 +85,9 @@ import java.awt.event.ComponentEvent;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
@@ -123,6 +125,7 @@ public class DopamineSimulatorPanel extends PluginPanel
 	private static final int CARD_MIN_COLUMNS = 3;
 	private static final int CARD_MAX_COLUMNS = 10;
 	private static final Color GOLD = Skin.ORANGE;
+	private static final Object ALL_SETS = new Object();
 	private enum Tab
 	{
 		PLAY, SHOP, CARDS, FEATS
@@ -142,6 +145,7 @@ public class DopamineSimulatorPanel extends PluginPanel
 	private Tab selectedTab = Tab.PLAY;
 	private Card selectedCard;
 	private CardSet selectedSet = CardSet.QUESTS;
+	private boolean allSets;
 	private int buyQuantity = 1;
 	private boolean collectionsExpanded;
 	private String cardSearch = "";
@@ -937,7 +941,7 @@ public class DopamineSimulatorPanel extends PluginPanel
 		searchField.setForeground(Skin.WHITE);
 		searchField.setCaretColor(Skin.WHITE);
 		searchField.setBorder(BorderFactory.createEmptyBorder(3, 5, 3, 5));
-		searchField.setToolTipText("Filter this set by card name");
+		searchField.setToolTipText("Filter the cards shown by name");
 		searchField.getDocument().addDocumentListener(new DocumentListener()
 		{
 			private void changed()
@@ -978,7 +982,7 @@ public class DopamineSimulatorPanel extends PluginPanel
 
 	private List<Card> visibleCards()
 	{
-		List<Card> all = CardCatalogue.bySet(selectedSet);
+		List<Card> all = allSets ? CardCatalogue.all() : CardCatalogue.bySet(selectedSet);
 		if (cardSearch.isEmpty())
 		{
 			return all;
@@ -1022,8 +1026,13 @@ public class DopamineSimulatorPanel extends PluginPanel
 		row.setBackground(Skin.BG);
 		row.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-		JComboBox<CardSet> picker = new JComboBox<>(CardSet.values());
-		picker.setSelectedItem(selectedSet);
+		CardSet[] sets = CardSet.values();
+		Object[] options = new Object[sets.length + 1];
+		options[0] = ALL_SETS;
+		System.arraycopy(sets, 0, options, 1, sets.length);
+
+		JComboBox<Object> picker = new JComboBox<>(options);
+		picker.setSelectedItem(allSets ? ALL_SETS : selectedSet);
 		picker.setFont(FontManager.getRunescapeSmallFont());
 		picker.setBackground(Skin.CARD_DEEP);
 		picker.setForeground(Skin.WHITE);
@@ -1035,8 +1044,14 @@ public class DopamineSimulatorPanel extends PluginPanel
 				boolean selected, boolean focused)
 			{
 				super.getListCellRendererComponent(list, value, index, selected, focused);
-				CardSet set = (CardSet) value;
 				setFont(FontManager.getRunescapeSmallFont());
+				if (value == ALL_SETS)
+				{
+					setText("All Sets   " + state.getUniqueCardsOwned() + "/"
+						+ CardCatalogue.size());
+					return this;
+				}
+				CardSet set = (CardSet) value;
 				setText(set.getDisplayName() + "   " + ownedIn(state, set) + "/"
 					+ CardCatalogue.bySet(set).size());
 				return this;
@@ -1044,13 +1059,23 @@ public class DopamineSimulatorPanel extends PluginPanel
 		});
 		picker.addActionListener(e ->
 		{
-			CardSet chosen = (CardSet) picker.getSelectedItem();
-			if (chosen != null && chosen != selectedSet)
+			Object chosen = picker.getSelectedItem();
+			if (chosen == null)
 			{
-				selectedSet = chosen;
-				selectedCard = null;
-				rebuild();
+				return;
 			}
+			boolean wantsAll = chosen == ALL_SETS;
+			if (wantsAll == allSets && (wantsAll || chosen == selectedSet))
+			{
+				return;
+			}
+			allSets = wantsAll;
+			if (!wantsAll)
+			{
+				selectedSet = (CardSet) chosen;
+			}
+			selectedCard = null;
+			rebuild();
 		});
 
 		row.add(picker, BorderLayout.CENTER);
@@ -1064,6 +1089,11 @@ public class DopamineSimulatorPanel extends PluginPanel
 	}
 	private void buildSelectedSet(DopamineState state)
 	{
+		if (allSets)
+		{
+			buildAllSets(state);
+			return;
+		}
 		List<Card> cards = visibleCards();
 		int owned = ownedIn(state, selectedSet);
 		int columns = cardColumns();
@@ -1097,6 +1127,51 @@ public class DopamineSimulatorPanel extends PluginPanel
 				+ " match \"" + cardSearch + "\"."));
 			return;
 		}
+		buildCardGrid(state, cards, columns, cardWidth);
+	}
+    
+	private void buildAllSets(DopamineState state)
+	{
+		List<Card> cards = visibleCards();
+		int columns = cardColumns();
+		int cardWidth = cardWidthFor(columns);
+		cardsContent.add(sectionLabel("All Sets",
+			cardSearch.isEmpty()
+				? state.getUniqueCardsOwned() + "/" + CardCatalogue.size() + " cards"
+				: cards.size() + " matching"));
+		// The picker no longer names the set packs draw from, so say it out loud.
+		cardsContent.add(hint("Curated packs and banner pulls still draw from "
+			+ selectedSet.getDisplayName() + "."));
+		cardsContent.add(Box.createVerticalStrut(6));
+
+		if (cards.isEmpty())
+		{
+			cardsContent.add(hint("No card in any set matches \"" + cardSearch + "\"."));
+			return;
+		}
+
+		Map<CardSet, List<Card>> bySet = new EnumMap<>(CardSet.class);
+		for (Card card : cards)
+		{
+			bySet.computeIfAbsent(card.getSet(), k -> new ArrayList<>()).add(card);
+		}
+		for (CardSet set : CardSet.values())
+		{
+			List<Card> inSet = bySet.get(set);
+			if (inSet == null)
+			{
+				continue;
+			}
+			cardsContent.add(sectionLabel(set.getDisplayName(),
+				ownedIn(state, inSet) + "/" + inSet.size()));
+			cardsContent.add(Box.createVerticalStrut(3));
+			buildCardGrid(state, inSet, columns, cardWidth);
+			cardsContent.add(Box.createVerticalStrut(4));
+		}
+	}
+
+	private void buildCardGrid(DopamineState state, List<Card> cards, int columns, int cardWidth)
+	{
 		for (int start = 0; start < cards.size(); start += columns)
 		{
 			int end = Math.min(start + columns, cards.size());
@@ -1423,7 +1498,11 @@ public class DopamineSimulatorPanel extends PluginPanel
 	}
 	private static int ownedIn(DopamineState state, CardSet set)
 	{
-		return (int) CardCatalogue.bySet(set).stream().filter(c -> state.owns(c.getId())).count();
+		return ownedIn(state, CardCatalogue.bySet(set));
+	}
+	private static int ownedIn(DopamineState state, List<Card> cards)
+	{
+		return (int) cards.stream().filter(c -> state.owns(c.getId())).count();
 	}
 	private static String cardTooltip(Card card, int copies, int stars, boolean owned)
 	{
