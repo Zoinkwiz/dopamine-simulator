@@ -35,6 +35,9 @@ public enum CardSet
 	BOSSES("Bosses", "Including raids"),
 	BOSS_DROPS("Boss Drops", "Collection log drops from every boss"),
 	RAIDS_DROPS("Raids Drops", "Collection log drops from every raid"),
+	CLUE_DROPS("Clue Rewards", "Collection log rewards from every clue tier."),
+	MINIGAME_REWARDS("Minigames Rewards", "Collection log rewards from every minigame."),
+	OTHER_COLLECTIONLOG("Other Collection Log", "Collection log rewards from the Other section."),
 	ITEMS("Items", "Gear and common items"),
 	MINIGAMES("Minigames", "Minigames and their rewards"),
 	SLAYER("Slayer", "Task monsters and slayer unlocks"),
@@ -93,6 +96,8 @@ public enum CardSet
 			case BOSSES: return SpriteID.PvpwIcons.PLAYER_KILLER_SKULL;
 			case BOSS_DROPS: return SpriteID.IconActivities25x25.COLLECTIONS_LOGGED;
 			case RAIDS_DROPS: return SpriteID.IconBoss25x25.CHAMBERS_OF_XERIC;
+			case CLUE_DROPS: return SpriteID.IconActivities25x25.CLUE_SCROLL_ALL;
+			case MINIGAME_REWARDS: return SpriteID.IconActivities25x25.RIFTS_CLOSED;
 			case ITEMS: return SpriteID.SideIcons.INVENTORY;
 			case MINIGAMES: return SpriteID.SideIcons.MINIGAMES;
 			case DIARIES: return SpriteID.SideIcons.ACHIEVEMENT_DIARIES;
