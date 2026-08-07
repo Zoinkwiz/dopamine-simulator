@@ -29,6 +29,7 @@ import com.dopaminesimulator.cards.sets.AreasCards;
 import com.dopaminesimulator.cards.sets.AttackCards;
 import com.dopaminesimulator.cards.sets.BossDropsCards;
 import com.dopaminesimulator.cards.sets.BossesCards;
+import com.dopaminesimulator.cards.sets.ClueCards;
 import com.dopaminesimulator.cards.sets.ConstructionCards;
 import com.dopaminesimulator.cards.sets.CookingCards;
 import com.dopaminesimulator.cards.sets.CraftingCards;
@@ -42,8 +43,10 @@ import com.dopaminesimulator.cards.sets.HerbloreCards;
 import com.dopaminesimulator.cards.sets.HunterCards;
 import com.dopaminesimulator.cards.sets.ItemsCards;
 import com.dopaminesimulator.cards.sets.MagicCards;
+import com.dopaminesimulator.cards.sets.MinigameRewardsCards;
 import com.dopaminesimulator.cards.sets.MinigamesCards;
 import com.dopaminesimulator.cards.sets.MiningCards;
+import com.dopaminesimulator.cards.sets.OtherCollectionLog;
 import com.dopaminesimulator.cards.sets.PrayerCards;
 import com.dopaminesimulator.cards.sets.QuestsCards;
 import com.dopaminesimulator.cards.sets.RangedCards;
@@ -111,6 +114,10 @@ public final class CardCatalogue
 		{
 			all.add(entry.getCard());
 		}
+		for (CardGroup entry : ClueCards.values())
+		{
+			all.add(entry.getCard());
+		}
 		for (CardGroup entry : ConstructionCards.values())
 		{
 			all.add(entry.getCard());
@@ -167,7 +174,15 @@ public final class CardCatalogue
 		{
 			all.add(entry.getCard());
 		}
+		for (CardGroup entry : MinigameRewardsCards.values())
+		{
+			all.add(entry.getCard());
+		}
 		for (CardGroup entry : MiningCards.values())
+		{
+			all.add(entry.getCard());
+		}
+		for (CardGroup entry : OtherCollectionLog.values())
 		{
 			all.add(entry.getCard());
 		}
