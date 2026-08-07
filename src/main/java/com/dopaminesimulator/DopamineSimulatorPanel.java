@@ -127,6 +127,7 @@ public class DopamineSimulatorPanel extends PluginPanel
 	private static final Color GOLD = Skin.ORANGE;
 	private static final Object ALL_SETS = new Object();
 	private static final int RESIZE_SETTLE_MS = 150;
+	private static final int MAX_MATCHES = 250;
 	private enum Tab
 	{
 		PLAY, SHOP, CARDS, FEATS
@@ -148,6 +149,7 @@ public class DopamineSimulatorPanel extends PluginPanel
 	private Card selectedCard;
 	private CardSet selectedSet = CardSet.QUESTS;
 	private boolean allSets;
+	private CardSet expandedInAll;
 	private int buyQuantity = 1;
 	private boolean collectionsExpanded;
 	private String cardSearch = "";
@@ -451,7 +453,6 @@ public class DopamineSimulatorPanel extends PluginPanel
 		return clickButton;
 	}
 
-	/** The red label on the plate: a warning first, then what the bite cost. */
 	private String dangerLabel(ClickState clicks, long now)
 	{
 		if (clicks == null)
@@ -470,10 +471,6 @@ public class DopamineSimulatorPanel extends PluginPanel
 		return null;
 	}
 
-	/**
-	 * A plated dish is worth nothing until it is clicked, so the button has to say
-	 * so, and count down the window while it does.
-	 */
 	private String calloutLabel(ClickState clicks, long now)
 	{
 		if (clicks == null)
@@ -1165,6 +1162,13 @@ public class DopamineSimulatorPanel extends PluginPanel
 		{
 			bySet.computeIfAbsent(card.getSet(), k -> new ArrayList<>()).add(card);
 		}
+
+		if (!cardSearch.isEmpty())
+		{
+			buildAllSetsMatches(state, bySet, cards.size(), columns, cardWidth);
+			return;
+		}
+
 		for (CardSet set : CardSet.values())
 		{
 			List<Card> inSet = bySet.get(set);
@@ -1172,11 +1176,65 @@ public class DopamineSimulatorPanel extends PluginPanel
 			{
 				continue;
 			}
+			boolean open = set == expandedInAll;
+			cardsContent.add(setToggle(state, set, inSet, open));
+			cardsContent.add(Box.createVerticalStrut(3));
+			if (open)
+			{
+				buildCardGrid(state, inSet, columns, cardWidth);
+				cardsContent.add(Box.createVerticalStrut(4));
+			}
+		}
+	}
+
+	private StoneButton setToggle(DopamineState state, CardSet set, List<Card> inSet, boolean open)
+	{
+		int owned = ownedIn(state, inSet);
+		StoneButton toggle = new StoneButton((open ? "▾ " : "▸ ") + set.getDisplayName()
+			+ "    " + owned + "/" + inSet.size());
+		toggle.withAccent(owned == inSet.size() ? GOLD : Skin.WHITE);
+		toggle.setHorizontalAlignment(SwingConstants.LEFT);
+		toggle.setMargin(new Insets(3, 5, 3, 5));
+		toggle.setAlignmentX(Component.LEFT_ALIGNMENT);
+		toggle.setMaximumSize(new Dimension(Integer.MAX_VALUE, 20));
+		toggle.addActionListener(e ->
+		{
+			expandedInAll = open ? null : set;
+			selectedCard = null;
+			rebuild();
+		});
+		return toggle;
+	}
+
+	private void buildAllSetsMatches(DopamineState state, Map<CardSet, List<Card>> bySet,
+		int total, int columns, int cardWidth)
+	{
+		int shown = 0;
+		for (CardSet set : CardSet.values())
+		{
+			List<Card> inSet = bySet.get(set);
+			if (inSet == null)
+			{
+				continue;
+			}
+			if (shown >= MAX_MATCHES)
+			{
+				break;
+			}
+			List<Card> drawn = inSet.size() > MAX_MATCHES - shown
+				? inSet.subList(0, MAX_MATCHES - shown)
+				: inSet;
 			cardsContent.add(sectionLabel(set.getDisplayName(),
 				ownedIn(state, inSet) + "/" + inSet.size()));
 			cardsContent.add(Box.createVerticalStrut(3));
-			buildCardGrid(state, inSet, columns, cardWidth);
+			buildCardGrid(state, drawn, columns, cardWidth);
 			cardsContent.add(Box.createVerticalStrut(4));
+			shown += drawn.size();
+		}
+		if (shown < total)
+		{
+			cardsContent.add(hint("Showing " + shown + " of " + total
+				+ " matches. Narrow the search to see the rest."));
 		}
 	}
 
