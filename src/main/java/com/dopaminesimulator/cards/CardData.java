@@ -24,19 +24,16 @@
  */
 package com.dopaminesimulator.cards;
 
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
+import com.google.gson.stream.JsonReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.UncheckedIOException;
-import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
 
 public final class CardData
 {
@@ -52,8 +49,8 @@ public final class CardData
 		public String name;
 		public String set;
 		public String rarity;
-		public int itemId;
-		public int spriteId;
+		public int itemId = -1;
+		public int spriteId = -1;
 	}
 
 	public static final class CollectionEntry
@@ -61,14 +58,14 @@ public final class CardData
 		public String name;
 		public String set;
 		public String description;
-		public List<String> members;
+		public List<String> members = new ArrayList<>();
 	}
 
 	public static final class OriginEntry
 	{
 		public String pool;
 		public String origin;
-		public List<String> members;
+		public List<String> members = new ArrayList<>();
 	}
 
 	private CardData()
@@ -94,26 +91,118 @@ public final class CardData
 
 	static List<Entry> readEntries()
 	{
-		return read(CARDS, new TypeToken<List<Entry>>()
+		return read(CARDS, reader ->
 		{
-		}.getType());
+			Entry e = new Entry();
+			reader.beginObject();
+			while (reader.hasNext())
+			{
+				switch (reader.nextName())
+				{
+					case "id":
+						e.id = reader.nextString();
+						break;
+					case "name":
+						e.name = reader.nextString();
+						break;
+					case "set":
+						e.set = reader.nextString();
+						break;
+					case "rarity":
+						e.rarity = reader.nextString();
+						break;
+					case "itemId":
+						e.itemId = reader.nextInt();
+						break;
+					case "spriteId":
+						e.spriteId = reader.nextInt();
+						break;
+					default:
+						reader.skipValue();
+				}
+			}
+			reader.endObject();
+			return e;
+		});
 	}
 
 	public static List<CollectionEntry> loadCollections()
 	{
-		return read(COLLECTIONS, new TypeToken<List<CollectionEntry>>()
+		return read(COLLECTIONS, reader ->
 		{
-		}.getType());
+			CollectionEntry e = new CollectionEntry();
+			reader.beginObject();
+			while (reader.hasNext())
+			{
+				switch (reader.nextName())
+				{
+					case "name":
+						e.name = reader.nextString();
+						break;
+					case "set":
+						e.set = reader.nextString();
+						break;
+					case "description":
+						e.description = reader.nextString();
+						break;
+					case "members":
+						e.members = readStrings(reader);
+						break;
+					default:
+						reader.skipValue();
+				}
+			}
+			reader.endObject();
+			return e;
+		});
 	}
 
 	public static List<OriginEntry> loadOrigins()
 	{
-		return read(ORIGINS, new TypeToken<List<OriginEntry>>()
+		return read(ORIGINS, reader ->
 		{
-		}.getType());
+			OriginEntry e = new OriginEntry();
+			reader.beginObject();
+			while (reader.hasNext())
+			{
+				switch (reader.nextName())
+				{
+					case "pool":
+						e.pool = reader.nextString();
+						break;
+					case "origin":
+						e.origin = reader.nextString();
+						break;
+					case "members":
+						e.members = readStrings(reader);
+						break;
+					default:
+						reader.skipValue();
+				}
+			}
+			reader.endObject();
+			return e;
+		});
 	}
 
-	private static <T> List<T> read(String resource, Type type)
+	private interface ElementReader<T>
+	{
+		T read(JsonReader reader) throws IOException;
+	}
+
+	private static List<String> readStrings(JsonReader reader) throws IOException
+	{
+		List<String> out = new ArrayList<>();
+		reader.beginArray();
+		while (reader.hasNext())
+		{
+			out.add(reader.nextString());
+		}
+		reader.endArray();
+		return out;
+	}
+
+	private static <T> List<T> read(String resource, ElementReader<T> element)
 	{
 		try (InputStream in = CardData.class.getResourceAsStream(resource))
 		{
@@ -122,15 +211,23 @@ public final class CardData
 				throw new IllegalStateException("missing resource " + resource);
 			}
 
-			try (Reader reader = new InputStreamReader(in, StandardCharsets.UTF_8))
+			List<T> entries = new ArrayList<>();
+			try (Reader chars = new InputStreamReader(in, StandardCharsets.UTF_8);
+				JsonReader reader = new JsonReader(chars))
 			{
-				List<T> entries = new Gson().fromJson(reader, type);
-				if (entries == null || entries.isEmpty())
+				reader.beginArray();
+				while (reader.hasNext())
 				{
-					throw new IllegalStateException(resource + " parsed to nothing");
+					entries.add(element.read(reader));
 				}
-				return entries;
+				reader.endArray();
 			}
+
+			if (entries.isEmpty())
+			{
+				throw new IllegalStateException(resource + " parsed to nothing");
+			}
+			return entries;
 		}
 		catch (IOException ex)
 		{
