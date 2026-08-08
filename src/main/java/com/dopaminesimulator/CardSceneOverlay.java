@@ -41,6 +41,8 @@ public class CardSceneOverlay extends Overlay
 	private Card card;
 	private java.awt.Rectangle box;
 	private AffineTransform transform;
+	private double px;
+	private double py;
 	private long submittedAt;
 
 	CardSceneOverlay()
@@ -49,8 +51,11 @@ public class CardSceneOverlay extends Overlay
 		setLayer(OverlayLayer.UNDER_WIDGETS);
 	}
 
-	public void submit(Card card, java.awt.Rectangle box, AffineTransform transform)
+	public void submit(Card card, java.awt.Rectangle box, AffineTransform transform,
+					   double px, double py)
 	{
+		this.px = px;
+		this.py = py;
 		this.card = card;
 		this.box = box;
 		this.transform = transform;
@@ -72,7 +77,7 @@ public class CardSceneOverlay extends Overlay
 		{
 			graphics.transform(transform);
 		}
-		CardRenderer.drawArtScene(graphics, card, box);
+		CardRenderer.drawArtScene(graphics, card, box, px, py);
 		graphics.setTransform(transformBefore);
 		graphics.setClip(clipBefore);
 		return null;

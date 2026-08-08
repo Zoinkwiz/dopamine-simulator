@@ -36,6 +36,7 @@ import com.dopaminesimulator.core.Balance;
 import com.dopaminesimulator.core.DopamineEngine;
 import com.dopaminesimulator.core.DopamineEvent;
 import com.dopaminesimulator.core.DopamineState;
+import com.dopaminesimulator.ui.CardRenderer;
 import com.dopaminesimulator.feats.FeatTrack;
 import com.dopaminesimulator.feats.Feat;
 import com.dopaminesimulator.feats.Feats;
@@ -315,6 +316,8 @@ public class DopamineSimulatorPlugin extends Plugin
 		revealOverlay = new PackRevealOverlay(client, config, revealSounds, cardArtService,
 			() -> engine == null ? SaveManager.freshState() : engine.getState(), cardScene);
 		overlayManager.add(revealOverlay);
+		CardRenderer.setCopiesLookup(cardId -> engine == null ? 0
+			: engine.getState().getCopies(cardId));
 		cardViewer = new CardViewerOverlay(client, cardArtService, cardScene);
 		overlayManager.add(cardViewer);
 
@@ -1242,6 +1245,15 @@ public class DopamineSimulatorPlugin extends Plugin
 		int scenery = 0;
 		int sceneryZoom = 0;
 		int foil = -1;
+		int pzoom = 0;
+		int pspread = 0;
+		int sdy = 0;
+		int prot = -1;
+		int prot2 = -1;
+		int fzoom = 0;
+		int fspread = 0;
+		int fdy = 0;
+		int layers = -1;
 
 		if (arguments != null)
 		{
@@ -1275,17 +1287,27 @@ public class DopamineSimulatorPlugin extends Plugin
 					case "scenery": scenery = value; break;
 					case "szoom": sceneryZoom = value; break;
 					case "foil": foil = value; break;
+					case "pzoom": pzoom = value; break;
+					case "pspread": pspread = value; break;
+					case "sdy": sdy = value; break;
+					case "prot": prot = value; break;
+					case "prot2": prot2 = value; break;
+					case "fzoom": fzoom = value; break;
+					case "fspread": fspread = value; break;
+					case "fdy": fdy = value; break;
+					case "layers": layers = value; break;
 					default: break;
 				}
 			}
 		}
 
-		revealOverlay.tuneModel(zoom, dx, dy, scenery, sceneryZoom, foil);
+		revealOverlay.tuneModel(zoom, dx, dy, scenery, sceneryZoom, foil, pzoom, pspread, sdy, prot, prot2, fzoom, fspread, fdy, layers);
 		if (art == null)
 		{
 			client.addChatMessage(ChatMessageType.GAMEMESSAGE, "",
 				"::cardlab <" + String.join("|", NpcCardArt.ids())
-					+ "> [zoom=] [dx=] [dy=] [scenery=|-1 off] [szoom=] [foil=0-100]", null);
+					+ "> [zoom=] [dx=] [dy=] [scenery=|-1 off] [szoom=] [sdy=]"
+					+ " [pzoom=] [pspread=] [prot=/prot2=0-2047] [fzoom=] [fspread=] [fdy=] [layers=1scene|2alcove|4pillars|8npc] [foil=0-100]", null);
 			client.addChatMessage(ChatMessageType.GAMEMESSAGE, "",
 				"[cardlab] " + revealOverlay.modelTuning(), null);
 			return;

@@ -49,19 +49,16 @@ public class CardViewerOverlay extends Overlay
 	private static final int CARD_WIDTH = 260;
 	private static final int CARD_HEIGHT = 364;
 	private static final long OPEN_MS = 220L;
-
 	private static final Color DIM = new Color(0, 0, 0, 120);
 	private static final Color HINT = new Color(0xC8, 0xCC, 0xD6);
 
 	private final Client client;
 	private final CardArtService artService;
-
 	private final NpcModelStage modelStage;
-
 	private final CardSceneOverlay scene;
 
-	private static final double MAX_SHEAR_X = 0.10d;
-	private static final double MAX_SHEAR_Y = 0.05d;
+	private static final double MAX_SHEAR_X = 0.032d;
+	private static final double MAX_SHEAR_Y = 0.016d;
 	private static final long PULSE_MS = 420L;
 
 	private Card card;
@@ -70,14 +67,16 @@ public class CardViewerOverlay extends Overlay
 	private boolean gilded;
 	private long openedAt;
 	private long pulsedAt;
-
 	private double pointerX = 0.5d;
 	private double pointerY = 0.5d;
 
 	public void click()
 	{
 		pulsedAt = System.currentTimeMillis();
-		modelStage.restartTurn();
+		if (!modelStage.toggleForm(NpcCardArt.forCard(card)))
+		{
+			modelStage.restartTurn();
+		}
 	}
 
 	private static AffineTransform localTransform(AffineTransform cardTransform)
@@ -95,7 +94,6 @@ public class CardViewerOverlay extends Overlay
 		}
 		int cx = client.getCanvasWidth() / 2;
 		int cy = client.getCanvasHeight() / 2;
-
 		int halfW = (int) (CARD_WIDTH * 0.62d);
 		int halfH = (int) (CARD_HEIGHT * 0.62d);
 		return Math.abs(x - cx) <= halfW && Math.abs(y - cy) <= halfH;
@@ -134,7 +132,6 @@ public class CardViewerOverlay extends Overlay
 	public void close()
 	{
 		card = null;
-		modelStage.hide();
 	}
 
 	@Override
@@ -181,19 +178,26 @@ public class CardViewerOverlay extends Overlay
 
 		NpcCardArt npcArt = NpcCardArt.forCard(showing);
 
+		double lean = NpcCardArt.forCard(showing) == null ? 1d : 0d;
 		AffineTransform cardTransform = new AffineTransform();
 		cardTransform.translate(cx, cy);
-		cardTransform.shear(-(pointerY - 0.5d) * 2d * MAX_SHEAR_X,
-			-(pointerX - 0.5d) * 2d * MAX_SHEAR_Y);
+		cardTransform.shear(-(pointerY - 0.5d) * 2d * MAX_SHEAR_X * lean,
+			-(pointerX - 0.5d) * 2d * MAX_SHEAR_Y * lean);
 		cardTransform.scale(scale, scale);
 
 		Rectangle modelBox = npcArt == null ? null : modelBounds(cardTransform);
 
-		if (modelBox != null)
+		java.awt.Shape artShape = null;
+		if (npcArt != null)
 		{
+			AffineTransform toCard = new AffineTransform(cardTransform);
+			toCard.translate(-CARD_WIDTH / 2d, -CARD_HEIGHT / 2d);
+			artShape = toCard.createTransformedShape(
+				CardRenderer.artShape(CARD_WIDTH, CARD_HEIGHT));
+
 			java.awt.geom.Area undimmed = new java.awt.geom.Area(clipBefore != null
 				? clipBefore : new Rectangle(0, 0, canvasWidth, canvasHeight));
-			undimmed.subtract(new java.awt.geom.Area(modelBox));
+			undimmed.subtract(new java.awt.geom.Area(artShape));
 			graphics.setClip(undimmed);
 		}
 		graphics.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha));
@@ -209,11 +213,11 @@ public class CardViewerOverlay extends Overlay
 
 		if (modelBox != null)
 		{
+			modelStage.setPointer((pointerX - 0.5d) * 2d, (pointerY - 0.5d) * 2d);
 			modelStage.showAt(npcArt, modelBox);
-
 			scene.submit(showing, CardRenderer.artBounds(CARD_WIDTH, CARD_HEIGHT),
-				localTransform(cardTransform));
-			CardRenderer.drawFoilOver(graphics, showing.getRarity(), modelBox, now,
+				localTransform(cardTransform), (pointerX - 0.5d) * 2d, (pointerY - 0.5d) * 2d);
+			CardRenderer.drawFoilOver(graphics, showing, showing.getRarity(), modelBox, now,
 				WishReveal.DEFAULT_MODEL_FOIL);
 			graphics.transform(cardTransform);
 			CardRenderer.drawChrome(graphics, showing, -CARD_WIDTH / 2, -CARD_HEIGHT / 2,

@@ -25,6 +25,7 @@
 package com.dopaminesimulator.ui;
 
 import com.dopaminesimulator.cards.Card;
+import com.dopaminesimulator.cards.NpcCardArt;
 import com.dopaminesimulator.cards.Rarity;
 import java.awt.AlphaComposite;
 import java.awt.BasicStroke;
@@ -33,11 +34,15 @@ import java.awt.Composite;
 import java.awt.Font;
 import java.awt.FontMetrics;
 import java.awt.Graphics2D;
+import java.awt.LinearGradientPaint;
+import java.awt.Shape;
+import java.awt.Stroke;
 import java.awt.MultipleGradientPaint;
 import java.awt.RadialGradientPaint;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Path2D;
 import java.awt.geom.Point2D;
+import java.awt.geom.RoundRectangle2D;
 import java.awt.image.BufferedImage;
 
 public final class WishReveal
@@ -46,7 +51,6 @@ public final class WishReveal
 	public static final long STAR_STEP_MS = 130L;
 
 	private static final long SEAL_MS = 620L;
-
 	private static final long TELL_HIGH_MS = 520L;
 	private static final long TELL_LOW_MS = 220L;
 	private static final long STRIKE_MS = 90L;
@@ -99,6 +103,19 @@ public final class WishReveal
 	private static final int CARD_WIDTH = 150;
 	private static final int CARD_HEIGHT = 210;
 
+	private static final int MODEL_CARD_WIDTH = 260;
+	private static final int MODEL_CARD_HEIGHT = 364;
+
+	private static int cardWidth(Card card)
+	{
+		return NpcCardArt.forCard(card) != null ? MODEL_CARD_WIDTH : CARD_WIDTH;
+	}
+
+	private static int cardHeight(Card card)
+	{
+		return NpcCardArt.forCard(card) != null ? MODEL_CARD_HEIGHT : CARD_HEIGHT;
+	}
+
 	private WishReveal()
 	{
 	}
@@ -127,7 +144,7 @@ public final class WishReveal
 		return draw(g, width, height, card, art, age, alpha, modelArt, DEFAULT_MODEL_FOIL);
 	}
 
-	public static final float DEFAULT_MODEL_FOIL = 0.25f;
+	public static final float DEFAULT_MODEL_FOIL = 0f;
 
 	public static java.awt.Rectangle draw(Graphics2D g, int width, int height, Card card,
 		BufferedImage art, long age, float alpha, boolean modelArt, float foilIntensity)
@@ -154,7 +171,7 @@ public final class WishReveal
 			{
 				drawWash(g, width, height, cx, cy, tierColour, ambient * 0.7d, alpha);
 			}
-			drawSeal(g, cx, cy, told ? tierColour : SEAL_NEUTRAL, told, highTier, age, alpha);
+			drawSeal(g, cx, cy, card, told ? tierColour : SEAL_NEUTRAL, told, highTier, age, alpha);
 			g.setClip(clipBefore);
 			g.setComposite(before);
 			return null;
@@ -192,7 +209,7 @@ public final class WishReveal
 		{
 			g.setClip(clipBefore);
 			CardRenderer.drawArtVignette(g, modelBox);
-			CardRenderer.drawFoilOver(g, rarity, modelBox, System.currentTimeMillis(),
+			CardRenderer.drawFoilOver(g, card, rarity, modelBox, System.currentTimeMillis(),
 				foilIntensity);
 			drawChrome(g, cx, cy, card, scale, age);
 		}
@@ -208,43 +225,111 @@ public final class WishReveal
 		return modelBox;
 	}
 
-	private static void drawSeal(Graphics2D g, int cx, int cy, Color colour, boolean told,
-		boolean highTier, long age, float alpha)
+	private static void drawSeal(Graphics2D g, int cx, int cy, Card card, Color colour,
+		boolean told, boolean highTier, long age, float alpha)
 	{
-		int w = (int) (CARD_WIDTH * 0.94d);
-		int h = (int) (CARD_HEIGHT * 0.94d);
+		int w = (int) (cardWidth(card) * 0.94d);
+		int h = (int) (cardHeight(card) * 0.94d);
 		int x = cx - w / 2;
 		int y = cy - h / 2;
+		int arc = Math.max(10, h / 14);
 
-		g.setColor(withAlpha(new Color(0x0B, 0x09, 0x10), (int) (245 * alpha)));
-		g.fillRoundRect(x, y, w, h, 15, 15);
-		g.setColor(withAlpha(new Color(0x2E, 0x27, 0x40), (int) (255 * alpha)));
+		Shape clipBefore = g.getClip();
+		Stroke strokeBefore = g.getStroke();
+
+		g.setPaint(new LinearGradientPaint(
+			new Point2D.Float(x, y), new Point2D.Float(x, y + h),
+			new float[]{0f, 0.55f, 1f},
+			new Color[]{withAlpha(new Color(0x16, 0x12, 0x1E), (int) (250 * alpha)),
+				withAlpha(new Color(0x0B, 0x09, 0x10), (int) (250 * alpha)),
+				withAlpha(mix(new Color(0x0B, 0x09, 0x10), colour, 0.22d), (int) (250 * alpha))}));
+		g.fillRoundRect(x, y, w, h, arc, arc);
+
+		g.setClip(new RoundRectangle2D.Float(x, y, w, h, arc, arc));
 		g.setStroke(new BasicStroke(1f));
-		g.drawRoundRect(x, y, w - 1, h - 1, 15, 15);
+		g.setColor(withAlpha(colour, (int) (16 * alpha)));
+		int step = Math.max(7, h / 24);
+		for (int offset = -h; offset < w + h; offset += step)
+		{
+			g.drawLine(x + offset, y, x + offset + h, y + h);
+			g.drawLine(x + offset + h, y, x + offset, y + h);
+		}
+		g.setClip(clipBefore);
+
+		int inset = Math.max(5, h / 26);
+		g.setStroke(new BasicStroke(1.4f));
+		g.setColor(withAlpha(mix(colour, Color.WHITE, 0.25d), (int) (150 * alpha)));
+		g.drawRoundRect(x, y, w - 1, h - 1, arc, arc);
+		g.setStroke(new BasicStroke(1f));
+		g.setColor(withAlpha(colour, (int) (70 * alpha)));
+		g.drawRoundRect(x + inset, y + inset, w - inset * 2 - 1, h - inset * 2 - 1,
+			arc / 2, arc / 2);
+
+		int tick = Math.max(4, h / 30);
+		g.setStroke(new BasicStroke(1.6f));
+		g.setColor(withAlpha(mix(colour, Color.WHITE, 0.4d), (int) (190 * alpha)));
+		for (int sx = 0; sx < 2; sx++)
+		{
+			for (int sy = 0; sy < 2; sy++)
+			{
+				int px = x + inset + (sx == 0 ? 0 : w - inset * 2);
+				int py = y + inset + (sy == 0 ? 0 : h - inset * 2);
+				g.drawLine(px, py, px + (sx == 0 ? tick : -tick), py);
+				g.drawLine(px, py, px, py + (sy == 0 ? tick : -tick));
+			}
+		}
 
 		double pulse = told ? 1.06d : 1d + 0.09d * Math.sin(age / 1100d * Math.PI * 2d);
-		int radius = (int) (37 * pulse);
+		int radius = (int) (h * 0.155d * pulse);
 
 		g.setColor(withAlpha(colour, (int) ((told ? 70 : 34) * alpha)));
-		g.fillOval(cx - radius - 10, cy - radius - 10, (radius + 10) * 2, (radius + 10) * 2);
-		g.setStroke(new BasicStroke(2f));
+		int halo = radius + radius / 4;
+		g.fillOval(cx - halo, cy - halo, halo * 2, halo * 2);
+
+		g.setStroke(new BasicStroke(Math.max(1.6f, h / 150f)));
 		g.setColor(withAlpha(colour, (int) (255 * alpha)));
 		g.drawOval(cx - radius, cy - radius, radius * 2, radius * 2);
+		g.setStroke(new BasicStroke(1f));
+		g.setColor(withAlpha(colour, (int) (110 * alpha)));
+		int inner = (int) (radius * 0.78d);
+		g.drawOval(cx - inner, cy - inner, inner * 2, inner * 2);
 
+		for (int i = 0; i < 16; i++)
+		{
+			double angle = Math.PI * 2d * i / 16d;
+			int from = radius + 2;
+			int to = from + (i % 4 == 0 ? tick : tick / 2);
+			g.setColor(withAlpha(colour, (int) ((i % 4 == 0 ? 190 : 90) * alpha)));
+			g.drawLine(cx + (int) (Math.cos(angle) * from), cy + (int) (Math.sin(angle) * from),
+				cx + (int) (Math.cos(angle) * to), cy + (int) (Math.sin(angle) * to));
+		}
+
+		g.setColor(withAlpha(colour, (int) (255 * alpha)));
+		int sigil = (int) (h * 0.072d);
 		if (told && highTier)
 		{
-			fillStar(g, cx, cy, 17);
+			fillStar(g, cx, cy, sigil);
 		}
 		else
 		{
 			Path2D.Double diamond = new Path2D.Double();
-			diamond.moveTo(cx, cy - 15);
-			diamond.lineTo(cx + 13, cy);
-			diamond.lineTo(cx, cy + 15);
-			diamond.lineTo(cx - 13, cy);
+			diamond.moveTo(cx, cy - sigil);
+			diamond.lineTo(cx + sigil * 0.86d, cy);
+			diamond.lineTo(cx, cy + sigil);
+			diamond.lineTo(cx - sigil * 0.86d, cy);
 			diamond.closePath();
 			g.fill(diamond);
 		}
+
+		g.setStroke(strokeBefore);
+	}
+
+	private static Color mix(Color from, Color to, double amount)
+	{
+		return new Color(
+			(int) (from.getRed() + (to.getRed() - from.getRed()) * amount),
+			(int) (from.getGreen() + (to.getGreen() - from.getGreen()) * amount),
+			(int) (from.getBlue() + (to.getBlue() - from.getBlue()) * amount));
 	}
 
 	private static void drawFlash(Graphics2D g, int width, int height, long sinceStrike,
@@ -290,9 +375,9 @@ public final class WishReveal
 	{
 		double bob = 0d;
 
-		java.awt.Rectangle local = CardRenderer.artBounds(CARD_WIDTH, CARD_HEIGHT);
-		double originX = cx - CARD_WIDTH / 2d * scale;
-		double originY = cy + bob - CARD_HEIGHT / 2d * scale;
+		java.awt.Rectangle local = CardRenderer.artBounds(MODEL_CARD_WIDTH, MODEL_CARD_HEIGHT);
+		double originX = cx - MODEL_CARD_WIDTH / 2d * scale;
+		double originY = cy + bob - MODEL_CARD_HEIGHT / 2d * scale;
 		return new java.awt.Rectangle(
 			(int) Math.round(originX + local.x * scale),
 			(int) Math.round(originY + local.y * scale),
@@ -326,7 +411,6 @@ public final class WishReveal
 		{
 			AffineTransform before = g.getTransform();
 			g.translate(cx, cy);
-
 			g.rotate(ring == 0 ? age / 3600d : -age / 2200d);
 
 			int shards = ring == 0 ? RAYS : RAYS / 2;
@@ -449,8 +533,8 @@ public final class WishReveal
 		AffineTransform before = g.getTransform();
 		g.translate(cx, cy + bob);
 		g.scale(scale, scale);
-		CardRenderer.drawChrome(g, card, -CARD_WIDTH / 2, -CARD_HEIGHT / 2,
-			CARD_WIDTH, CARD_HEIGHT, false, false);
+		CardRenderer.drawChrome(g, card, -cardWidth(card) / 2, -cardHeight(card) / 2,
+			cardWidth(card), cardHeight(card), false, false);
 		g.setTransform(before);
 	}
 
@@ -462,7 +546,8 @@ public final class WishReveal
 		AffineTransform before = g.getTransform();
 		g.translate(cx, cy + bob);
 		g.scale(scale, scale);
-		CardRenderer.draw(g, card, -CARD_WIDTH / 2, -CARD_HEIGHT / 2, CARD_WIDTH, CARD_HEIGHT,
+		CardRenderer.draw(g, card, -cardWidth(card) / 2, -cardHeight(card) / 2,
+			cardWidth(card), cardHeight(card),
 			0, true, System.currentTimeMillis(), art, false, false, modelArt);
 		g.setTransform(before);
 	}
@@ -470,7 +555,7 @@ public final class WishReveal
 	private static void drawStars(Graphics2D g, int cx, int cy, Color glow, int stars,
 		long sinceStamp, float alpha, boolean prismatic)
 	{
-		int y = cy + CARD_HEIGHT / 2 + 26;
+		int y = cy + (prismatic ? MODEL_CARD_HEIGHT : CARD_HEIGHT) / 2 + 26;
 		int size = 11;
 		int gap = 7;
 		int total = stars * size * 2 + (stars - 1) * gap;
@@ -485,7 +570,6 @@ public final class WishReveal
 				continue;
 			}
 			double pop = clamp01((sinceStamp - due) / (double) STAR_POP_MS);
-
 			double c1 = 1.70158d;
 			double c3 = c1 + 1d;
 			double back = 1d + c3 * Math.pow(pop - 1d, 3d) + c1 * Math.pow(pop - 1d, 2d);
@@ -535,7 +619,7 @@ public final class WishReveal
 			return;
 		}
 
-		int y = cy + CARD_HEIGHT / 2 + 62;
+		int y = cy + cardHeight(card) / 2 + 62;
 		g.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 9));
 		FontMetrics metrics = g.getFontMetrics();
 		String eyebrow = "FEATURED";

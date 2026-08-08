@@ -27,60 +27,87 @@ package com.dopaminesimulator.cards;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import lombok.Value;
+import lombok.Getter;
 
-@Value
+@Getter
 public class NpcCardArt
 {
-	String displayName;
-
-	int npcId;
-
-	int animationId;
-
-	int zoom;
-
-	int verticalOffset;
-
-	int backdropColour;
-
-	int sceneryModelId;
-
-	int sceneryZoom;
-
-	int accentColour;
-
-	String epithet;
-
-	String roleTag;
-
-	String mechanicTag;
-
 	private static final Map<String, NpcCardArt> BY_ID = new LinkedHashMap<>();
 
 	static
 	{
-		register("characters-verzik-vitur"     , "Verzik Vitur"     ,  8250, 8051, 3100, 33, 0x2A0A12, 30835, 2709, 0xFFC46A, "THE MATRIARCH · VER SINHAZA", "RAID BOSS", "DAWNBRINGER REQUIRED");
-		register("characters-vanescula-drakan" , "Vanescula Drakan" ,  9574, 8701, 1290, 42, 0x1E1030,  6261,  573, 0xC98BFF, "VYREWATCH · DARKMEYER", "VAMPYRE", "MYREQUE ALLY");
-		register("characters-seren"            , "Seren"            ,  8775, 8372, 1555, 33, 0x0E2430,  1747,  963, 0x9BF0FF, "THE GODDESS · PRIFDDINAS", "ELVEN GOD", "CRYSTAL BORN");
-		register("characters-konar-quo-maten"  , "Konar quo Maten"  ,  8623, 8219, 1560, 33, 0x2A1A0E, 32266,  277, 0xFFB067, "SLAYER MASTER · MOUNT KARUULM", "SLAYER", "BRIMSTONE KEYS");
-		register("characters-amascut"          , "Amascut"          , 11696,  808, 1700, 33, 0x2C2210,  6259,  573, 0xFFD98A, "THE DEVOURER · TOMBS", "DESERT GOD", "TOMBS OF AMASCUT");
-		register("characters-ilfeen"           , "Ilfeen"           ,  8676,  808, 1250, 33, 0x102A18,  2168,  215, 0x8CF0C0, "CRYSTAL SINGER · ISAFDAR", "ELF", "CRYSTAL RECHARGE");
-		register("characters-maisa"            , "Maisa"            ,  3876,  808, 1290, 42, 0x2A2416,  1593,  932, 0xFFDFA0, "THE ENVOY · NARDAH", "ALLY", "BENEATH CURSED SANDS");
-
-		register("characters-commander-zilyana", "Commander Zilyana",  2205, 6966, 1855, 33, 0x14203A,  1470,  246, 0x9EC8FF, "SARADOMIN GENERAL · GWD", "RAID BOSS", "ZILYANA HILT");
+		for (CardData.NpcArtEntry entry : CardData.loadNpcArt())
+		{
+			BY_ID.put(entry.id, new NpcCardArt(entry));
+		}
 	}
 
-	private static final boolean SCENERY_ENABLED = false;
+	private final String displayName;
+	private final int npcId;
+	private final int animationId;
 
-	private static void register(String cardId, String displayName, int npcId, int animationId,
-								 int zoom, int vy, int backdrop, int sceneryModelId,
-								 int sceneryZoom, int accent, String epithet, String roleTag,
-								 String mechanicTag)
+	private final int zoom;
+	private final int verticalOffset;
+	private final int backdropColour;
+	private final int sceneryModelId;
+	private final int sceneryZoom;
+	private final int accentColour;
+	private final String epithet;
+	private final String roleTag;
+	private final String mechanicTag;
+	private final int metalDark;
+	private final int metalMid;
+	private final int metalLight;
+	private final int plateColour;
+	private final int glowColour;
+
+	private final int pillarModelId;
+	private final int pillarModelIdRight;
+	private final int pillarZoom;
+	private final int pillarRotation;
+	private final int pillarRotationRight;
+	private final int foreModelId;
+	private final int foreZoom;
+	private final int foreRotation;
+	private final int altNpcId;
+	private final int altAnimationId;
+	private final int altZoom;
+	private final int altVerticalOffset;
+
+	private final boolean bloodDrips;
+
+	private NpcCardArt(CardData.NpcArtEntry entry)
 	{
-		BY_ID.put(cardId, new NpcCardArt(displayName, npcId, animationId, zoom, vy,
-			backdrop, SCENERY_ENABLED ? sceneryModelId : -1, sceneryZoom,
-			accent, epithet, roleTag, mechanicTag));
+		this.displayName = entry.displayName;
+		this.npcId = entry.npcId;
+		this.animationId = entry.animationId;
+		this.zoom = entry.zoom;
+		this.verticalOffset = entry.verticalOffset;
+		this.backdropColour = entry.backdropColour;
+		this.sceneryModelId = entry.sceneryModelId;
+		this.sceneryZoom = entry.sceneryZoom;
+		this.accentColour = entry.accentColour;
+		this.epithet = entry.epithet;
+		this.roleTag = entry.roleTag;
+		this.mechanicTag = entry.mechanicTag;
+		this.metalDark = entry.metalDark;
+		this.metalMid = entry.metalMid;
+		this.metalLight = entry.metalLight;
+		this.plateColour = entry.plateColour;
+		this.glowColour = entry.glowColour;
+		this.pillarModelId = entry.pillarModelId;
+		this.pillarModelIdRight = entry.pillarModelIdRight;
+		this.pillarZoom = entry.pillarZoom;
+		this.pillarRotation = entry.pillarRotation;
+		this.pillarRotationRight = entry.pillarRotationRight;
+		this.foreModelId = entry.foreModelId;
+		this.foreZoom = entry.foreZoom;
+		this.foreRotation = entry.foreRotation;
+		this.altNpcId = entry.altNpcId;
+		this.altAnimationId = entry.altAnimationId;
+		this.altZoom = entry.altZoom;
+		this.altVerticalOffset = entry.altVerticalOffset;
+		this.bloodDrips = entry.bloodDrips;
 	}
 
 	public static NpcCardArt forCard(Card card)

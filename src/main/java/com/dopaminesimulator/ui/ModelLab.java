@@ -51,10 +51,12 @@ public class ModelLab
 		PRESETS.put("maisa", new int[]{3876, 808});
 		PRESETS.put("zilyana", new int[]{2205, 6966});
 		PRESETS.put("nieve", new int[]{6797, 813});
-
 		PRESETS.put("guildmaster", new int[]{8586, 808});
 		PRESETS.put("jane", new int[]{12951, 1796});
 		PRESETS.put("dusk", new int[]{15621, 7797});
+		PRESETS.put("spider", new int[]{8374, 8120});
+		PRESETS.put("spiderstatic", new int[]{8374, -1});
+		PRESETS.put("flight", new int[]{8371, 8112});
 	}
 
 	private final Client client;
@@ -70,7 +72,6 @@ public class ModelLab
 	private int spinStep = 2;
 	private int vy = 0;
 	private int boxSize = 160;
-
 	private int isolatePart = -1;
 	private int spin;
 

@@ -38,36 +38,66 @@ import net.runelite.api.widgets.WidgetType;
 public class NpcModelStage
 {
 	private static final long TURN_MS = 1500L;
-
-	private static final int SWING = 240;
-	private static final double SWING_PERIOD_MS = 5200d;
-
 	private static final long REAPPEAR_GAP_MS = 250L;
-
 	private static final int TILT_X = 66;
+	private static final int PARALLAX_YAW = 50;
 
 	private final Client client;
 
 	private Widget container;
 	private Widget scenery;
+	private final List<Widget> pillars = new ArrayList<>();
+	private final List<Widget> forePillars = new ArrayList<>();
 
 	private final List<Widget> parts = new ArrayList<>();
 	private int builtFor = -1;
 
 	private long shownSinceMs;
-
 	private long lastShowMs;
 
 	private int zoomOverride;
 	private int offsetX;
 	private int offsetY;
-
 	private int sceneryOverride;
 	private int sceneryZoomOverride;
+	private int pillarZoomOverride;
+	private int pillarSpreadPct = 34;
+	private int pillarRotationOverride = -1;
+	private int pillarRotationRightOverride = -1;
+	private int foreZoomOverride;
+	private int foreSpreadPct = 40;
+	private int foreOffsetY;
+	private int layerMask = 15;
+	private int sceneryOffsetY;
+	private double px;
+	private double py;
+	private boolean altForm;
 
 	public void tune(int zoomOverride, int offsetX, int offsetY, int sceneryOverride,
-					 int sceneryZoomOverride)
+					 int sceneryZoomOverride, int pillarZoomOverride, int pillarSpreadPct,
+					 int sceneryOffsetY, int pillarRotationOverride,
+					 int pillarRotationRightOverride, int foreZoomOverride, int foreSpreadPct,
+					 int foreOffsetY, int layerMask)
 	{
+		if (layerMask >= 0 && layerMask != this.layerMask)
+		{
+			this.layerMask = layerMask;
+			builtFor = -1;
+		}
+		this.foreZoomOverride = foreZoomOverride;
+		this.foreOffsetY = foreOffsetY;
+		if (foreSpreadPct != 0)
+		{
+			this.foreSpreadPct = foreSpreadPct;
+		}
+		this.pillarRotationOverride = pillarRotationOverride;
+		this.pillarRotationRightOverride = pillarRotationRightOverride;
+		this.pillarZoomOverride = pillarZoomOverride;
+		if (pillarSpreadPct != 0)
+		{
+			this.pillarSpreadPct = pillarSpreadPct;
+		}
+		this.sceneryOffsetY = sceneryOffsetY;
 		if (this.sceneryOverride != sceneryOverride)
 		{
 			builtFor = -1;
@@ -84,12 +114,64 @@ public class NpcModelStage
 		shownSinceMs = System.currentTimeMillis();
 	}
 
+	public boolean toggleForm(NpcCardArt art)
+	{
+		if (art == null || art.getAltNpcId() <= 0)
+		{
+			return false;
+		}
+		altForm = !altForm;
+
+		builtFor = -1;
+		shownSinceMs = System.currentTimeMillis();
+		return true;
+	}
+
+	private int npcFor(NpcCardArt art)
+	{
+		return altForm && art.getAltNpcId() > 0 ? art.getAltNpcId() : art.getNpcId();
+	}
+
+	private int zoomFor(NpcCardArt art)
+	{
+		if (zoomOverride != 0)
+		{
+			return zoomOverride;
+		}
+		return altForm && art.getAltZoom() > 0 ? art.getAltZoom() : art.getZoom();
+	}
+
+	private int floorOffsetFor(NpcCardArt art)
+	{
+		return altForm && art.getAltNpcId() > 0 && art.getAltVerticalOffset() > 0
+			? art.getAltVerticalOffset() : art.getVerticalOffset();
+	}
+
+	private int animFor(NpcCardArt art)
+	{
+		return altForm && art.getAltNpcId() > 0 ? art.getAltAnimationId() : art.getAnimationId();
+	}
+
+	public void setPointer(double px, double py)
+	{
+		this.px = px;
+		this.py = py;
+	}
+
 	public String tuning()
 	{
 		return "zoom=" + (zoomOverride == 0 ? "card" : zoomOverride)
 			+ " dx=" + offsetX + " dy=" + offsetY
 			+ " scenery=" + (sceneryOverride == 0 ? "card" : sceneryOverride)
-			+ " szoom=" + (sceneryZoomOverride == 0 ? "card" : sceneryZoomOverride);
+			+ " szoom=" + (sceneryZoomOverride == 0 ? "card" : sceneryZoomOverride)
+			+ " sdy=" + sceneryOffsetY
+			+ " pzoom=" + (pillarZoomOverride == 0 ? "card" : pillarZoomOverride)
+			+ " pspread=" + pillarSpreadPct
+			+ " prot=" + (pillarRotationOverride < 0 ? "card" : pillarRotationOverride)
+			+ " prot2=" + (pillarRotationRightOverride < 0 ? "card" : pillarRotationRightOverride)
+			+ " fzoom=" + (foreZoomOverride == 0 ? "card" : foreZoomOverride)
+			+ " fspread=" + foreSpreadPct + " fdy=" + foreOffsetY
+			+ " layers=" + layerMask;
 	}
 
 	private int sceneryModelFor(NpcCardArt art)
@@ -117,7 +199,7 @@ public class NpcModelStage
 			return;
 		}
 
-		if (builtFor != art.getNpcId() || container == null || parts.isEmpty())
+		if (builtFor != npcFor(art) || container == null)
 		{
 			build(parent, art);
 			if (parts.isEmpty())
@@ -127,7 +209,6 @@ public class NpcModelStage
 		}
 
 		long now = System.currentTimeMillis();
-
 		boolean fresh = lastShowMs == 0L || now - lastShowMs > REAPPEAR_GAP_MS;
 		if (fresh)
 		{
@@ -144,7 +225,7 @@ public class NpcModelStage
 		}
 		else
 		{
-			rotation = SWING * Math.sin((elapsed - TURN_MS) * 2d * Math.PI / SWING_PERIOD_MS);
+			rotation = 0d;
 		}
 		int rotationZ = (((int) Math.round(rotation)) % 2048 + 2048) % 2048;
 
@@ -161,41 +242,101 @@ public class NpcModelStage
 
 		int modelX = (box.width - size) / 2 + offsetX;
 		int modelY = (box.height - size) / 2 + offsetY;
+		int nearX = (int) (-px * box.width * 0.10d);
+		int nearY = 0;
+		int nearYaw = (int) (-px * PARALLAX_YAW);
+		int baseY = box.height * art.getVerticalOffset() / 100;
+		int charY = box.height * floorOffsetFor(art) / 100;
 
 		if (scenery != null)
 		{
 			scenery.setHidden(false);
 			scenery.setOriginalX(modelX);
-			scenery.setOriginalY(modelY);
+			scenery.setOriginalY(modelY + baseY + sceneryOffsetY);
 			scenery.setOriginalWidth(size);
 			scenery.setOriginalHeight(size);
+			scenery.setRotationY(0);
 			int sceneryZoom = sceneryZoomOverride != 0 ? sceneryZoomOverride
 				: art.getSceneryZoom() > 0 ? art.getSceneryZoom() : art.getZoom();
 			scenery.setModelZoom(sceneryZoom);
 			scenery.setRotationX(TILT_X);
-			scenery.setRotationZ(rotationZ);
+			scenery.setRotationZ(0);
 			scenery.revalidate();
+		}
+
+		for (int i = 0; i < pillars.size(); i++)
+		{
+			Widget pillar = pillars.get(i);
+			int side = i == 0 ? -1 : 1;
+			pillar.setHidden(false);
+			pillar.setOriginalX(modelX + side * (int) (box.width * pillarSpreadPct / 100d));
+			pillar.setOriginalY(modelY + baseY);
+			pillar.setOriginalWidth(size);
+			pillar.setOriginalHeight(size);
+			pillar.setModelZoom(pillarZoomOverride != 0 ? pillarZoomOverride
+				: art.getPillarZoom() > 0 ? art.getPillarZoom() : art.getZoom());
+			pillar.setRotationX(TILT_X);
+			int baseRot;
+			if (i == 1)
+			{
+				baseRot = pillarRotationRightOverride >= 0 ? pillarRotationRightOverride
+					: art.getPillarRotationRight();
+			}
+			else
+			{
+				baseRot = pillarRotationOverride >= 0 ? pillarRotationOverride
+					: art.getPillarRotation();
+			}
+			pillar.setRotationZ(baseRot);
+			pillar.setAnimationId(-1);
+			pillar.setHidden(true);
+			pillar.revalidate();
+		}
+
+		for (int i = 0; i < forePillars.size(); i++)
+		{
+			Widget fore = forePillars.get(i);
+			int side = i == 0 ? -1 : 1;
+			fore.setHidden(false);
+			fore.setOriginalX(modelX + side * (int) (box.width * foreSpreadPct / 100d) + nearX);
+			fore.setOriginalY(modelY + foreOffsetY);
+			fore.setOriginalWidth(size);
+			fore.setOriginalHeight(size);
+			fore.setModelZoom(foreZoomOverride != 0 ? foreZoomOverride
+				: art.getForeZoom() > 0 ? art.getForeZoom() : art.getZoom());
+			fore.setRotationX(TILT_X);
+			fore.setRotationZ((art.getForeRotation() + nearYaw % 2048 + 2048) % 2048);
+			fore.setAnimationId(-1);
+			fore.setHidden(true);
+			fore.revalidate();
 		}
 
 		for (Widget part : parts)
 		{
 			part.setHidden(false);
 			part.setOriginalX(modelX);
-
-			part.setOriginalY(modelY + box.height * art.getVerticalOffset() / 100);
+			part.setOriginalY(modelY + charY);
 			part.setOriginalWidth(size);
 			part.setOriginalHeight(size);
-			part.setModelZoom(zoomOverride == 0 ? art.getZoom() : zoomOverride);
+			part.setModelZoom(zoomFor(art));
 			part.setRotationX(TILT_X);
 			part.setRotationZ(rotationZ);
-			part.setAnimationId(art.getAnimationId());
+			part.setAnimationId(animFor(art));
 			part.revalidate();
 		}
 	}
 
 	public void hide()
 	{
-			hide(scenery);
+		hide(scenery);
+		for (Widget pillar : pillars)
+		{
+			hide(pillar);
+		}
+		for (Widget fore : forePillars)
+		{
+			hide(fore);
+		}
 		for (Widget part : parts)
 		{
 			hide(part);
@@ -214,8 +355,11 @@ public class NpcModelStage
 	public void dispose()
 	{
 		parts.clear();
+		pillars.clear();
+		forePillars.clear();
 		scenery = null;
 		builtFor = -1;
+		lastShowMs = 0L;
 		if (container != null)
 		{
 			container.deleteAllChildren();
@@ -227,14 +371,19 @@ public class NpcModelStage
 
 	private void build(Widget parent, NpcCardArt art)
 	{
-		dispose();
-
-		NPCComposition npc = client.getNpcDefinition(art.getNpcId());
-		if (npc == null)
+		parts.clear();
+		pillars.clear();
+		forePillars.clear();
+		scenery = null;
+		builtFor = -1;
+		if (container != null)
 		{
-			return;
+			container.deleteAllChildren();
+			container.setHidden(true);
+			container.revalidate();
 		}
-		int[] models = npc.getModels();
+
+		int[] models = modelsFor(npcFor(art));
 		if (models == null || models.length == 0)
 		{
 			return;
@@ -243,24 +392,64 @@ public class NpcModelStage
 		container = parent.createChild(-1, WidgetType.LAYER);
 		container.setHidden(false);
 
-		int sceneryModel = sceneryModelFor(art);
+		int sceneryModel = (layerMask & 1) == 0 ? -1 : sceneryModelFor(art);
 		if (sceneryModel > 0)
 		{
 			scenery = container.createChild(-1, WidgetType.MODEL);
 			scenery.setModelType(WidgetModelType.MODEL);
 			scenery.setModelId(sceneryModel);
 			scenery.setRotationY(0);
+			scenery.setAnimationId(-1);
+			scenery.setHidden(true);
 		}
 
-		for (int model : models)
+		if ((layerMask & 2) != 0 && art.getPillarModelId() > 0)
+		{
+			for (int i = 0; i < 2; i++)
+			{
+				int model = i == 1 && art.getPillarModelIdRight() > 0
+					? art.getPillarModelIdRight() : art.getPillarModelId();
+				Widget pillar = container.createChild(-1, WidgetType.MODEL);
+				pillar.setModelType(WidgetModelType.MODEL);
+				pillar.setModelId(model);
+				pillar.setRotationY(0);
+				pillar.setAnimationId(-1);
+				pillar.setHidden(true);
+				pillars.add(pillar);
+			}
+		}
+
+		for (int model : (layerMask & 8) == 0 ? new int[0] : models)
 		{
 			Widget part = container.createChild(-1, WidgetType.MODEL);
 			part.setModelType(WidgetModelType.MODEL);
 			part.setModelId(model);
 			part.setRotationY(0);
+			part.setAnimationId(-1);
+			part.setHidden(true);
 			parts.add(part);
 		}
-		builtFor = art.getNpcId();
+
+		if ((layerMask & 4) != 0 && art.getForeModelId() > 0)
+		{
+			for (int i = 0; i < 2; i++)
+			{
+				Widget fore = container.createChild(-1, WidgetType.MODEL);
+				fore.setModelType(WidgetModelType.MODEL);
+				fore.setModelId(art.getForeModelId());
+				fore.setRotationY(0);
+				fore.setAnimationId(-1);
+				fore.setHidden(true);
+				forePillars.add(fore);
+			}
+		}
+		builtFor = npcFor(art);
+	}
+
+	private int[] modelsFor(int npcId)
+	{
+		NPCComposition npc = client.getNpcDefinition(npcId);
+		return npc == null ? null : npc.getModels();
 	}
 
 	private Widget topLevel()
