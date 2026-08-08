@@ -28698,6 +28698,15 @@
     "itemIdName": "TRAWLER_REWARD_HAT"
   },
   {
+    "id": "minigame_rewards-angler-top",
+    "name": "Angler top",
+    "set": "MINIGAME_REWARDS",
+    "rarity": "RARE",
+    "itemId": 13259,
+    "spriteId": -1,
+    "itemIdName": "TRAWLER_REWARD_TOP"
+  },
+  {
     "id": "minigame_rewards-angler-waders",
     "name": "Angler waders",
     "set": "MINIGAME_REWARDS",
