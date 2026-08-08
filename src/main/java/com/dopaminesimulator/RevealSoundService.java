@@ -52,6 +52,22 @@ public class RevealSoundService
 		play(320d, 70, 0.20d, 26d);
 	}
 
+	public void strike(boolean highTier)
+	{
+		play(highTier ? 62d : 82d, highTier ? 420 : 260, 0.34d, 9d);
+	}
+
+	public void starStamped(int index, int total)
+	{
+		double frequency = 523.25d * Math.pow(2d, index * 2d / 12d);
+		boolean last = index == total - 1;
+		if (last)
+		{
+			frequency *= 1.5d;
+		}
+		play(frequency, last ? 520 : 240, last ? 0.30d : 0.22d, last ? 6d : 16d);
+	}
+
 	public void cardRevealed(Rarity rarity)
 	{
 		double frequency;

@@ -251,7 +251,6 @@ public class DopamineSimulatorPanel extends PluginPanel
 			@Override
 			public void setBorder(Border border)
 			{
-
 			}
 
 			@Override
@@ -265,7 +264,6 @@ public class DopamineSimulatorPanel extends PluginPanel
 				g.fillRoundRect(0, 0, w, h, 5, 5);
 				if (isSelected())
 				{
-
 					g.setColor(Skin.GOLD);
 					g.fillRect(2, h - 2, w - 4, 2);
 				}
@@ -480,7 +478,6 @@ public class DopamineSimulatorPanel extends PluginPanel
 		GnomeFood plated = clicks.getPlated(now);
 		if (plated != null)
 		{
-			// A trap gets the red warning instead, from dangerLabel.
 			return plated.isTrap()
 				? null : "EAT " + String.format("%.0fs", clicks.plateSecondsRemaining(now));
 		}
@@ -655,7 +652,6 @@ public class DopamineSimulatorPanel extends PluginPanel
 		BufferedImage art = plugin.getCardArtService().get(featured);
 		if (art == null)
 		{
-
 			plugin.getCardArtService().onLoaded(featured,
 				() -> SwingUtilities.invokeLater(this::refresh));
 		}
@@ -1012,7 +1008,6 @@ public class DopamineSimulatorPanel extends PluginPanel
 		StringBuilder text = new StringBuilder();
 		if (state.getDust() > 0)
 		{
-
 			text.append("  •  ").append(BigNumbers.format(state.getDust()))
 				.append(" dust");
 		}
@@ -1136,7 +1131,7 @@ public class DopamineSimulatorPanel extends PluginPanel
 		}
 		buildCardGrid(state, cards, columns, cardWidth);
 	}
-    
+
 	private void buildAllSets(DopamineState state)
 	{
 		List<Card> cards = visibleCards();
@@ -1146,7 +1141,7 @@ public class DopamineSimulatorPanel extends PluginPanel
 			cardSearch.isEmpty()
 				? state.getUniqueCardsOwned() + "/" + CardCatalogue.size() + " cards"
 				: cards.size() + " matching"));
-		// The picker no longer names the set packs draw from, so say it out loud.
+
 		cardsContent.add(hint("Curated packs and banner pulls still draw from "
 			+ selectedSet.getDisplayName() + "."));
 		cardsContent.add(Box.createVerticalStrut(6));
@@ -1428,10 +1423,9 @@ public class DopamineSimulatorPanel extends PluginPanel
 		CardComponent big = new CardComponent(card, stars, owned, 72, plugin.getCardArtService(),
 			state.isShiny(card.getId()), state.isGilded(card.getId()));
 		big.playIntro();
-		big.setOnClick(c -> {
-			selectedCard = null;
-			rebuild();
-		});
+
+		big.setOnClick(plugin::openCardViewer);
+		big.setToolTipText("Click to view in-game");
 		detail.add(big, BorderLayout.WEST);
 		JPanel text = new JPanel();
 		text.setLayout(new BoxLayout(text, BoxLayout.Y_AXIS));
@@ -1448,8 +1442,6 @@ public class DopamineSimulatorPanel extends PluginPanel
 		meta.setAlignmentX(Component.LEFT_ALIGNMENT);
 		text.add(meta);
 
-		// Without this the panel sends people to buy Curated packs for cards that
-		// packs cannot contain.
 		CardOrigin origin = CardOrigins.of(card);
 		if (origin.isExclusive())
 		{
@@ -1600,7 +1592,6 @@ public class DopamineSimulatorPanel extends PluginPanel
 		cascadeTimer = new Timer(CASCADE_INTERVAL_MS, null);
 		cascadeTimer.addActionListener(e ->
 		{
-
 			RewardQueue queue = plugin.getRewards();
 			Reward reward = queue == null ? null : queue.claim();
 			if (reward == null)
@@ -1713,8 +1704,6 @@ public class DopamineSimulatorPanel extends PluginPanel
 		int free = state.getFreeInsight();
 		boolean maxed = Prestige.isMaxed(insight);
 
-		// The count of what is left to spend, not of what the tree costs. A held
-		// budget nobody has touched used to read as having bought the lot.
 		if (free > 0)
 		{
 			block.add(sectionLabel("Insight", free + " insight left"));
@@ -1749,8 +1738,6 @@ public class DopamineSimulatorPanel extends PluginPanel
 			return block;
 		}
 
-		// Offered whenever a run qualifies, even when it adds no insight. Resetting
-		// is the only rethink there is, so it has to stay reachable to be one.
 		String why;
 		if (gain > 0)
 		{
@@ -2013,7 +2000,6 @@ public class DopamineSimulatorPanel extends PluginPanel
 		surgeTimer.stop();
 	}
 
-	// A running Swing timer keeps this whole panel alive after shutDown.
 	public void dispose()
 	{
 		surgeTimer.stop();

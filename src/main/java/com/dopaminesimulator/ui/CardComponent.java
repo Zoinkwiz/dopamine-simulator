@@ -25,6 +25,7 @@
 package com.dopaminesimulator.ui;
 
 import com.dopaminesimulator.cards.Card;
+import com.dopaminesimulator.cards.NpcCardArt;
 import com.dopaminesimulator.cards.Rarity;
 import java.awt.AlphaComposite;
 import java.awt.Color;
@@ -214,28 +215,9 @@ public class CardComponent extends JComponent
 
 	private void drawSpecular(Graphics2D g, int x, int y, int width, int height)
 	{
-		Rarity rarity = card.getRarity();
-		int peak = rarity.ordinal() >= Rarity.EPIC.ordinal() ? 90
-			: rarity.ordinal() >= Rarity.RARE.ordinal() ? 60 : 42;
-		Color tint = rarity.ordinal() >= Rarity.EPIC.ordinal()
-			? rarity.getColour()
-			: Color.WHITE;
-		java.awt.Shape clip = g.getClip();
-		int radius = Math.max(3, height / 14);
-		g.setClip(new RoundRectangle2D.Float(x, y, width, height, radius, radius));
-		float glintX = (float) (x + pointerX * width);
-		float glintY = (float) (y + pointerY * height);
 		g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1f));
-		g.setPaint(new RadialGradientPaint(
-			new Point2D.Float(glintX, glintY),
-			Math.max(width, height) * 0.8f,
-			new float[]{0f, 1f},
-			new Color[]{
-				new Color(tint.getRed(), tint.getGreen(), tint.getBlue(), peak),
-				new Color(tint.getRed(), tint.getGreen(), tint.getBlue(), 0)},
-			MultipleGradientPaint.CycleMethod.NO_CYCLE));
-		g.fillRect(x, y, width, height);
-		g.setClip(clip);
+		CardRenderer.drawSpecular(g, card, x, y, width, height, pointerX, pointerY,
+			NpcCardArt.forCard(card) != null, System.currentTimeMillis());
 	}
 
 	private static double clamp01(double value)

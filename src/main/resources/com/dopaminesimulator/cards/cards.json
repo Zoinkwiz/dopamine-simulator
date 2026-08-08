@@ -6389,6 +6389,78 @@
     "spriteIdName": "IconBoss25x25.ROYAL_TITANS"
   },
   {
+    "id": "characters-verzik-vitur",
+    "name": "Verzik Vitur",
+    "set": "CHARACTERS",
+    "rarity": "LEGENDARY",
+    "itemId": 22473,
+    "spriteId": -1,
+    "itemIdName": "LIL_ZIK"
+  },
+  {
+    "id": "characters-commander-zilyana",
+    "name": "Commander Zilyana",
+    "set": "CHARACTERS",
+    "rarity": "LEGENDARY",
+    "itemId": 11814,
+    "spriteId": -1,
+    "itemIdName": "SARADOMIN_HILT"
+  },
+  {
+    "id": "characters-seren",
+    "name": "Seren",
+    "set": "CHARACTERS",
+    "rarity": "LEGENDARY",
+    "itemId": 23995,
+    "spriteId": -1,
+    "itemIdName": "BLADE_OF_SAELDOR"
+  },
+  {
+    "id": "characters-konar-quo-maten",
+    "name": "Konar quo Maten",
+    "set": "CHARACTERS",
+    "rarity": "LEGENDARY",
+    "itemId": 23083,
+    "spriteId": -1,
+    "itemIdName": "BRIMSTONE_KEY"
+  },
+  {
+    "id": "characters-amascut",
+    "name": "Amascut",
+    "set": "CHARACTERS",
+    "rarity": "LEGENDARY",
+    "itemId": 30893,
+    "spriteId": -1,
+    "itemIdName": "JEWEL_OF_AMASCUT"
+  },
+  {
+    "id": "characters-vanescula-drakan",
+    "name": "Vanescula Drakan",
+    "set": "CHARACTERS",
+    "rarity": "LEGENDARY",
+    "itemId": 24699,
+    "spriteId": -1,
+    "itemIdName": "BLISTERWOOD_FLAIL"
+  },
+  {
+    "id": "characters-ilfeen",
+    "name": "Ilfeen",
+    "set": "CHARACTERS",
+    "rarity": "LEGENDARY",
+    "itemId": 23962,
+    "spriteId": -1,
+    "itemIdName": "CRYSTAL_SHARD"
+  },
+  {
+    "id": "characters-maisa",
+    "name": "Maisa",
+    "set": "CHARACTERS",
+    "rarity": "LEGENDARY",
+    "itemId": 10581,
+    "spriteId": -1,
+    "itemIdName": "KERIS"
+  },
+  {
     "id": "clue_drops-mole-slippers",
     "name": "Mole slippers",
     "set": "CLUE_DROPS",

@@ -25,6 +25,7 @@
 package com.dopaminesimulator;
 
 import com.dopaminesimulator.cards.Card;
+import com.dopaminesimulator.cards.NpcCardArt;
 import com.dopaminesimulator.cards.Rarity;
 import com.dopaminesimulator.core.DopamineState;
 import com.dopaminesimulator.core.Reward;
@@ -34,6 +35,7 @@ import com.dopaminesimulator.feats.Feat;
 import com.dopaminesimulator.ui.CardArtService;
 import com.dopaminesimulator.ui.CardRenderer;
 import com.dopaminesimulator.ui.FeatBanner;
+import com.dopaminesimulator.ui.NpcModelStage;
 import com.dopaminesimulator.ui.WishReveal;
 import java.awt.AlphaComposite;
 import java.awt.BasicStroke;
@@ -51,6 +53,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.function.Supplier;
+import lombok.Setter;
 import net.runelite.api.Client;
 import net.runelite.client.ui.FontManager;
 import net.runelite.client.ui.overlay.Overlay;
@@ -83,11 +86,6 @@ public class PackRevealOverlay extends Overlay
 	private static final Color ACHIEVEMENT = new Color(0xFF, 0xB3, 0x00);
 	static final long FLIP_MS = 300L;
 
-	/**
-	 * Below this, a flip is not a flip. Half of it is card back and the card is
-	 * squashed edge-on for the rest, so a bulk reveal reads as a stutter of grey
-	 * rectangles rather than cards. Anything this quick is dealt face up instead.
-	 */
 	private static final long FACE_UP_BELOW_MS = 160L;
 	private static final long HOLD_MS = 1300L;
 	private static final long MAJOR_HOLD_MS = 2400L;
@@ -104,6 +102,11 @@ public class PackRevealOverlay extends Overlay
 	private final CardArtService artService;
 	private final Supplier<DopamineState> stateSupplier;
 	private final Deque<RevealCard> cards = new ConcurrentLinkedDeque<>();
+
+	private final NpcModelStage modelStage;
+
+	private final CardSceneOverlay scene;
+	private float modelFoil = WishReveal.DEFAULT_MODEL_FOIL;
 	private long nextAvailableSlot;
 	private static final class RevealCard
 	{
@@ -117,8 +120,6 @@ public class PackRevealOverlay extends Overlay
 		private final long dealMs;
 		private final long flipMs;
 
-		// Derived, not passed in: every caller that wants a fast reveal already says
-		// so by asking for a short flip, and the wish showcase keeps its full one.
 		private final boolean dealtFaceUp;
 
 		private final Card card;
@@ -132,6 +133,9 @@ public class PackRevealOverlay extends Overlay
 		private final int featTier;
 		private boolean dealSoundPlayed;
 		private boolean revealSoundPlayed;
+
+		private boolean strikeSoundPlayed;
+		private int starsSounded;
 		private RevealCard(String title, String detail, Rarity rarity, Color colour,
 						   boolean major, long start, Card card, int stars, boolean shiny, boolean gilded, int quantity, boolean stackable,
 						   boolean feat, boolean wish, int featTier, long holdMs, long dealMs, long flipMs)
@@ -178,19 +182,48 @@ public class PackRevealOverlay extends Overlay
 		}
 	}
 	PackRevealOverlay(Client client, DopamineSimulatorConfig config, RevealSoundService sounds,
-					  CardArtService artService, Supplier<DopamineState> stateSupplier)
+					  CardArtService artService, Supplier<DopamineState> stateSupplier,
+					  CardSceneOverlay scene)
 	{
+		this.scene = scene;
 		this.client = client;
 		this.config = config;
 		this.sounds = sounds;
 		this.artService = artService;
 		this.stateSupplier = stateSupplier;
+		this.modelStage = new NpcModelStage(client);
 		setPosition(OverlayPosition.DYNAMIC);
 		setLayer(OverlayLayer.ABOVE_WIDGETS);
 	}
 
+	public void dispose()
+	{
+		modelStage.dispose();
+	}
+
+	@Setter
+	private Runnable onRevealStart = () -> { };
+
+	private void revealStarting()
+	{
+		onRevealStart.run();
+	}
+
+	public void tuneModel(int zoomOverride, int offsetX, int offsetY, int scenery, int sceneryZoom,
+						  int foilPercent)
+	{
+		modelStage.tune(zoomOverride, offsetX, offsetY, scenery, sceneryZoom);
+		modelFoil = foilPercent < 0 ? WishReveal.DEFAULT_MODEL_FOIL : foilPercent / 100f;
+	}
+
+	public String modelTuning()
+	{
+		return modelStage.tuning() + " foil=" + Math.round(modelFoil * 100f) + "%";
+	}
+
 	public void push(Reward reward)
 	{
+		revealStarting();
 		if (reward == null || !config.showRewardFlashes())
 		{
 			return;
@@ -272,7 +305,6 @@ public class PackRevealOverlay extends Overlay
 			hold, deal, flip));
 	}
 
-	// The queue tightens as it fills: more waiting cards, less time each.
 	static long staggerFor(int pending)
 	{
 		return Math.max(MIN_STAGGER_MS, STAGGER_MS - pending * 25L);
@@ -290,6 +322,7 @@ public class PackRevealOverlay extends Overlay
 
 	public void pushBatch(List<Reward> ordered)
 	{
+		revealStarting();
 		if (ordered.isEmpty() || !config.showRewardFlashes())
 		{
 			return;
@@ -319,6 +352,7 @@ public class PackRevealOverlay extends Overlay
 
 	private void pushWish(Reward reward)
 	{
+		revealStarting();
 		long now = System.currentTimeMillis();
 		cards.removeIf(card -> card.wish);
 
@@ -331,6 +365,41 @@ public class PackRevealOverlay extends Overlay
 			reward.getRarity() == null ? Color.WHITE : reward.getRarity().getColour(),
 			true, now, reward.getCard(), 0, false, false, 1, false, false, true, 0,
 			WishReveal.LIFETIME_MS - DEAL_MS - FLIP_MS - FADE_MS, DEAL_MS, FLIP_MS));
+	}
+
+	public void previewWish(Card card)
+	{
+		revealStarting();
+		long now = System.currentTimeMillis();
+		cards.removeIf(existing -> existing.wish);
+		nextAvailableSlot = now + WishReveal.LIFETIME_MS;
+		cards.addLast(new RevealCard(card.getName(), card.getSet().getDisplayName(),
+			card.getRarity(),
+			card.getRarity() == null ? Color.WHITE : card.getRarity().getColour(),
+			true, now, card, 0, false, false, 1, false, false, true, 0,
+			WishReveal.LIFETIME_MS - DEAL_MS - FLIP_MS - FADE_MS, DEAL_MS, FLIP_MS));
+	}
+
+	private void soundWishBeats(RevealCard card, boolean modelArt)
+	{
+		if (card.card == null || card.rarity == null)
+		{
+			return;
+		}
+		long age = card.age();
+		boolean high = modelArt || card.rarity.ordinal() >= Rarity.EPIC.ordinal();
+		if (!card.strikeSoundPlayed && age >= WishReveal.strikeTime(card.rarity, modelArt))
+		{
+			card.strikeSoundPlayed = true;
+			sounds.strike(high);
+		}
+		int stars = WishReveal.starsFor(card.rarity, modelArt);
+		while (card.starsSounded < stars
+			&& age >= WishReveal.starDue(card.starsSounded, card.rarity, modelArt))
+		{
+			sounds.starStamped(card.starsSounded, stars);
+			card.starsSounded++;
+		}
 	}
 
 	private boolean stackOntoExisting(Reward reward)
@@ -412,8 +481,9 @@ public class PackRevealOverlay extends Overlay
 	@Override
 	public Dimension render(Graphics2D graphics)
 	{
-		// RuneLite sets the font once a layer, not once an overlay.
 		java.awt.Font fontBefore = graphics.getFont();
+
+		modelStage.hide();
 		if (!config.showRewardFlashes())
 		{
 			cards.clear();
@@ -463,9 +533,32 @@ public class PackRevealOverlay extends Overlay
 		{
 			if (card.wish && card.card != null)
 			{
+				NpcCardArt npcArt = NpcCardArt.forCard(card.card);
+
+				java.awt.Shape dimClip = graphics.getClip();
+
+				java.awt.Rectangle pending = npcArt == null ? null
+					: WishReveal.modelBounds(canvasWidth, canvasHeight, card.age());
+				if (pending != null)
+				{
+					java.awt.geom.Area undimmed = new java.awt.geom.Area(dimClip != null
+						? dimClip : new java.awt.Rectangle(0, 0, canvasWidth, canvasHeight));
+					undimmed.subtract(new java.awt.geom.Area(pending));
+					graphics.setClip(undimmed);
+				}
 				drawDim(graphics, visible, canvasWidth, canvasHeight);
-				WishReveal.draw(graphics, canvasWidth, canvasHeight, card.card,
-					artService.get(card.card), card.age(), cardAlpha(card));
+				graphics.setClip(dimClip);
+				soundWishBeats(card, npcArt != null);
+
+				java.awt.Rectangle modelBox = WishReveal.draw(graphics, canvasWidth, canvasHeight,
+					card.card, artService.get(card.card), card.age(), cardAlpha(card),
+					npcArt != null, modelFoil);
+				if (npcArt != null)
+				{
+					modelStage.showAt(npcArt, modelBox);
+
+					scene.submit(card.card, modelBox, null);
+				}
 				graphics.setComposite(originalComposite);
 				graphics.setTransform(originalTransform);
 				graphics.setFont(fontBefore);
@@ -683,10 +776,6 @@ public class PackRevealOverlay extends Overlay
 		boolean faceUp;
 		if (card.dealtFaceUp)
 		{
-			// Already turned over on the way in. The card still flies up into its
-			// slot, so a bulk open reads as a hand of cards going past rather than
-			// a row of backs that turn over after you have stopped looking. flipMs
-			// is left in the lifetime on purpose: it becomes extra legible time.
 			scaleX = 1d;
 			faceUp = true;
 		}
@@ -698,8 +787,6 @@ public class PackRevealOverlay extends Overlay
 			faceUp = flipProgress >= 0.5d;
 		}
 
-		// Face-up cards hold the reveal until they land, so it still lines up with
-		// the card arriving rather than firing while it is off the bottom.
 		if (faceUp && !card.revealSoundPlayed && (!card.dealtFaceUp || dealProgress >= 1d))
 		{
 			card.revealSoundPlayed = true;

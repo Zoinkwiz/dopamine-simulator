@@ -2541,5 +2541,20 @@
       "minigames-fight-caves",
       "minigames-inferno"
     ]
+  },
+  {
+    "name": "Faces of Gielinor",
+    "set": "CHARACTERS",
+    "description": "Every character rendered live on their card.",
+    "members": [
+      "characters-verzik-vitur",
+      "characters-commander-zilyana",
+      "characters-seren",
+      "characters-konar-quo-maten",
+      "characters-amascut",
+      "characters-vanescula-drakan",
+      "characters-ilfeen",
+      "characters-maisa"
+    ]
   }
 ]
