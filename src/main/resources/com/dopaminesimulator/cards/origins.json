@@ -1,0 +1,115 @@
+[
+  {
+    "pool": "CURIOUS",
+    "origin": "GACHA",
+    "members": [
+      "raids_drops-onyx",
+      "raids_drops-dinh-s-bulwark",
+      "raids_drops-twisted-buckler",
+      "raids_drops-justiciar-faceguard",
+      "raids_drops-justiciar-chestguard",
+      "raids_drops-justiciar-legguards",
+      "raids_drops-elidinis-ward",
+      "raids_drops-lightbearer",
+      "raids_drops-breach-of-the-scarab",
+      "raids_drops-eye-of-the-corruptor",
+      "raids_drops-jewel-of-the-sun",
+      "raids_drops-jewel-of-amascut",
+      "raids_drops-xeric-s-guard"
+    ]
+  },
+  {
+    "pool": "STORIED",
+    "origin": "GACHA",
+    "members": [
+      "raids_drops-dragon-claws",
+      "raids_drops-ancestral-hat",
+      "raids_drops-ancestral-robe-top",
+      "raids_drops-ancestral-robe-bottom",
+      "raids_drops-ghrazi-rapier",
+      "raids_drops-sanguinesti-staff-uncharged",
+      "raids_drops-avernic-defender-hilt",
+      "raids_drops-osmumten-s-fang",
+      "raids_drops-masori-mask",
+      "raids_drops-masori-body",
+      "raids_drops-masori-chaps",
+      "raids_drops-dragon-hunter-crossbow",
+      "raids_drops-dexterous-prayer-scroll"
+    ]
+  },
+  {
+    "pool": "MYTHIC",
+    "origin": "GACHA",
+    "members": [
+      "raids_drops-twisted-bow",
+      "raids_drops-scythe-of-vitur-uncharged",
+      "raids_drops-tumeken-s-shadow-uncharged",
+      "raids_drops-elder-maul",
+      "raids_drops-kodai-insignia",
+      "raids_drops-olmlet",
+      "raids_drops-lil-zik",
+      "raids_drops-tumeken-s-guardian"
+    ]
+  },
+  {
+    "pool": "SEASONAL",
+    "origin": "PASS",
+    "members": [
+      "areas-misthalin",
+      "areas-asgarnia",
+      "areas-kandarin",
+      "areas-morytania",
+      "areas-kharidian-desert",
+      "areas-fremennik-province",
+      "areas-karamja",
+      "areas-kebos-lowlands",
+      "areas-tirannwn",
+      "areas-great-kourend",
+      "areas-varlamore",
+      "areas-feldip-hills",
+      "areas-troll-country"
+    ]
+  },
+  {
+    "pool": "MASTERY",
+    "origin": "PRESTIGE",
+    "members": [
+      "skills-attack-rune",
+      "skills-strength-rune",
+      "skills-defence-rune",
+      "skills-hitpoints-rune",
+      "skills-ranged-rune",
+      "skills-magic-rune",
+      "skills-prayer-rune",
+      "skills-slayer-rune",
+      "skills-agility-rune",
+      "skills-thieving-rune",
+      "skills-herblore-rune",
+      "skills-farming-rune",
+      "skills-hunter-rune",
+      "skills-mining-rune",
+      "skills-smithing-rune",
+      "skills-fishing-rune",
+      "skills-cooking-rune",
+      "skills-firemaking-rune",
+      "skills-woodcutting-rune",
+      "skills-crafting-rune",
+      "skills-fletching-rune",
+      "skills-construction-rune",
+      "skills-runecraft-rune",
+      "skills-sailing-rune"
+    ]
+  },
+  {
+    "pool": "ASCENDANT",
+    "origin": "ASCENSION",
+    "members": [
+      "bosses-chambers-of-xeric",
+      "bosses-theatre-of-blood",
+      "bosses-tombs-of-amascut",
+      "minigames-inferno",
+      "bosses-yama",
+      "bosses-royal-titans"
+    ]
+  }
+]
