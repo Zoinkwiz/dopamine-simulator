@@ -179,13 +179,14 @@ public class CardViewerOverlay extends Overlay
 			CARD_WIDTH, CARD_HEIGHT);
 
 		Rectangle artLocal = CardRenderer.artBounds(CARD_WIDTH, CARD_HEIGHT);
+		java.awt.Shape artRounded = CardRenderer.artShape(CARD_WIDTH, CARD_HEIGHT);
 		Rectangle modelBox = npcArt == null ? null
-			: turn.outline(artLocal).getBounds();
+			: turn.outline(artRounded).getBounds();
 
 		java.awt.Shape artShape = null;
 		if (npcArt != null)
 		{
-			artShape = turn.outline(artLocal);
+			artShape = turn.outline(artRounded);
 
 			java.awt.geom.Area undimmed = new java.awt.geom.Area(clipBefore != null
 				? clipBefore : new Rectangle(0, 0, canvasWidth, canvasHeight));

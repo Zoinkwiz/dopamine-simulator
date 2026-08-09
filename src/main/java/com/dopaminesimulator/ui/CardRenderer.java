@@ -163,20 +163,33 @@ public final class CardRenderer
 			return new Point2D.Double(x, y);
 		}
 
-		/** The turned outline of a card-local rectangle. */
-		public Shape outline(java.awt.Rectangle local)
+		/** The turned outline of a card-local shape, corners and all. */
+		public Shape outline(Shape local)
 		{
-			Point2D.Double tl = project(local.x, local.y);
-			Point2D.Double tr = project(local.x + local.width, local.y);
-			Point2D.Double br = project(local.x + local.width, local.y + local.height);
-			Point2D.Double bl = project(local.x, local.y + local.height);
-			Path2D.Double quad = new Path2D.Double();
-			quad.moveTo(tl.x, tl.y);
-			quad.lineTo(tr.x, tr.y);
-			quad.lineTo(br.x, br.y);
-			quad.lineTo(bl.x, bl.y);
-			quad.closePath();
-			return quad;
+			Path2D.Double turned = new Path2D.Double();
+			double[] seg = new double[6];
+			for (java.awt.geom.PathIterator it = local.getPathIterator(null, 0.6d);
+				 !it.isDone(); it.next())
+			{
+				Point2D.Double p;
+				switch (it.currentSegment(seg))
+				{
+					case java.awt.geom.PathIterator.SEG_MOVETO:
+						p = project(seg[0], seg[1]);
+						turned.moveTo(p.x, p.y);
+						break;
+					case java.awt.geom.PathIterator.SEG_LINETO:
+						p = project(seg[0], seg[1]);
+						turned.lineTo(p.x, p.y);
+						break;
+					case java.awt.geom.PathIterator.SEG_CLOSE:
+						turned.closePath();
+						break;
+					default:
+						break;
+				}
+			}
+			return turned;
 		}
 	}
 
@@ -587,7 +600,7 @@ public final class CardRenderer
 
 		Color[] body = rich ? bodyTint(style) : new Color[]{BODY_TOP, BODY_BOTTOM};
 		drawBody(g, innerX, innerY, innerW, innerH, innerRadius,
-			modelArt ? new java.awt.Rectangle(artX, artY, artW, artH) : null, body[0], body[1]);
+			modelArt ? artShape(width, height) : null, body[0], body[1]);
 		drawArtWindow(g, card, style, artX, artY, artW, artH, modelArt ? null : art, modelArt,
 			animMs);
 		if (!compact)
@@ -765,7 +778,7 @@ public final class CardRenderer
 		g.fillOval(width - pad - size, height - pad - size, size, size);
 	}
 	private static void drawBody(Graphics2D g, int x, int y, int width, int height, int radius,
-								 java.awt.Rectangle hole, Color top, Color bottom)
+								 Shape hole, Color top, Color bottom)
 	{
 		Shape body = new RoundRectangle2D.Float(x, y, width, height, radius, radius);
 		if (hole != null)
