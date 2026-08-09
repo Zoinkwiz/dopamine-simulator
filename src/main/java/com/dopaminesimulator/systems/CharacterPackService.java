@@ -75,7 +75,7 @@ public class CharacterPackService
 
 		for (int i = 0; i < THEMED_CARDS; i++)
 		{
-			Card themed = randomFrom(deed);
+			Card themed = randomFrom(state, deed);
 			if (themed != null)
 			{
 				pulled.add(themed);
@@ -90,13 +90,22 @@ public class CharacterPackService
 		return Math.max(0, deed.getPity() - state.getCharacterPity(deed.getCardId()));
 	}
 
-	private Card randomFrom(CharacterDeed deed)
+	private Card randomFrom(DopamineState state, CharacterDeed deed)
 	{
-		List<Card> pool = CardCatalogue.bySet(deed.getThemedSet());
-		if (pool == null || pool.isEmpty())
+		List<Card> pool = deed.pool();
+		if (pool.isEmpty())
 		{
 			return null;
 		}
-		return pool.get(random.nextInt(pool.size()));
+		List<Card> missing = new ArrayList<>(pool.size());
+		for (Card card : pool)
+		{
+			if (state.getCopies(card.getId()) == 0)
+			{
+				missing.add(card);
+			}
+		}
+		List<Card> from = missing.isEmpty() ? pool : missing;
+		return from.get(random.nextInt(from.size()));
 	}
 }

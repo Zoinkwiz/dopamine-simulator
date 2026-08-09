@@ -24,41 +24,93 @@
  */
 package com.dopaminesimulator.cards;
 
+import java.util.ArrayList;
+import java.util.List;
 import lombok.Getter;
 
 @Getter
 public enum CharacterDeed
 {
 	VERZIK("characters-verzik-vitur", "Theatre of Blood: Hard Mode",
-		0.014d, 100, CardSet.RAIDS_DROPS),
+		0.014d, 100, "Theatre of Blood"),
 	VANESCULA("characters-vanescula-drakan", "Theatre of Blood",
-		0.012d, 110, CardSet.RAIDS_DROPS),
+		0.012d, 110, "Theatre of Blood"),
 	AMASCUT("characters-amascut", "Tombs of Amascut, raid level 300+",
-		0.012d, 110, CardSet.RAIDS_DROPS),
+		0.012d, 110, "Tombs of Amascut"),
 	MAISA("characters-maisa", "Tombs of Amascut, below raid level 300",
-		0.010d, 130, CardSet.RAIDS_DROPS),
+		0.010d, 130, "Tombs of Amascut"),
 	SEREN("characters-seren", "The Corrupted Gauntlet",
-		0.008d, 160, CardSet.BOSSES),
+		0.008d, 160, null, Pools.GAUNTLET),
 	ILFEEN("characters-ilfeen", "The Gauntlet",
-		0.008d, 160, CardSet.BOSSES),
+		0.008d, 160, null, Pools.GAUNTLET),
 	KONAR("characters-konar-quo-maten", "A slayer task from Konar",
-		0.010d, 130, CardSet.SLAYER),
+		0.010d, 130, "Slayer Boss Drops"),
 	ZILYANA("characters-commander-zilyana", "Killing Commander Zilyana",
-		0.0015d, 900, CardSet.BOSSES);
+		0.0015d, 900, "God Wars Uniques");
+
+	private static final class Pools
+	{
+		private static final String[] GAUNTLET = {
+			"bosses-the-gauntlet",
+			"bosses-the-corrupted-gauntlet",
+			"boss_drops-gauntlet-cape",
+			"boss_drops-youngllef",
+			"boss_drops-crystal-armour-seed",
+			"boss_drops-crystal-weapon-seed",
+			"boss_drops-enhanced-crystal-weapon-seed",
+			"attack-blade-of-saeldor",
+		};
+	}
 
 	private final String cardId;
 	private final String deed;
 	private final double chance;
 	private final int pity;
-	private final CardSet themedSet;
+	private final String collection;
+	private final String[] extraCards;
 
-	CharacterDeed(String cardId, String deed, double chance, int pity, CardSet themedSet)
+	CharacterDeed(String cardId, String deed, double chance, int pity, String collection)
+	{
+		this(cardId, deed, chance, pity, collection, null);
+	}
+
+	CharacterDeed(String cardId, String deed, double chance, int pity, String collection,
+				  String[] extraCards)
 	{
 		this.cardId = cardId;
 		this.deed = deed;
 		this.chance = chance;
 		this.pity = pity;
-		this.themedSet = themedSet;
+		this.collection = collection;
+		this.extraCards = extraCards;
+	}
+
+	public List<Card> pool()
+	{
+		List<Card> pool = new ArrayList<>();
+		if (collection != null)
+		{
+			for (CardCollection candidate : CardCollection.all())
+			{
+				if (candidate.getName().equals(collection))
+				{
+					pool.addAll(candidate.getCards());
+					break;
+				}
+			}
+		}
+		if (extraCards != null)
+		{
+			for (String id : extraCards)
+			{
+				Card card = CardCatalogue.byId(id);
+				if (card != null)
+				{
+					pool.add(card);
+				}
+			}
+		}
+		return pool;
 	}
 
 	public NpcCardArt getArt()
