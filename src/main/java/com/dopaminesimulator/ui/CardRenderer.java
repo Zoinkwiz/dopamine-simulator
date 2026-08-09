@@ -26,6 +26,7 @@ package com.dopaminesimulator.ui;
 
 import com.dopaminesimulator.cards.Card;
 import com.dopaminesimulator.cards.CardSet;
+import com.dopaminesimulator.cards.NpcCardArt;
 import com.dopaminesimulator.cards.Rarity;
 import java.awt.BasicStroke;
 import java.awt.Color;
@@ -95,6 +96,761 @@ public final class CardRenderer
 							int stars, boolean owned, long animMs, BufferedImage art, boolean shiny,
 							boolean gilded)
 	{
+		draw(graphics, card, x, y, width, height, stars, owned, animMs, art, shiny, gilded, false);
+	}
+
+	public static java.awt.Rectangle artBounds(int width, int height)
+	{
+		int border = borderWidth(height);
+		int innerW = width - border * 2;
+		int innerH = height - border * 2;
+		int inset = Math.max(1, height / 40);
+		int artX = border + inset;
+		int artY = border + inset;
+		return new java.awt.Rectangle(artX, artY, innerW - inset * 2,
+			(int) (innerH * (isCompact(height) ? 0.74d : 0.65d)));
+	}
+
+	public static Shape artShape(int width, int height)
+	{
+		java.awt.Rectangle b = artBounds(width, height);
+		int radius = Math.max(2, b.height / 8);
+		return new RoundRectangle2D.Float(b.x, b.y, b.width, b.height, radius, radius);
+	}
+
+	public static final int SUPERSAMPLE = 2;
+	public static final int FACE_PAD = 60;
+
+	public static final class Turn
+	{
+		private static final double EYE = 2.6d;
+		private static final int STRIPS = 48;
+
+		private final double cx;
+		private final double cy;
+		private final double scale;
+		private final double yaw;
+		private final double pitch;
+		private final int w;
+		private final int h;
+
+		public Turn(double cx, double cy, double scale, double yaw, double pitch, int w, int h)
+		{
+			this.cx = cx;
+			this.cy = cy;
+			this.scale = scale;
+			this.yaw = yaw;
+			this.pitch = pitch;
+			this.w = w;
+			this.h = h;
+		}
+
+		public Point2D.Double project(double lx, double ly)
+		{
+			double u = lx - w / 2d;
+			double v = ly - h / 2d;
+			double eye = w * EYE;
+			double depth = eye / (eye + u * Math.sin(yaw));
+			double x = cx + u * Math.cos(yaw) * depth * scale;
+			double y = cy + v * depth * scale * Math.cos(pitch)
+				+ Math.sin(pitch) * h * 0.5d * depth * scale * 0.12d;
+			return new Point2D.Double(x, y);
+		}
+
+		public Shape outline(Shape local)
+		{
+			Path2D.Double turned = new Path2D.Double();
+			double[] seg = new double[6];
+			for (java.awt.geom.PathIterator it = local.getPathIterator(null, 0.6d);
+				 !it.isDone(); it.next())
+			{
+				Point2D.Double p;
+				switch (it.currentSegment(seg))
+				{
+					case java.awt.geom.PathIterator.SEG_MOVETO:
+						p = project(seg[0], seg[1]);
+						turned.moveTo(p.x, p.y);
+						break;
+					case java.awt.geom.PathIterator.SEG_LINETO:
+						p = project(seg[0], seg[1]);
+						turned.lineTo(p.x, p.y);
+						break;
+					case java.awt.geom.PathIterator.SEG_CLOSE:
+						turned.closePath();
+						break;
+					default:
+						break;
+				}
+			}
+			return turned;
+		}
+	}
+
+	public static void drawTurned(Graphics2D graphics, BufferedImage face, Turn turn)
+	{
+		drawTurned(graphics, face, turn, 0);
+	}
+
+	public static void drawTurned(Graphics2D graphics, BufferedImage face, Turn turn, int pad)
+	{
+		int sw = face.getWidth();
+		int sh = face.getHeight();
+		Object hintBefore = graphics.getRenderingHint(RenderingHints.KEY_INTERPOLATION);
+		graphics.setRenderingHint(RenderingHints.KEY_INTERPOLATION,
+			RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+
+		double[] bx = new double[Turn.STRIPS + 1];
+		double[] top = new double[Turn.STRIPS + 1];
+		double[] bottom = new double[Turn.STRIPS + 1];
+		for (int i = 0; i <= Turn.STRIPS; i++)
+		{
+			double lx = -pad + (turn.w + pad * 2d) * i / Turn.STRIPS;
+			bx[i] = turn.project(lx, -pad).x;
+			top[i] = turn.project(lx, -pad).y;
+			bottom[i] = turn.project(lx, turn.h + pad).y;
+		}
+
+		for (int i = 0; i < Turn.STRIPS; i++)
+		{
+			int sx0 = sw * i / Turn.STRIPS;
+			int sx1 = sw * (i + 1) / Turn.STRIPS;
+			double x0 = bx[i];
+			double x1 = bx[i + 1];
+			double y0 = (top[i] + top[i + 1]) / 2d;
+			double y1 = (bottom[i] + bottom[i + 1]) / 2d;
+			if (sx1 <= sx0 || Math.abs(x1 - x0) < 0.01d || y1 - y0 < 0.01d)
+			{
+				continue;
+			}
+			BufferedImage strip = face.getSubimage(sx0, 0, sx1 - sx0, sh);
+			java.awt.geom.AffineTransform place = new java.awt.geom.AffineTransform();
+			place.translate(x0, y0);
+			place.scale((x1 - x0) / (sx1 - sx0), (y1 - y0) / sh);
+			graphics.drawImage(strip, place, null);
+		}
+
+		if (hintBefore != null)
+		{
+			graphics.setRenderingHint(RenderingHints.KEY_INTERPOLATION, hintBefore);
+		}
+	}
+
+	public enum BackMotif
+	{
+		COOKIE,
+		EYES,
+		BAT,
+		CRYSTAL,
+		SEREN,
+		PEAK,
+		SCARAB,
+		ANKH,
+		LEAF,
+		CRESCENT,
+		STAR;
+
+		public static BackMotif of(String name)
+		{
+			if (name != null)
+			{
+				for (BackMotif motif : values())
+				{
+					if (motif.name().equalsIgnoreCase(name))
+					{
+						return motif;
+					}
+				}
+			}
+			return COOKIE;
+		}
+	}
+
+	public static void drawPackArt(Graphics2D graphics, int x, int y, int width, int height,
+								   Style style, BackMotif motif, long animMs)
+	{
+		if (width < 10 || height < 12)
+		{
+			return;
+		}
+		Graphics2D g = (Graphics2D) graphics.create();
+		g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+		g.translate(x, y);
+
+		int tear = Math.max(3, height / 9);
+		int arc = Math.max(4, width / 6);
+		Shape body = new RoundRectangle2D.Float(0, tear, width, height - tear, arc, arc);
+
+		g.setPaint(new LinearGradientPaint(
+			new Point2D.Float(0, tear), new Point2D.Float(width, height),
+			new float[]{0f, 0.35f, 0.6f, 1f},
+			new Color[]{style.metalDark, style.metalMid, style.metalLight, style.metalDark}));
+		g.fill(body);
+
+		Shape clipBefore = g.getClip();
+		g.clip(body);
+		double sweep = (animMs % 3400L) / 3400d;
+		int gx = (int) (-width + sweep * width * 2.4d);
+		g.setPaint(new LinearGradientPaint(
+			new Point2D.Float(gx, 0), new Point2D.Float(gx + width * 0.42f, height),
+			new float[]{0f, 0.5f, 1f},
+			new Color[]{withAlpha(Color.WHITE, 0), withAlpha(Color.WHITE, 70),
+				withAlpha(Color.WHITE, 0)}));
+		g.fillRect(0, 0, width, height);
+		g.setClip(clipBefore);
+
+		g.setPaint(new LinearGradientPaint(
+			new Point2D.Float(0, 0), new Point2D.Float(0, tear),
+			new float[]{0f, 1f},
+			new Color[]{lighten(style.metalMid, 0.4d), darken(style.metalDark, 0.2d)}));
+		Path2D.Double strip = new Path2D.Double();
+		strip.moveTo(0, tear);
+		strip.lineTo(0, 2);
+		int teeth = Math.max(4, width / 7);
+		for (int i = 0; i <= teeth; i++)
+		{
+			double tx = width * i / (double) teeth;
+			strip.lineTo(tx, i % 2 == 0 ? 0 : 3);
+		}
+		strip.lineTo(width, tear);
+		strip.closePath();
+		g.fill(strip);
+		g.setColor(withAlpha(darken(style.metalDark, 0.4d), 200));
+		g.setStroke(new BasicStroke(1f));
+		g.drawLine(0, tear, width, tear);
+
+		int radius = (int) (Math.min(width, height - tear) * 0.30d);
+		drawMotif(g, motif, width / 2, tear + (height - tear) / 2, radius, style.glow, animMs,
+			1f, false);
+
+		g.setColor(withAlpha(darken(style.metalDark, 0.35d), 220));
+		g.setStroke(new BasicStroke(Math.max(1f, height / 40f)));
+		g.draw(body);
+		g.dispose();
+	}
+
+	public static void drawCardBack(Graphics2D graphics, int x, int y, int width, int height,
+									Color base, Color trim, Color motifColour, BackMotif motif,
+									long animMs, float alpha, boolean lit)
+	{
+		if (width < 8 || height < 8)
+		{
+			return;
+		}
+		Graphics2D g = (Graphics2D) graphics.create();
+		g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+		g.translate(x, y);
+		int arc = Math.max(8, height / 14);
+		int a = (int) (255 * alpha);
+
+		g.setPaint(new LinearGradientPaint(
+			new Point2D.Float(0, 0), new Point2D.Float(0, height),
+			new float[]{0f, 0.55f, 1f},
+			new Color[]{withAlpha(lighten(base, 0.35d), a), withAlpha(base, a),
+				withAlpha(darken(base, 0.45d), a)}));
+		g.fillRoundRect(0, 0, width, height, arc, arc);
+
+		Shape clipBefore = g.getClip();
+		g.setClip(new RoundRectangle2D.Float(0, 0, width, height, arc, arc));
+		g.setStroke(new BasicStroke(1f));
+		g.setColor(withAlpha(trim, (int) (18 * alpha)));
+		int step = Math.max(7, height / 24);
+		for (int offset = -height; offset < width + height; offset += step)
+		{
+			g.drawLine(offset, 0, offset + height, height);
+			g.drawLine(offset + height, 0, offset, height);
+		}
+		g.setClip(clipBefore);
+
+		int inset = Math.max(5, height / 26);
+		g.setStroke(new BasicStroke(Math.max(1.2f, height / 220f)));
+		g.setColor(withAlpha(trim, (int) (170 * alpha)));
+		g.drawRoundRect(0, 0, width - 1, height - 1, arc, arc);
+		g.setStroke(new BasicStroke(1f));
+		g.setColor(withAlpha(trim, (int) (80 * alpha)));
+		g.drawRoundRect(inset, inset, width - inset * 2 - 1, height - inset * 2 - 1,
+			arc / 2, arc / 2);
+
+		int tick = Math.max(4, height / 30);
+		g.setStroke(new BasicStroke(1.6f));
+		g.setColor(withAlpha(lighten(trim, 0.4d), (int) (200 * alpha)));
+		for (int sx = 0; sx < 2; sx++)
+		{
+			for (int sy = 0; sy < 2; sy++)
+			{
+				int px = inset + (sx == 0 ? 0 : width - inset * 2);
+				int py = inset + (sy == 0 ? 0 : height - inset * 2);
+				g.drawLine(px, py, px + (sx == 0 ? tick : -tick), py);
+				g.drawLine(px, py, px, py + (sy == 0 ? tick : -tick));
+			}
+		}
+
+		int cx = width / 2;
+		int cy = height / 2;
+		int radius = (int) (height * 0.155d);
+		drawMotif(g, motif, cx, cy, radius, motifColour, animMs, alpha, lit);
+		g.dispose();
+	}
+
+	private static void drawMotif(Graphics2D g, BackMotif motif, int cx, int cy, int radius,
+								  Color glow, long animMs, float alpha, boolean lit)
+	{
+		if (motif == BackMotif.COOKIE)
+		{
+			drawCookieMotif(g, cx, cy, radius, glow, animMs, alpha, lit);
+			return;
+		}
+		if (motif == BackMotif.EYES)
+		{
+			drawEyesMotif(g, cx, cy, radius, glow, animMs, alpha, lit);
+			return;
+		}
+
+		double breathe = 0.9d + 0.1d * Math.sin(animMs / 1100d);
+		int halo = (int) (radius * 1.35d * breathe);
+		g.setPaint(new RadialGradientPaint(new Point2D.Float(cx, cy), Math.max(1f, halo),
+			new float[]{0f, 0.45f, 1f},
+			new Color[]{withAlpha(glow, (int) ((lit ? 110 : 62) * alpha)),
+				withAlpha(glow, (int) (26 * alpha)), withAlpha(glow, 0)},
+			MultipleGradientPaint.CycleMethod.NO_CYCLE));
+		g.fillOval(cx - halo, cy - halo, halo * 2, halo * 2);
+
+		g.setStroke(new BasicStroke(Math.max(1.4f, radius / 22f)));
+		g.setColor(withAlpha(glow, (int) (200 * alpha)));
+		g.drawOval(cx - radius, cy - radius, radius * 2, radius * 2);
+		g.setStroke(new BasicStroke(1f));
+		g.setColor(withAlpha(glow, (int) (90 * alpha)));
+		int inner = (int) (radius * 0.80d);
+		g.drawOval(cx - inner, cy - inner, inner * 2, inner * 2);
+
+		Color ink = withAlpha(lighten(glow, 0.35d), (int) (245 * alpha));
+		g.setColor(ink);
+		double r = radius * 0.62d;
+		switch (motif)
+		{
+			case BAT:
+				drawBat(g, cx, cy, r);
+				break;
+			case CRYSTAL:
+				drawCrystal(g, cx, cy, r);
+				break;
+			case SEREN:
+				drawSerenSymbol(g, cx, cy, r);
+				break;
+			case ANKH:
+				drawInvertedAnkh(g, cx, cy, r);
+				break;
+			case PEAK:
+				drawPeak(g, cx, cy, r);
+				break;
+			case SCARAB:
+				drawScarab(g, cx, cy, r);
+				break;
+			case LEAF:
+				drawLeaf(g, cx, cy, r);
+				break;
+			case CRESCENT:
+				drawCrescent(g, cx, cy, r);
+				break;
+			case STAR:
+				drawSaradominStar(g, cx, cy, r);
+				break;
+			default:
+				break;
+		}
+	}
+
+	private static void drawBat(Graphics2D g, int cx, int cy, double r)
+	{
+		Path2D.Double wing = new Path2D.Double();
+		wing.moveTo(cx, cy - r * 0.30d);
+		wing.curveTo(cx - r * 0.34d, cy - r * 0.62d, cx - r * 0.74d, cy - r * 0.52d,
+			cx - r, cy - r * 0.12d);
+		wing.lineTo(cx - r * 0.72d, cy - r * 0.20d);
+		wing.lineTo(cx - r * 0.62d, cy + r * 0.16d);
+		wing.lineTo(cx - r * 0.38d, cy - r * 0.02d);
+		wing.lineTo(cx - r * 0.26d, cy + r * 0.34d);
+		wing.lineTo(cx, cy + r * 0.20d);
+		wing.closePath();
+		g.fill(wing);
+		Path2D.Double mirrored = new Path2D.Double(wing);
+		mirrored.transform(java.awt.geom.AffineTransform.getScaleInstance(-1d, 1d));
+		mirrored.transform(java.awt.geom.AffineTransform.getTranslateInstance(cx * 2d, 0d));
+		g.fill(mirrored);
+		g.fill(new java.awt.geom.Ellipse2D.Double(cx - r * 0.13d, cy - r * 0.34d,
+			r * 0.26d, r * 0.62d));
+	}
+
+	private static void drawCrystal(Graphics2D g, int cx, int cy, double r)
+	{
+		Path2D.Double shard = new Path2D.Double();
+		shard.moveTo(cx, cy - r);
+		shard.lineTo(cx + r * 0.52d, cy - r * 0.16d);
+		shard.lineTo(cx, cy + r);
+		shard.lineTo(cx - r * 0.52d, cy - r * 0.16d);
+		shard.closePath();
+		g.fill(shard);
+		Color face = g.getColor();
+		g.setColor(withAlpha(Color.WHITE, 90));
+		Path2D.Double lit = new Path2D.Double();
+		lit.moveTo(cx, cy - r);
+		lit.lineTo(cx + r * 0.52d, cy - r * 0.16d);
+		lit.lineTo(cx, cy + r * 0.30d);
+		lit.closePath();
+		g.fill(lit);
+		g.setColor(face);
+	}
+
+	private static void drawPeak(Graphics2D g, int cx, int cy, double r)
+	{
+		Color rim = g.getColor();
+		Path2D.Double peak = new Path2D.Double();
+		peak.moveTo(cx - r, cy + r * 0.56d);
+		peak.lineTo(cx - r * 0.30d, cy - r * 0.74d);
+		peak.lineTo(cx - r * 0.04d, cy - r * 0.30d);
+		peak.lineTo(cx + r * 0.34d, cy - r * 0.62d);
+		peak.lineTo(cx + r, cy + r * 0.56d);
+		peak.closePath();
+		g.setColor(new Color(0x0A, 0x0A, 0x0C));
+		g.fill(peak);
+		java.awt.Stroke before = g.getStroke();
+		g.setStroke(new BasicStroke((float) Math.max(1d, r / 14d)));
+		g.setColor(withAlpha(rim, 210));
+		g.draw(peak);
+		g.setStroke(before);
+		g.setColor(rim);
+	}
+
+	private static void drawSerenSymbol(Graphics2D g, int cx, int cy, double r)
+	{
+		java.awt.Stroke before = g.getStroke();
+		Color ink = g.getColor();
+		Path2D.Double outer = diamond(cx, cy, r, r);
+		g.setColor(withAlpha(ink, 70));
+		g.fill(outer);
+		g.setStroke(new BasicStroke((float) Math.max(1.6d, r / 5.5d), BasicStroke.CAP_ROUND,
+			BasicStroke.JOIN_ROUND));
+		g.setColor(withAlpha(Color.WHITE, 235));
+		g.draw(outer);
+		g.setStroke(new BasicStroke((float) Math.max(1.2d, r / 9d), BasicStroke.CAP_ROUND,
+			BasicStroke.JOIN_ROUND));
+		g.setColor(ink);
+		g.draw(diamond(cx, cy, r * 0.46d, r * 0.46d));
+		g.setStroke(before);
+	}
+
+	private static Path2D.Double diamond(double cx, double cy, double rx, double ry)
+	{
+		Path2D.Double shape = new Path2D.Double();
+		shape.moveTo(cx, cy - ry);
+		shape.lineTo(cx + rx, cy);
+		shape.lineTo(cx, cy + ry);
+		shape.lineTo(cx - rx, cy);
+		shape.closePath();
+		return shape;
+	}
+
+	private static void drawInvertedAnkh(Graphics2D g, int cx, int cy, double r)
+	{
+		java.awt.Stroke before = g.getStroke();
+		float weight = (float) Math.max(1.5d, r / 5.5d);
+		g.setStroke(new BasicStroke(weight, BasicStroke.CAP_BUTT, BasicStroke.JOIN_ROUND));
+		double loopR = r * 0.30d;
+		double loopCy = cy + r * 0.45d;
+		g.draw(new java.awt.geom.Line2D.Double(cx, cy - r * 0.75d, cx, loopCy - loopR));
+		g.draw(new java.awt.geom.Line2D.Double(cx - r * 0.42d, cy - r * 0.34d,
+			cx + r * 0.42d, cy - r * 0.34d));
+		g.draw(new java.awt.geom.Ellipse2D.Double(cx - loopR, loopCy - loopR,
+			loopR * 2, loopR * 2));
+		g.setStroke(before);
+	}
+
+	private static void drawScarab(Graphics2D g, int cx, int cy, double r)
+	{
+		g.fill(new java.awt.geom.Ellipse2D.Double(cx - r * 0.46d, cy - r * 0.30d,
+			r * 0.92d, r * 1.10d));
+		g.fill(new java.awt.geom.Ellipse2D.Double(cx - r * 0.26d, cy - r * 0.78d,
+			r * 0.52d, r * 0.46d));
+		java.awt.Stroke before = g.getStroke();
+		g.setStroke(new BasicStroke((float) Math.max(1d, r / 12d)));
+		for (int i = -1; i <= 1; i += 2)
+		{
+			g.draw(new java.awt.geom.Line2D.Double(cx + i * r * 0.44d, cy - r * 0.22d,
+				cx + i * r, cy - r * 0.52d));
+			g.draw(new java.awt.geom.Line2D.Double(cx + i * r * 0.46d, cy + r * 0.16d,
+				cx + i * r, cy + r * 0.10d));
+			g.draw(new java.awt.geom.Line2D.Double(cx + i * r * 0.40d, cy + r * 0.52d,
+				cx + i * r * 0.86d, cy + r * 0.76d));
+		}
+		g.setStroke(before);
+	}
+
+	private static void drawLeaf(Graphics2D g, int cx, int cy, double r)
+	{
+		Path2D.Double leaf = new Path2D.Double();
+		leaf.moveTo(cx, cy - r);
+		leaf.curveTo(cx + r * 0.86d, cy - r * 0.34d, cx + r * 0.58d, cy + r * 0.62d,
+			cx, cy + r * 0.86d);
+		leaf.curveTo(cx - r * 0.58d, cy + r * 0.62d, cx - r * 0.86d, cy - r * 0.34d,
+			cx, cy - r);
+		leaf.closePath();
+		g.fill(leaf);
+		java.awt.Stroke before = g.getStroke();
+		g.setColor(withAlpha(Color.WHITE, 80));
+		g.setStroke(new BasicStroke((float) Math.max(1d, r / 14d)));
+		g.draw(new java.awt.geom.Line2D.Double(cx, cy - r * 0.86d, cx, cy + r * 0.80d));
+		for (int i = 1; i <= 3; i++)
+		{
+			double y = cy - r * 0.52d + i * r * 0.40d;
+			g.draw(new java.awt.geom.Line2D.Double(cx, y, cx - r * 0.40d, y + r * 0.20d));
+			g.draw(new java.awt.geom.Line2D.Double(cx, y, cx + r * 0.40d, y + r * 0.20d));
+		}
+		g.setStroke(before);
+	}
+
+	private static void drawCrescent(Graphics2D g, int cx, int cy, double r)
+	{
+		java.awt.geom.Area moon = new java.awt.geom.Area(
+			new java.awt.geom.Ellipse2D.Double(cx - r, cy - r, r * 2, r * 2));
+		moon.subtract(new java.awt.geom.Area(new java.awt.geom.Ellipse2D.Double(
+			cx - r * 0.42d, cy - r * 1.08d, r * 1.86d, r * 2.16d)));
+		g.fill(moon);
+		for (int i = 0; i < 3; i++)
+		{
+			double a = -0.5d + i * 0.5d;
+			double sx = cx + Math.cos(a) * r * 0.82d;
+			double sy = cy + Math.sin(a) * r * 0.82d;
+			double sz = r * (i == 1 ? 0.16d : 0.10d);
+			Path2D.Double spark = new Path2D.Double();
+			spark.moveTo(sx, sy - sz);
+			spark.lineTo(sx + sz * 0.4d, sy);
+			spark.lineTo(sx, sy + sz);
+			spark.lineTo(sx - sz * 0.4d, sy);
+			spark.closePath();
+			g.fill(spark);
+		}
+	}
+
+	private static void drawSaradominStar(Graphics2D g, int cx, int cy, double r)
+	{
+		Path2D.Double star = new Path2D.Double();
+		for (int i = 0; i < 8; i++)
+		{
+			double angle = Math.PI * i / 4d - Math.PI / 2d;
+			double reach = (i % 2 == 0) ? r : r * 0.26d;
+			double x = cx + Math.cos(angle) * reach;
+			double y = cy + Math.sin(angle) * reach;
+			if (i == 0)
+			{
+				star.moveTo(x, y);
+			}
+			else
+			{
+				star.lineTo(x, y);
+			}
+		}
+		star.closePath();
+		g.fill(star);
+		g.setColor(withAlpha(Color.WHITE, 110));
+		g.fill(new java.awt.geom.Ellipse2D.Double(cx - r * 0.16d, cy - r * 0.16d,
+			r * 0.32d, r * 0.32d));
+	}
+
+	private static void drawCookieMotif(Graphics2D g, int cx, int cy, int radius, Color glow,
+										long animMs, float alpha, boolean lit)
+	{
+		int a = (int) (255 * alpha);
+		int halo = radius + radius / 3;
+		g.setPaint(new RadialGradientPaint(new Point2D.Float(cx, cy), Math.max(1f, halo),
+			new float[]{0f, 1f},
+			new Color[]{withAlpha(glow, (int) ((lit ? 90 : 45) * alpha)), withAlpha(glow, 0)}));
+		g.fillOval(cx - halo, cy - halo, halo * 2, halo * 2);
+
+		Path2D.Double disc = new Path2D.Double();
+		int points = 48;
+		for (int i = 0; i <= points; i++)
+		{
+			double t = Math.PI * 2d * i / points;
+			double wobble = 1d + 0.035d * Math.sin(t * 7d) + 0.02d * Math.sin(t * 3d + 1.1d);
+			double px = cx + Math.cos(t) * radius * wobble;
+			double py = cy + Math.sin(t) * radius * wobble;
+			if (i == 0)
+			{
+				disc.moveTo(px, py);
+			}
+			else
+			{
+				disc.lineTo(px, py);
+			}
+		}
+		disc.closePath();
+
+		Color dough = new Color(0xC2, 0x8E, 0x4E);
+		g.setPaint(new RadialGradientPaint(
+			new Point2D.Float(cx - radius * 0.3f, cy - radius * 0.35f), Math.max(1f, radius * 1.6f),
+			new float[]{0f, 0.55f, 1f},
+			new Color[]{withAlpha(lighten(dough, 0.32d), a), withAlpha(dough, a),
+				withAlpha(darken(dough, 0.42d), a)}));
+		g.fill(disc);
+		g.setStroke(new BasicStroke(Math.max(1f, radius / 16f)));
+		g.setColor(withAlpha(darken(dough, 0.55d), (int) (200 * alpha)));
+		g.draw(disc);
+
+		double[][] chips = {
+			{-0.42d, -0.30d, 0.20d}, {0.28d, -0.44d, 0.16d}, {0.46d, 0.16d, 0.19d},
+			{-0.18d, 0.34d, 0.22d}, {-0.52d, 0.22d, 0.14d}, {0.06d, -0.06d, 0.17d},
+			{0.30d, 0.48d, 0.13d},
+		};
+		Color chip = new Color(0x3A, 0x21, 0x12);
+		for (double[] c : chips)
+		{
+			int size = (int) (radius * c[2]);
+			int px = (int) (cx + radius * c[0]) - size / 2;
+			int py = (int) (cy + radius * c[1]) - size / 2;
+			g.setColor(withAlpha(chip, (int) (235 * alpha)));
+			g.fillOval(px, py, size * 2, (int) (size * 1.7d));
+			g.setColor(withAlpha(lighten(chip, 0.35d), (int) (120 * alpha)));
+			g.fillOval(px + size / 3, py + size / 4, Math.max(1, size), Math.max(1, size / 2));
+		}
+
+		double sweep = (animMs % 4200L) / 4200d;
+		int gx = (int) (cx - radius + sweep * radius * 2);
+		g.setClip(disc);
+		g.setPaint(new LinearGradientPaint(
+			new Point2D.Float(gx - radius * 0.35f, cy), new Point2D.Float(gx + radius * 0.35f, cy),
+			new float[]{0f, 0.5f, 1f},
+			new Color[]{withAlpha(Color.WHITE, 0), withAlpha(Color.WHITE, (int) (34 * alpha)),
+				withAlpha(Color.WHITE, 0)}));
+		g.fillOval(cx - radius * 2, cy - radius, radius * 4, radius * 2);
+		g.setClip(null);
+	}
+
+	private static void drawEyesMotif(Graphics2D g, int cx, int cy, int radius, Color glow,
+									  long animMs, float alpha, boolean lit)
+	{
+		double[][] eyes = {
+			{-1.05d, -0.30d, 0.30d}, {0d, -0.42d, 0.42d}, {1.05d, -0.30d, 0.30d},
+			{-0.72d, 0.36d, 0.24d}, {0d, 0.30d, 0.30d}, {0.72d, 0.36d, 0.24d},
+		};
+		for (int i = 0; i < eyes.length; i++)
+		{
+			double breathe = 0.82d + 0.18d * Math.sin((animMs / 900d) + i * 0.9d);
+			int size = Math.max(2, (int) (radius * eyes[i][2] * (lit ? 1.15d : 1d)));
+			int ex = (int) (cx + radius * eyes[i][0]);
+			int ey = (int) (cy + radius * eyes[i][1]);
+
+			int halo = (int) (size * 3.2d * breathe);
+			g.setPaint(new RadialGradientPaint(new Point2D.Float(ex, ey), Math.max(1f, halo),
+				new float[]{0f, 0.45f, 1f},
+				new Color[]{withAlpha(glow, (int) ((lit ? 150 : 105) * alpha * breathe)),
+					withAlpha(glow, (int) (40 * alpha * breathe)), withAlpha(glow, 0)}));
+			g.fillOval(ex - halo, ey - halo, halo * 2, halo * 2);
+
+			Path2D.Double lens = new Path2D.Double();
+			lens.moveTo(ex - size, ey);
+			lens.quadTo(ex, ey - size * 0.78d, ex + size, ey);
+			lens.quadTo(ex, ey + size * 0.78d, ex - size, ey);
+			lens.closePath();
+			g.setPaint(new RadialGradientPaint(
+				new Point2D.Float(ex, ey), Math.max(1f, size),
+				new float[]{0f, 0.6f, 1f},
+				new Color[]{withAlpha(Color.WHITE, (int) (235 * alpha)),
+					withAlpha(glow, (int) (245 * alpha)),
+					withAlpha(darken(glow, 0.6d), (int) (235 * alpha))}));
+			g.fill(lens);
+
+			g.setColor(withAlpha(new Color(0x18, 0x02, 0x06), (int) (230 * alpha)));
+			int slit = Math.max(1, size / 5);
+			g.fillOval(ex - slit / 2, ey - (int) (size * 0.52d), slit, (int) (size * 1.04d));
+		}
+	}
+
+	public static final int ORN_FILIGREE = 1;
+	public static final int ORN_GEMS = 2;
+	public static final int ORN_PRISM = 4;
+	public static final int ORN_RAIL = 8;
+	public static final int ORN_DRIPS = 16;
+
+	public static final class Style
+	{
+		public final Color metalDark;
+		public final Color metalMid;
+		public final Color metalLight;
+		public final Color plate;
+		public final Color glow;
+		public final Color accent;
+		final int ornament;
+		final NpcCardArt art;
+		final double polish;
+
+		Style(Color metalDark, Color metalMid, Color metalLight, Color plate, Color glow,
+			  Color accent, int ornament, NpcCardArt art, double polish)
+		{
+			this.polish = polish;
+			this.metalDark = metalDark;
+			this.metalMid = metalMid;
+			this.metalLight = metalLight;
+			this.plate = plate;
+			this.glow = glow;
+			this.accent = accent;
+			this.ornament = ornament;
+			this.art = art;
+		}
+
+		boolean has(int flag)
+		{
+			return (ornament & flag) != 0;
+		}
+	}
+
+	public static Style styleFor(Card card)
+	{
+		NpcCardArt art = NpcCardArt.forCard(card);
+		if (art != null)
+		{
+			int ornament = ORN_FILIGREE | ORN_GEMS | ORN_PRISM | ORN_RAIL
+				| (art.isBloodDrips() ? ORN_DRIPS : 0);
+			return new Style(new Color(art.getMetalDark()), new Color(art.getMetalMid()),
+				new Color(art.getMetalLight()), new Color(art.getPlateColour()),
+				new Color(art.getGlowColour()), new Color(art.getAccentColour()), ornament, art,
+				1d);
+		}
+
+		Rarity rarity = card == null ? Rarity.COMMON : card.getRarity();
+		int[] tier = TIERS[rarity.ordinal()];
+		return new Style(new Color(tier[0]), new Color(tier[1]), new Color(tier[2]),
+			new Color(tier[3]), new Color(tier[4]), new Color(tier[2]),
+			ornamentFor(rarity), null, POLISH[rarity.ordinal()]);
+	}
+
+	private static final int[][] TIERS = {
+		{0x4A331B, 0x8A6335, 0xA67E4B, 0x140E08, 0x6B431C},
+		{0x333A43, 0x6B7783, 0xA3AEBA, 0x0D1014, 0x55677A},
+		{0x1C2660, 0x4560B8, 0x8FA4EA, 0x080A16, 0x4A68D8},
+		{0x0F4034, 0x2F9575, 0x7AE0BB, 0x050F0C, 0x2FBE8A},
+		{0x0C4450, 0x22A2B8, 0x88F2FF, 0x031014, 0x37CDE6},
+	};
+
+	private static final double[] POLISH = {0d, 0.35d, 0.7d, 1d, 1d};
+
+	private static int ornamentFor(Rarity rarity)
+	{
+		switch (rarity)
+		{
+			case LEGENDARY:
+				return ORN_FILIGREE | ORN_GEMS | ORN_RAIL;
+			case EPIC:
+				return ORN_FILIGREE | ORN_GEMS;
+			case RARE:
+				return ORN_FILIGREE;
+			default:
+				return 0;
+		}
+	}
+
+	public static void draw(Graphics2D graphics, Card card, int x, int y, int width, int height,
+							int stars, boolean owned, long animMs, BufferedImage art, boolean shiny,
+							boolean gilded, boolean modelArt)
+	{
 		Graphics2D g = (Graphics2D) graphics.create();
 		g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 		g.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
@@ -104,14 +860,38 @@ public final class CardRenderer
 		g.translate(x, y);
 		int radius = Math.max(3, height / 14);
 		Rarity rarity = card.getRarity();
+		Style style = styleFor(card);
+		boolean rich = !isCompact(height);
 		drawShadow(g, width, height, radius);
+		if (rich && rarity.ordinal() >= Rarity.RARE.ordinal())
+		{
+			drawOuterGlow(g, style, width, height, radius, animMs);
+		}
 		if (!owned)
 		{
 			drawLocked(g, card, width, height, radius);
 			g.dispose();
 			return;
 		}
-		drawFrame(g, rarity, width, height, radius, frameColour(rarity, shiny, gilded));
+		drawFrame(g, rarity, width, height, radius,
+			rich ? style.metalMid : frameColour(rarity, shiny, gilded));
+		if (rich)
+		{
+			drawMetalFrame(g, style, width, height, radius);
+			if (rarity.ordinal() >= Rarity.UNCOMMON.ordinal())
+			{
+				drawFrameBevel(g, width, height, radius);
+			}
+			if (style.has(ORN_FILIGREE))
+			{
+				drawFiligree(g, style, width, height, radius);
+			}
+			drawDrips(g, style, width, height, radius, animMs);
+			if (style.has(ORN_GEMS))
+			{
+				drawCornerGems(g, style, width, height, animMs);
+			}
+		}
 		int border = borderWidth(height);
 		int innerX = border;
 		int innerY = border;
@@ -119,29 +899,39 @@ public final class CardRenderer
 		int innerH = height - border * 2;
 		int innerRadius = Math.max(2, radius - border);
 
-		drawBody(g, innerX, innerY, innerW, innerH, innerRadius);
 		boolean compact = isCompact(height);
 		int artX = innerX + Math.max(1, height / 40);
 		int artY = innerY + Math.max(1, height / 40);
 		int artW = innerW - (artX - innerX) * 2;
-		int artH = (int) (innerH * (compact ? 0.74d : 0.48d));
-		drawArtWindow(g, card, artX, artY, artW, artH, art);
+		int artH = (int) (innerH * (compact ? 0.74d : 0.65d));
+
+		Color[] body = rich ? bodyTint(style) : new Color[]{BODY_TOP, BODY_BOTTOM};
+		drawBody(g, innerX, innerY, innerW, innerH, innerRadius,
+			modelArt ? artShape(width, height) : null, body[0], body[1]);
+		drawArtWindow(g, card, style, artX, artY, artW, artH, modelArt ? null : art, modelArt,
+			animMs);
 		if (!compact)
 		{
-			drawNamePlate(g, card, innerX, artY + artH, innerW,
-				innerH - artH - (artY - innerY), height);
+			drawNamePlate(g, card, style, innerX, artY + artH, innerW,
+				innerH - artH - (artY - innerY), height, style.has(ORN_PRISM), animMs);
 		}
 
-		drawStars(g, rarity, innerX, innerY + innerH, innerW, height, stars, compact);
-		drawRarityPip(g, rarity, width, height, shiny, gilded);
-		drawSetBadge(g, card, height);
-		if (rarity.ordinal() >= Rarity.RARE.ordinal())
+		if (style.art == null || compact)
 		{
-			drawFoil(g, rarity, artX, artY, artW, artH, animMs);
+			drawStars(g, rarity, innerX, innerY + innerH, innerW, height, stars, compact);
 		}
 		if (gilded)
 		{
 			drawGildedTrim(g, artX, artY, artW, artH);
+		}
+		if (style.art == null)
+		{
+			if (!modelArt && rarity.ordinal() >= Rarity.LEGENDARY.ordinal())
+			{
+				drawFoil(g, rarity, artX, artY, artW, artH, animMs);
+			}
+			drawRarityPip(g, rarity, width, height, shiny, gilded);
+			drawSetBadge(g, card, height);
 		}
 		if (shiny)
 		{
@@ -294,38 +1084,62 @@ public final class CardRenderer
 		g.fillOval(pad, height - pad - size, size, size);
 		g.fillOval(width - pad - size, height - pad - size, size, size);
 	}
-	private static void drawBody(Graphics2D g, int x, int y, int width, int height, int radius)
+	private static void drawBody(Graphics2D g, int x, int y, int width, int height, int radius,
+								 Shape hole, Color top, Color bottom)
 	{
-		g.setPaint(new GradientPaint(x, y, BODY_TOP, x, y + height, BODY_BOTTOM));
-		g.fillRoundRect(x, y, width, height, radius, radius);
+		Shape body = new RoundRectangle2D.Float(x, y, width, height, radius, radius);
+		if (hole != null)
+		{
+			java.awt.geom.Area area = new java.awt.geom.Area(body);
+			area.subtract(new java.awt.geom.Area(hole));
+			body = area;
+		}
+		g.setPaint(new GradientPaint(x, y, top, x, y + height, bottom));
+		g.fill(body);
 	}
-	private static void drawArtWindow(Graphics2D g, Card card, int x, int y, int width, int height,
-									  BufferedImage art)
+	private static final int SLATE = 0x414B60;
+	private static final int[] GROUNDS = {SLATE, SLATE, SLATE, SLATE, 0xC79A3A};
+
+	private static Color groundFor(Card card, Style style)
+	{
+		if (style.art != null)
+		{
+			return style.accent;
+		}
+		return new Color(GROUNDS[(card == null ? Rarity.COMMON : card.getRarity()).ordinal()]);
+	}
+
+	private static void drawArtWindow(Graphics2D g, Card card, Style style, int x, int y,
+									  int width, int height, BufferedImage art, boolean modelArt,
+									  long animMs)
 	{
 		if (width <= 0 || height <= 0)
 		{
 			return;
 		}
-		Color base = card.getRarity().getColour();
+		Color base = groundFor(card, style);
 		Shape clip = g.getClip();
 		int radius = Math.max(2, height / 8);
 		g.setClip(new RoundRectangle2D.Float(x, y, width, height, radius, radius));
-		g.setPaint(new GradientPaint(x, y, darken(base, 0.80d), x, y + height, new Color(0x0A, 0x0A, 0x0C)));
-		g.fillRect(x, y, width, height);
-		float bloomRadius = Math.max(width, height) * 0.75f;
-		int bloomAlpha = width < 44 ? 130 : 90;
-		g.setPaint(new RadialGradientPaint(
-			new Point2D.Float(x + width / 2f, y + height * 0.42f),
-			bloomRadius,
-			new float[]{0f, 1f},
-			new Color[]{withAlpha(lighten(base, 0.3d), bloomAlpha), withAlpha(base, 0)},
-			MultipleGradientPaint.CycleMethod.NO_CYCLE));
-		g.fillRect(x, y, width, height);
-		if (card.getRarity() == Rarity.LEGENDARY)
+		if (!modelArt)
 		{
-			drawRadiantBurst(g, base, x, y, width, height);
+			g.setPaint(new GradientPaint(x, y, darken(base, 0.80d), x, y + height, new Color(0x0A, 0x0A, 0x0C)));
+			g.fillRect(x, y, width, height);
+			float bloomRadius = Math.max(width, height) * 0.75f;
+			int bloomAlpha = width < 44 ? 130 : 90;
+			g.setPaint(new RadialGradientPaint(
+				new Point2D.Float(x + width / 2f, y + height * 0.42f),
+				bloomRadius,
+				new float[]{0f, 1f},
+				new Color[]{withAlpha(lighten(base, 0.3d), bloomAlpha), withAlpha(base, 0)},
+				MultipleGradientPaint.CycleMethod.NO_CYCLE));
+			g.fillRect(x, y, width, height);
+			if (card.getRarity() == Rarity.LEGENDARY)
+			{
+				drawRadiantBurst(g, base, x, y, width, height);
+			}
+			drawHalo(g, style, x, y, width, height);
 		}
-		drawSigil(g, card, x, y, width, height);
 
 		if (art != null)
 		{
@@ -335,57 +1149,45 @@ public final class CardRenderer
 		drawSetSymbol(g, card.getSet(), x + width - symbolSize(height) - 3,
 			y + height - symbolSize(height) - 3, symbolSize(height), 70);
 		g.setClip(clip);
+
+		if (modelArt)
+		{
+			g.setStroke(new BasicStroke(Math.max(1f, height / 34f)));
+			g.setPaint(new GradientPaint(x, y, withAlpha(Color.WHITE, 110),
+				x + width, y + height, withAlpha(Color.BLACK, 150)));
+			g.drawRoundRect(x, y, width - 1, height - 1, radius, radius);
+			g.setStroke(new BasicStroke(1f));
+			g.setPaint(new GradientPaint(x, y, withAlpha(Color.WHITE, 120),
+				x + width, y, withAlpha(Color.WHITE, 30)));
+			g.drawLine(x + radius, y + 1, x + width - radius, y + 1);
+			return;
+		}
+
 		g.setColor(withAlpha(darken(base, 0.3d), 160));
 		g.setStroke(new BasicStroke(1f));
 		g.drawRoundRect(x, y, width - 1, height - 1, radius, radius);
 	}
-	private static void drawSigil(Graphics2D g, Card card, int x, int y, int width, int height)
+	private static void drawHalo(Graphics2D g, Style style, int x, int y, int width, int height)
 	{
-		int seed = card.getId().hashCode();
-		Color base = card.getRarity().getColour();
-		double cx = x + width / 2d;
-		double cy = y + height / 2d;
-		double maxRadius = Math.min(width, height) * 0.42d;
-		int points = 3 + Math.floorMod(seed, 5);
-		int rings = 2 + Math.floorMod(seed >> 3, 3);
-		double baseRotation = Math.floorMod(seed >> 6, 360) * Math.PI / 180d;
-
-		g.setPaint(new RadialGradientPaint(
-			new Point2D.Double(cx, cy),
-			(float) maxRadius,
-			new float[]{0f, 1f},
-			new Color[]{withAlpha(lighten(base, 0.15d), 90), withAlpha(base, 10)},
-			MultipleGradientPaint.CycleMethod.NO_CYCLE));
-		g.fill(new Ellipse2D.Double(cx - maxRadius, cy - maxRadius, maxRadius * 2, maxRadius * 2));
-		g.setStroke(new BasicStroke(Math.max(1.2f, height / 42f)));
-		for (int ring = 0; ring < rings; ring++)
+		float radius = Math.min(width, height) * 0.52f;
+		if (radius < 4f)
 		{
-			double scale = 1d - ring * (0.26d / rings * 2);
-			double rotation = baseRotation + ring * (Math.PI / points);
-			int alpha = 150 - ring * 34;
-			if (alpha <= 0)
-			{
-				continue;
-			}
-			g.setColor(withAlpha(lighten(base, 0.5d), alpha));
-			Path2D.Double path = new Path2D.Double();
-			for (int i = 0; i < points; i++)
-			{
-				double angle = rotation + i * 2 * Math.PI / points;
-				double px = cx + Math.cos(angle) * maxRadius * scale;
-				double py = cy + Math.sin(angle) * maxRadius * scale;
-				if (i == 0)
-				{
-					path.moveTo(px, py);
-				}
-				else
-				{
-					path.lineTo(px, py);
-				}
-			}
-			path.closePath();
-			g.draw(path);
+			return;
 		}
+		float cx = x + width / 2f;
+		float cy = y + height * 0.44f;
+		Color light = lighten(style.metalLight, 0.15d);
+		g.setPaint(new RadialGradientPaint(new Point2D.Float(cx, cy), radius,
+			new float[]{0f, 0.42f, 0.78f, 1f},
+			new Color[]{withAlpha(light, 78), withAlpha(light, 46), withAlpha(light, 14),
+				withAlpha(light, 0)},
+			MultipleGradientPaint.CycleMethod.NO_CYCLE));
+		g.fillRect(x, y, width, height);
+
+		g.setStroke(new BasicStroke(Math.max(1f, height / 90f)));
+		g.setColor(withAlpha(light, 30));
+		int ring = (int) (radius * 0.82d);
+		g.drawOval((int) (cx - ring), (int) (cy - ring), ring * 2, ring * 2);
 	}
 	private static void drawArtImage(Graphics2D g, BufferedImage art, int x, int y,
 									 int width, int height)
@@ -403,8 +1205,9 @@ public final class CardRenderer
 			g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, previous);
 		}
 	}
-	private static void drawNamePlate(Graphics2D g, Card card, int x, int y, int width, int height,
-									  int cardHeight)
+	private static void drawNamePlate(Graphics2D g, Card card, Style style, int x, int y,
+									  int width, int height, int cardHeight, boolean prismatic,
+									  long animMs)
 	{
 		int starStrip = starStripHeight(cardHeight);
 		int plateHeight = Math.max(1, height - starStrip);
@@ -415,29 +1218,135 @@ public final class CardRenderer
 		int inset = Math.max(1, cardHeight / 40);
 		int plateX = x + inset;
 		int plateW = width - inset * 2;
-		g.setColor(PLATE);
+		g.setPaint(new GradientPaint(plateX, y, characterShade(style, 0.26f),
+			plateX, y + plateHeight, characterShade(style, 0.13f)));
 		g.fillRoundRect(plateX, y + 1, plateW, plateHeight - 2, 3, 3);
-		g.setColor(withAlpha(card.getRarity().getColour(), 120));
+		if (prismatic)
+		{
+			g.setPaint(new GradientPaint(plateX, y, withAlpha(style.metalLight, 200),
+				plateX + plateW, y, withAlpha(style.metalMid, 150)));
+		}
+		else
+		{
+			g.setColor(withAlpha(card.getRarity().getColour(), 120));
+		}
 		g.setStroke(new BasicStroke(1f));
 		g.drawLine(plateX + 2, y + 1, plateX + plateW - 2, y + 1);
 
-		g.setColor(Color.WHITE);
-		g.setFont(cardHeight >= 150
-			? FontManager.getRunescapeBoldFont()
-			: FontManager.getRunescapeSmallFont());
 		int available = plateW - 6;
-		List<String> lines = wrapToLines(g, card.getName(), available, 3);
+		int centreX = plateX + plateW / 2;
 
+		boolean serif = cardHeight >= 150;
+		if (!serif)
+		{
+			g.setColor(Color.WHITE);
+			g.setFont(FontManager.getRunescapeSmallFont());
+			FontMetrics small = g.getFontMetrics();
+			String line = ellipsise(small, card.getName(), available);
+			g.drawString(line, centreX - small.stringWidth(line) / 2,
+				y + plateHeight / 2 + small.getAscent() / 2);
+			return;
+		}
+
+		Font font = nameFont(cardHeight);
+		g.setFont(font);
 		FontMetrics metrics = g.getFontMetrics();
+		List<String> lines = wrapToLines(g, card.getName(), available, 2);
+
 		int lineHeight = metrics.getHeight();
-		int block = lines.size() * lineHeight;
-		int top = y + (plateHeight - block) / 2 + metrics.getAscent();
+		int tagHeight = Math.max(7, cardHeight / 32);
+		int block = lines.size() * lineHeight + tagHeight + 4;
+		int top = y + Math.max(4, (plateHeight - block) / 2) + metrics.getAscent();
+
 		for (int i = 0; i < lines.size(); i++)
 		{
 			String line = ellipsise(metrics, lines.get(i), available);
-			g.drawString(line, plateX + (plateW - metrics.stringWidth(line)) / 2,
-				top + i * lineHeight);
+			int lineY = top + i * lineHeight;
+			drawTrackedText(g, line, font, 0.045f, centreX + 1, lineY + 1,
+				new Color(0, 0, 0, 190));
+			java.awt.Paint fill = prismatic
+				? new GradientPaint(0, lineY - metrics.getAscent(), Color.WHITE,
+					0, lineY, style.metalLight)
+				: new GradientPaint(0, lineY - metrics.getAscent(), Color.WHITE,
+					0, lineY, lighten(card.getRarity().getColour(), 0.25d));
+			drawTrackedText(g, line, font, 0.045f, centreX, lineY, fill);
 		}
+
+		NpcCardArt art = NpcCardArt.forCard(card);
+		Font tagFont = FontManager.getRunescapeSmallFont().deriveFont((float) tagHeight);
+		int tagY = top + (lines.size() - 1) * lineHeight + tagHeight + 5;
+		Color tagColour = prismatic ? PLATINUM : card.getRarity().getColour();
+
+		String subtitle = art != null && art.getEpithet() != null
+			? art.getEpithet()
+			: card.getSet().getDisplayName().toUpperCase(java.util.Locale.ROOT);
+		drawTrackedText(g, subtitle, tagFont, 0.22f, centreX, tagY, withAlpha(tagColour, 165));
+
+		if (prismatic)
+		{
+			drawPlateProgress(g, card, plateX, tagY + Math.max(6, cardHeight / 30), plateW,
+				cardHeight, animMs);
+		}
+	}
+
+	private static java.util.function.ToIntFunction<String> copiesLookup;
+
+	public static void setCopiesLookup(java.util.function.ToIntFunction<String> lookup)
+	{
+		copiesLookup = lookup;
+	}
+
+	private static int copiesOf(Card card)
+	{
+		return copiesLookup == null || card == null ? 0 : copiesLookup.applyAsInt(card.getId());
+	}
+
+	private static void drawPlateProgress(Graphics2D g, Card card, int x, int y, int width,
+										  int cardHeight, long animMs)
+	{
+		NpcCardArt art = NpcCardArt.forCard(card);
+		if (art == null)
+		{
+			return;
+		}
+		int barH = Math.max(4, cardHeight / 78);
+		int labelH = Math.max(10, cardHeight / 26);
+
+		g.setColor(new Color(255, 255, 255, 24));
+		g.fillRoundRect(x, y, width, barH, barH, barH);
+
+		int copies = copiesOf(card);
+		int held = Math.min(copies, WishReveal.DIAMOND_STARS);
+		int fill = width * held / WishReveal.DIAMOND_STARS;
+		if (fill > 0)
+		{
+			g.setPaint(new LinearGradientPaint(
+				new Point2D.Float(x, y), new Point2D.Float(x + fill, y),
+				new float[]{0f, 0.6f, 1f},
+				new Color[]{darken(new Color(art.getGlowColour()), 0.55d),
+					new Color(art.getGlowColour()),
+					lighten(new Color(art.getGlowColour()), 0.55d)}));
+			g.fillRoundRect(x, y, fill, barH, barH, barH);
+		}
+
+		g.setColor(new Color(0, 0, 0, 190));
+		g.setStroke(new BasicStroke(1f));
+		for (int i = 1; i < WishReveal.DIAMOND_STARS; i++)
+		{
+			int mx = x + width * i / WishReveal.DIAMOND_STARS;
+			g.drawLine(mx, y, mx, y + barH);
+		}
+		g.setColor(new Color(0, 0, 0, 150));
+		g.drawRoundRect(x, y, width, barH, barH, barH);
+
+		Font labelFont = FontManager.getRunescapeSmallFont().deriveFont((float) labelH);
+		int labelY = y + barH + labelH + 2;
+		Color label = withAlpha(new Color(art.getMetalLight()), 130);
+		drawTrackedText(g, "COLLECTED", labelFont, 0.2f,
+			x + g.getFontMetrics(labelFont).stringWidth("COLLECTED") / 2, labelY, label);
+		String right = copies + " / " + WishReveal.DIAMOND_STARS;
+		int rw = g.getFontMetrics(labelFont).stringWidth(right);
+		drawTrackedText(g, right, labelFont, 0.2f, x + width - rw / 2, labelY, label);
 	}
 	private static List<String> wrapToLines(Graphics2D g, String text, int width, int maxLines)
 	{
@@ -473,12 +1382,18 @@ public final class CardRenderer
 	}
 	private static void drawSetSymbol(Graphics2D g, CardSet set, int x, int y, int size, int alpha)
 	{
+		drawSetSymbol(g, set, x, y, size, alpha, new Color(0xC8, 0xC8, 0xD2));
+	}
+
+	private static void drawSetSymbol(Graphics2D g, CardSet set, int x, int y, int size, int alpha,
+									  Color colour)
+	{
 		if (size < 4)
 		{
 			return;
 		}
 		int half = size / 2;
-		g.setColor(new Color(0xC8, 0xC8, 0xD2, alpha));
+		g.setColor(withAlpha(colour, alpha));
 		g.setStroke(new BasicStroke(Math.max(1f, size / 7f)));
 
 		switch (set)
@@ -578,13 +1493,34 @@ public final class CardRenderer
 	private static void drawRarityPip(Graphics2D g, Rarity rarity, int width, int height,
 									  boolean shiny, boolean gilded)
 	{
+		drawRarityPip(g, rarity, width, height, shiny, gilded, false, 0L);
+	}
+
+	private static void drawRarityPip(Graphics2D g, Rarity rarity, int width, int height,
+									  boolean shiny, boolean gilded, boolean prismatic,
+									  long animMs)
+	{
 		int size = Math.max(4, height / 13);
 		int x = width - size - Math.max(2, height / 30);
 		int y = Math.max(2, height / 30);
 		g.setColor(new Color(0, 0, 0, 150));
 		g.fillOval(x - 1, y - 1, size + 2, size + 2);
 
-		if (shiny && gilded)
+		if (prismatic)
+		{
+			float hueDrift = animMs == 0 ? 0f : (animMs % 7000L) / 7000f;
+			float[] fractions = new float[PRISM_STOPS + 1];
+			Color[] prism = new Color[PRISM_STOPS + 1];
+			for (int i = 0; i <= PRISM_STOPS; i++)
+			{
+				fractions[i] = i / (float) PRISM_STOPS;
+				prism[i] = Color.getHSBColor((hueDrift + fractions[i] * 0.85f) % 1f, 0.5f, 1f);
+			}
+			g.setPaint(new LinearGradientPaint(
+				new Point2D.Float(x, y), new Point2D.Float(x + size, y + size),
+				fractions, prism));
+		}
+		else if (shiny && gilded)
 		{
 			g.setPaint(new LinearGradientPaint(
 				new Point2D.Float(x, y), new Point2D.Float(x + size, y + size),
@@ -622,6 +1558,502 @@ public final class CardRenderer
 		g.setColor(new Color(255, 255, 255, 120));
 		g.fillOval(x + size / 4, y + size / 5, Math.max(1, size / 4), Math.max(1, size / 5));
 	}
+
+	private static void drawMetalFrame(Graphics2D g, Style style, int width, int height,
+									   int radius)
+	{
+		Color m1 = style.metalDark;
+		Color m2 = style.metalMid;
+		Color m3 = style.metalLight;
+		float[] stops;
+		Color[] ramp;
+		if (style.polish < 0.2d)
+		{
+			stops = new float[]{0f, 0.34f, 0.62f, 0.88f, 1f};
+			ramp = new Color[]{m1, m2, m1, m2, m1};
+		}
+		else if (style.polish < 0.6d)
+		{
+			stops = new float[]{0f, 0.26f, 0.40f, 0.58f, 0.82f, 1f};
+			ramp = new Color[]{m1, m2, m3, m2, m1, m2};
+		}
+		else
+		{
+			stops = new float[]{0f, 0.18f, 0.32f, 0.46f, 0.60f, 0.76f, 0.88f, 1f};
+			ramp = new Color[]{m1, m2, m3, m2, m1, m2, m3, m1};
+		}
+		g.setPaint(new LinearGradientPaint(
+			new Point2D.Float(0, 0), new Point2D.Float(width, height), stops, ramp));
+		g.fillRoundRect(0, 0, width, height, radius, radius);
+	}
+
+	private static void drawBadges(Graphics2D g, Card card, int width, int height, int artTop,
+								   int artBottom)
+	{
+		NpcCardArt art = NpcCardArt.forCard(card);
+		if (art == null)
+		{
+			return;
+		}
+		Color m2 = new Color(art.getMetalMid());
+		Color m3 = new Color(art.getMetalLight());
+		int pad = Math.max(4, height / 44);
+
+		float bannerPt = height / 30f;
+		if (art.getRoleTag() != null && bannerPt >= 9f)
+		{
+			Font f = FontManager.getRunescapeSmallFont().deriveFont(bannerPt);
+			g.setFont(f);
+			FontMetrics fm = g.getFontMetrics();
+			int tw = fm.stringWidth(art.getRoleTag()) + Math.max(14, height / 22);
+			int th = fm.getHeight() + 3;
+			int bx = 0;
+			int by = Math.max(2, artTop - th - 2);
+			Path2D.Double flag = new Path2D.Double();
+			flag.moveTo(bx, by);
+			flag.lineTo(bx + tw, by);
+			flag.lineTo(bx + tw - th * 0.34d, by + th / 2d);
+			flag.lineTo(bx + tw, by + th);
+			flag.lineTo(bx, by + th);
+			flag.closePath();
+			g.setPaint(new GradientPaint(bx, by, m3, bx, by + th, m2));
+			g.fill(flag);
+			g.setColor(new Color(0x2A, 0x04, 0x09));
+			g.drawString(art.getRoleTag(), bx + Math.max(5, height / 60),
+				by + fm.getAscent() + 1);
+		}
+
+		int orbD = Math.max(9, height / 17);
+		int ox = width - orbD - pad;
+		int oy = pad;
+		g.setPaint(new RadialGradientPaint(
+			new Point2D.Float(ox + orbD * 0.34f, oy + orbD * 0.28f), Math.max(1, orbD),
+			new float[]{0f, 0.42f, 1f},
+			new Color[]{Color.WHITE, new Color(art.getGlowColour()), new Color(0x2C, 0x02, 0x06)},
+			MultipleGradientPaint.CycleMethod.NO_CYCLE));
+		g.fillOval(ox, oy, orbD, orbD);
+		g.setColor(new Color(0, 0, 0, 150));
+		g.setStroke(new BasicStroke(1f));
+		g.drawOval(ox, oy, orbD, orbD);
+
+		float chipPt = height / 32f;
+		if (art.getMechanicTag() != null && chipPt >= 9f)
+		{
+			Font f = FontManager.getRunescapeSmallFont().deriveFont(chipPt);
+			g.setFont(f);
+			FontMetrics fm = g.getFontMetrics();
+			int cw = fm.stringWidth(art.getMechanicTag()) + Math.max(10, height / 26);
+			int ch = fm.getHeight() + 2;
+			int cxp = pad + Math.max(3, height / 60);
+			int cyp = artBottom - ch - Math.max(4, height / 50);
+			g.setColor(new Color(10, 2, 4, 205));
+			g.fillRoundRect(cxp, cyp, cw, ch, 4, 4);
+			g.setColor(new Color(255, 255, 255, 26));
+			g.drawRoundRect(cxp, cyp, cw, ch, 4, 4);
+			g.setColor(m3);
+			g.drawString(art.getMechanicTag(), cxp + Math.max(5, height / 60),
+				cyp + fm.getAscent() + 1);
+		}
+	}
+
+	private static void drawOuterGlow(Graphics2D g, Style style, int width, int height, int radius,
+									  long animMs)
+	{
+		double beat = (animMs % 1500L) / 1500d;
+		double pulse = 1d + 0.55d * Math.exp(-beat * 9d) + 0.30d * Math.exp(-Math.max(0d, beat - 0.24d) * 9d);
+		Color glow = style.glow;
+		int spread = (int) (Math.max(6, height / 12) * pulse);
+		for (int i = spread; i > 0; i -= Math.max(1, spread / 7))
+		{
+			int alpha = (int) (34 * (1d - i / (double) spread));
+			if (alpha <= 0)
+			{
+				continue;
+			}
+			g.setColor(withAlpha(glow, alpha));
+			g.fillRoundRect(-i, -i + height / 40, width + i * 2, height + i * 2,
+				radius + i, radius + i);
+		}
+	}
+
+	private static void drawDrips(Graphics2D g, Style style, int width, int height, int radius,
+								  long animMs)
+	{
+		if (!style.has(ORN_DRIPS) || height < 120)
+		{
+			return;
+		}
+		Shape clip = g.getClip();
+		g.setClip(new RoundRectangle2D.Float(0, 0, width, height, radius, radius));
+		int top = borderWidth(height) - 2;
+		Color blood = new Color(0xC1, 0x12, 0x2B);
+		float w = Math.max(1f, height / 250f);
+
+		int[] atPct = {18, 34, 57, 79};
+		long[] offset = {0L, 2600L, 1200L, 4100L};
+		int[] runPct = {13, 8, 16, 10};
+		for (int i = 0; i < atPct.length; i++)
+		{
+			double t = ((animMs + offset[i]) % 8000L) / 8000d;
+			double len;
+			int alpha;
+			if (t < 0.70d)
+			{
+				len = (t / 0.70d) * (height * runPct[i] / 100d);
+				alpha = (int) ((t < 0.08d ? 255 * t / 0.08d : 255) * 0.62d);
+			}
+			else if (t < 0.86d)
+			{
+				len = height * runPct[i] / 100d;
+				alpha = (int) (158 * (1d - (t - 0.70d) / 0.16d));
+			}
+			else
+			{
+				continue;
+			}
+			if (len < 1d)
+			{
+				continue;
+			}
+
+			int x = width * atPct[i] / 100;
+			g.setPaint(new LinearGradientPaint(
+				new Point2D.Float(x, top), new Point2D.Float(x, (float) (top + len)),
+				new float[]{0f, 0.55f, 1f},
+				new Color[]{withAlpha(blood, Math.max(0, alpha)),
+					withAlpha(blood, Math.max(0, (int) (alpha * 0.8d))),
+					withAlpha(blood, 0)}));
+			g.fillRect(x, top, (int) Math.ceil(w), (int) len);
+		}
+		g.setClip(clip);
+	}
+
+	private static void drawFiligree(Graphics2D g, Style style, int width, int height, int radius)
+	{
+		if (height < 120)
+		{
+			return;
+		}
+		int inset = Math.max(3, borderWidth(height) / 2);
+		g.setColor(withAlpha(style.metalLight, 110));
+		g.setStroke(new BasicStroke(Math.max(1f, height / 240f), BasicStroke.CAP_BUTT,
+			BasicStroke.JOIN_MITER, 10f,
+			new float[]{1.6f, 2.4f, 1.6f, 5.2f}, 0f));
+		g.drawRoundRect(inset, inset, width - inset * 2 - 1, height - inset * 2 - 1,
+			radius, radius);
+	}
+
+	private static final Color PLATINUM = new Color(0xDC, 0xE0, 0xEA);
+
+	private static void drawFrameBevel(Graphics2D g, int width, int height, int radius)
+	{
+		g.setStroke(new BasicStroke(1f));
+		g.setColor(new Color(255, 255, 255, 46));
+		g.drawRoundRect(1, 1, width - 3, height - 3, radius, radius);
+		g.setColor(new Color(0, 0, 0, 190));
+		g.drawRoundRect(0, 0, width - 1, height - 1, radius, radius);
+	}
+
+	private static void drawCornerGems(Graphics2D g, Style style, int width, int height,
+									   long animMs)
+	{
+		int size = Math.max(3, height / 52);
+		int pad = Math.max(2, height / 60);
+		int[][] at = {
+			{pad, pad}, {width - size - pad, pad},
+			{pad, height - size - pad}, {width - size - pad, height - size - pad}};
+		for (int i = 0; i < at.length; i++)
+		{
+			int gx = at[i][0];
+			int gy = at[i][1];
+			g.setPaint(new RadialGradientPaint(
+				new Point2D.Float(gx + size * 0.34f, gy + size * 0.30f), Math.max(1f, size),
+				new float[]{0f, 0.3f, 1f},
+				new Color[]{Color.WHITE, gemHue(style, animMs, i), new Color(0, 0, 0, 220)},
+				MultipleGradientPaint.CycleMethod.NO_CYCLE));
+			g.fillOval(gx, gy, size, size);
+		}
+	}
+
+	private static Color gemHue(Style style, long animMs, int index)
+	{
+		float[] hsb = Color.RGBtoHSB(style.accent.getRed(), style.accent.getGreen(),
+			style.accent.getBlue(), null);
+		float drift = ((animMs % 7000L) / 7000f + index * 0.25f) % 1f;
+		return Color.getHSBColor((hsb[0] + (drift - 0.5f) * 0.12f + 1f) % 1f, 0.4f, 1f);
+	}
+
+	private static Font nameFont(int cardHeight)
+	{
+		return new Font(Font.SERIF, Font.BOLD, Math.max(9, Math.round(cardHeight / 17.5f)));
+	}
+
+	private static int drawTrackedText(Graphics2D g, String text, Font font, float tracking,
+									   int centreX, int baseline, java.awt.Paint paint)
+	{
+		if (text == null || text.isEmpty())
+		{
+			return 0;
+		}
+		java.text.AttributedString styled = new java.text.AttributedString(text);
+		styled.addAttribute(java.awt.font.TextAttribute.FONT, font);
+		styled.addAttribute(java.awt.font.TextAttribute.TRACKING, tracking);
+		java.awt.font.TextLayout layout =
+			new java.awt.font.TextLayout(styled.getIterator(), g.getFontRenderContext());
+		int width = (int) Math.ceil(layout.getAdvance());
+		Shape outline = layout.getOutline(
+			java.awt.geom.AffineTransform.getTranslateInstance(centreX - width / 2d, baseline));
+		g.setPaint(paint);
+		g.fill(outline);
+		return width;
+	}
+
+	public static void drawSpecular(Graphics2D graphics, Card card, int x, int y, int width,
+									int height, double pointerX, double pointerY,
+									boolean prismatic, long animMs)
+	{
+		if (width <= 0 || height <= 0)
+		{
+			return;
+		}
+		Graphics2D g = (Graphics2D) graphics.create();
+		g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+		int radius = Math.max(3, height / 14);
+		java.awt.geom.Area area = new java.awt.geom.Area(
+			new RoundRectangle2D.Float(x, y, width, height, radius, radius));
+		if (prismatic)
+		{
+			area.subtract(new java.awt.geom.Area(java.awt.geom.AffineTransform
+				.getTranslateInstance(x, y).createTransformedShape(artShape(width, height))));
+		}
+		g.setClip(area);
+
+		Rarity rarity = card.getRarity();
+		int peak = prismatic ? 40
+			: rarity.ordinal() >= Rarity.EPIC.ordinal() ? 90
+			: rarity.ordinal() >= Rarity.RARE.ordinal() ? 60 : 42;
+		Color tint = prismatic
+			? Color.getHSBColor((animMs % 7000L) / 7000f, 0.12f, 1f)
+			: rarity.ordinal() >= Rarity.EPIC.ordinal() ? rarity.getColour() : Color.WHITE;
+
+		float glintX = (float) (x + pointerX * width);
+		float glintY = (float) (y + pointerY * height);
+		g.setPaint(new RadialGradientPaint(
+			new Point2D.Float(glintX, glintY),
+			Math.max(width, height) * 0.8f,
+			new float[]{0f, 1f},
+			new Color[]{withAlpha(tint, peak), withAlpha(tint, 0)},
+			MultipleGradientPaint.CycleMethod.NO_CYCLE));
+		g.fillRect(x, y, width, height);
+		g.dispose();
+	}
+
+	private static final double FLOOR_AT = 0.80d;
+
+	private static Color characterShade(Style style, float brightness)
+	{
+		Color base = style.art != null ? new Color(style.art.getBackdropColour()) : style.plate;
+		float[] hsb = Color.RGBtoHSB(base.getRed(), base.getGreen(), base.getBlue(), null);
+		return Color.getHSBColor(hsb[0], Math.max(0.55f, hsb[1]), brightness);
+	}
+
+	private static Color[] bodyTint(Style style)
+	{
+		return new Color[]{characterShade(style, 0.34f), characterShade(style, 0.17f)};
+	}
+
+	public static void drawChrome(Graphics2D graphics, Card card, int x, int y, int width,
+								  int height, boolean shiny, boolean gilded)
+	{
+		Graphics2D g = (Graphics2D) graphics.create();
+		g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+		g.translate(x, y);
+		if (NpcCardArt.forCard(card) == null)
+		{
+			drawRarityPip(g, card.getRarity(), width, height, shiny, gilded, true,
+				System.currentTimeMillis());
+		}
+		else
+		{
+			java.awt.Rectangle b = artBounds(width, height);
+			drawBadges(g, card, width, height, b.y, b.y + b.height);
+		}
+		if (NpcCardArt.forCard(card) == null)
+		{
+			drawSetBadge(g, card, height);
+		}
+		g.dispose();
+	}
+
+	private static final int PRISM_STOPS = 5;
+
+	public static void drawArtScene(Graphics2D graphics, Card card, java.awt.Rectangle box)
+	{
+		drawArtScene(graphics, card, box, 0d, 0d);
+	}
+
+	public static void drawArtScene(Graphics2D graphics, Card card, java.awt.Rectangle box,
+									double px, double py)
+	{
+		NpcCardArt art = NpcCardArt.forCard(card);
+
+		if (box == null || box.width < 8 || box.height < 8 || art == null)
+		{
+			return;
+		}
+		Graphics2D g = (Graphics2D) graphics.create();
+		g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+		int radius = Math.max(2, box.height / 8);
+		g.setClip(new RoundRectangle2D.Float(box.x, box.y, box.width, box.height, radius, radius));
+
+		Color accent = new Color(art.getAccentColour());
+		g.setColor(characterShade(styleFor(card), 0.06f));
+		g.fillRect(box.x, box.y, box.width, box.height);
+
+		int floorY = box.y + (int) (box.height * FLOOR_AT);
+
+		float haloR = Math.max(4f, Math.min(box.width, box.height) * 0.46f);
+		g.setPaint(new RadialGradientPaint(
+			new Point2D.Float(box.x + box.width / 2f, box.y + box.height * 0.46f), haloR,
+			new float[]{0f, 0.40f, 0.72f, 1f},
+			new Color[]{withAlpha(accent, 86), withAlpha(accent, 42), withAlpha(accent, 12),
+				withAlpha(accent, 0)},
+			MultipleGradientPaint.CycleMethod.NO_CYCLE));
+		g.fillRect(box.x, box.y, box.width, box.height);
+
+		int poolW = (int) (box.width * 0.86d);
+		int poolH = (int) (box.height * 0.30d);
+		g.setPaint(new RadialGradientPaint(
+			new java.awt.geom.Rectangle2D.Float(box.x + (box.width - poolW) / 2f,
+				floorY - poolH * 0.42f, poolW, poolH),
+			new float[]{0f, 0.55f, 1f},
+			new Color[]{withAlpha(accent, 74), withAlpha(accent, 26), withAlpha(accent, 0)},
+			MultipleGradientPaint.CycleMethod.NO_CYCLE));
+		g.fillRect(box.x, floorY - poolH / 2, box.width, box.y + box.height - floorY + poolH / 2);
+
+		g.setStroke(new BasicStroke(1f));
+		g.setPaint(new LinearGradientPaint(
+			new Point2D.Float(box.x, floorY), new Point2D.Float(box.x + box.width, floorY),
+			new float[]{0f, 0.5f, 1f},
+			new Color[]{withAlpha(accent, 0), withAlpha(accent, 110), withAlpha(accent, 0)}));
+		g.drawLine(box.x, floorY, box.x + box.width, floorY);
+
+		drawArtVignette(g, box);
+		g.dispose();
+	}
+
+	public static void drawArtVignette(Graphics2D graphics, java.awt.Rectangle box)
+	{
+		if (box == null || box.width <= 0 || box.height <= 0)
+		{
+			return;
+		}
+		Graphics2D g = (Graphics2D) graphics.create();
+		int radius = Math.max(2, box.height / 8);
+		g.setClip(new RoundRectangle2D.Float(box.x, box.y, box.width, box.height, radius, radius));
+		g.setPaint(new RadialGradientPaint(
+			new Point2D.Float(box.x + box.width / 2f, box.y + box.height * 0.42f),
+			Math.max(box.width, box.height) * 0.72f,
+			new float[]{0.42f, 1f},
+			new Color[]{new Color(0, 0, 0, 0), new Color(0, 0, 0, 185)},
+			MultipleGradientPaint.CycleMethod.NO_CYCLE));
+		g.fillRect(box.x, box.y, box.width, box.height);
+		g.setPaint(new GradientPaint(box.x, box.y, new Color(0, 0, 0, 90),
+			box.x, box.y + box.height * 0.18f, new Color(0, 0, 0, 0)));
+		g.fillRect(box.x, box.y, box.width, (int) (box.height * 0.18f));
+		g.dispose();
+	}
+
+	private static Color spectrumAt(Card card, float t)
+	{
+		NpcCardArt art = NpcCardArt.forCard(card);
+		if (art == null)
+		{
+			return Color.getHSBColor(t % 1f, 0.5f, 1f);
+		}
+		Color glow = new Color(art.getGlowColour());
+		float[] hsb = Color.RGBtoHSB(glow.getRed(), glow.getGreen(), glow.getBlue(), null);
+		float hue = (hsb[0] + (float) Math.sin(t * Math.PI * 2d) * 0.09f + 1f) % 1f;
+		return Color.getHSBColor(hue, 0.62f, 1f);
+	}
+
+	public static void drawFoilOver(Graphics2D graphics, Card card, Rarity rarity,
+									java.awt.Rectangle box, long animMs, float intensity)
+	{
+		if (rarity == null || box == null || box.width <= 0 || box.height <= 0
+			|| intensity <= 0f || rarity.ordinal() < Rarity.RARE.ordinal())
+		{
+			return;
+		}
+		Graphics2D g = (Graphics2D) graphics.create();
+		if (intensity < 1f)
+		{
+			Composite existing = g.getComposite();
+			float base = existing instanceof AlphaComposite
+				? ((AlphaComposite) existing).getAlpha() : 1f;
+			g.setComposite(AlphaComposite.getInstance(
+				AlphaComposite.SRC_OVER, Math.max(0f, Math.min(1f, base * intensity))));
+		}
+
+		int radius = Math.max(2, box.height / 8);
+		g.setClip(new RoundRectangle2D.Float(box.x, box.y, box.width, box.height, radius, radius));
+
+		float phase = animMs == 0 ? 0.35f : (animMs % 5200L) / 5200f;
+		float sweep = phase * box.width * 2f - box.width * 0.6f;
+		float hueDrift = animMs == 0 ? 0f : (animMs % 9000L) / 9000f;
+		Color[] band = new Color[PRISM_STOPS + 1];
+		float[] fractions = new float[PRISM_STOPS + 1];
+		for (int i = 0; i <= PRISM_STOPS; i++)
+		{
+			fractions[i] = i / (float) PRISM_STOPS;
+			Color hue = spectrumAt(card, hueDrift + fractions[i] * 0.6f);
+			double falloff = Math.sin(Math.PI * fractions[i]);
+			band[i] = withAlpha(hue, (int) Math.round(96 * falloff));
+		}
+		LinearGradientPaint prism = new LinearGradientPaint(
+			new Point2D.Float(box.x + sweep, box.y),
+			new Point2D.Float(box.x + sweep + box.width * 0.9f, box.y + box.height),
+			fractions, band);
+
+		BufferedImage scratch = foilScratch(box.width, box.height);
+		Graphics2D lg = scratch.createGraphics();
+		lg.setComposite(AlphaComposite.Clear);
+		lg.fillRect(0, 0, box.width, box.height);
+		lg.setComposite(AlphaComposite.SrcOver);
+		lg.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+		lg.translate(-box.x, -box.y);
+		lg.setPaint(prism);
+		lg.fillRect(box.x, box.y, box.width, box.height);
+		lg.translate(box.x, box.y);
+
+		lg.setComposite(AlphaComposite.DstIn);
+		lg.setPaint(new RadialGradientPaint(
+			new Point2D.Float(box.width * 0.5f, box.height * 0.52f),
+			Math.max(box.width, box.height) * 0.58f,
+			new float[]{0.12f, 0.78f},
+			new Color[]{new Color(0, 0, 0, 0), new Color(0, 0, 0, 255)},
+			MultipleGradientPaint.CycleMethod.NO_CYCLE));
+		lg.fillRect(0, 0, box.width, box.height);
+		lg.dispose();
+
+		g.drawImage(scratch, box.x, box.y, box.x + box.width, box.y + box.height,
+			0, 0, box.width, box.height, null);
+		g.dispose();
+	}
+
+	private static BufferedImage foilScratch;
+
+	private static BufferedImage foilScratch(int width, int height)
+	{
+		if (foilScratch == null || foilScratch.getWidth() < width
+			|| foilScratch.getHeight() < height)
+		{
+			foilScratch = new BufferedImage(Math.max(1, width), Math.max(1, height),
+				BufferedImage.TYPE_INT_ARGB);
+		}
+		return foilScratch;
+	}
+
 	private static void drawFoil(Graphics2D g, Rarity rarity, int x, int y, int width, int height,
 								 long animMs)
 	{

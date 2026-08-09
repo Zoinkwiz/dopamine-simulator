@@ -54,7 +54,11 @@ public enum CardOrigin
 
 	ASCENSION("Ascendant", "Ascension only",
 		"Awarded for ascending a maxed collection.",
-		new Color(0xAB, 0x47, 0xBC));
+		new Color(0xAB, 0x47, 0xBC)),
+
+	DEEDS("Deeds", "Their own pack",
+		"Earned by doing the thing they are known for. Only their own pack holds them.",
+		new Color(0xF0, 0xC4, 0x6A));
 
 	private final String displayName;
 	private final String shortHint;

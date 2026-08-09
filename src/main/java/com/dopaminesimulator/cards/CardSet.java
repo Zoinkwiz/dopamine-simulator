@@ -43,6 +43,8 @@ public enum CardSet
 	SLAYER("Slayer", "Task monsters and slayer unlocks"),
 	DIARIES("Diaries", "Achievement diaries by area"),
 
+	CHARACTERS("Characters", "The faces of Gielinor, rendered live"),
+
 	AGILITY("Agility", "Courses and shortcuts"),
 	ATTACK("Attack", "Weapons"),
 	CONSTRUCTION("Construction", "Rooms and furniture"),
@@ -90,17 +92,17 @@ public enum CardSet
 	{
 		switch (this)
 		{
-
 			case QUESTS: return SpriteID.SideIcons.QUEST;
 			case SKILLS: return SpriteID.SideIcons.STATS;
 			case BOSSES: return SpriteID.PvpwIcons.PLAYER_KILLER_SKULL;
 			case BOSS_DROPS: return SpriteID.IconActivities25x25.COLLECTIONS_LOGGED;
 			case RAIDS_DROPS: return SpriteID.IconBoss25x25.CHAMBERS_OF_XERIC;
 			case CLUE_DROPS: return SpriteID.IconActivities25x25.CLUE_SCROLL_ALL;
-			case MINIGAME_REWARDS: return SpriteID.IconActivities25x25.RIFTS_CLOSED;
+			case MINIGAME_REWARDS: return SpriteID.AchievementDiaryIcons.RED_MINIGAMES;
 			case ITEMS: return SpriteID.SideIcons.INVENTORY;
 			case MINIGAMES: return SpriteID.SideIcons.MINIGAMES;
 			case DIARIES: return SpriteID.SideIcons.ACHIEVEMENT_DIARIES;
+			case CHARACTERS: return SpriteID.SideIcons.EQUIPMENT;
 			case AREAS: return SpriteID.Mapfunction.DUNGEON;
 			case SPELLS_STANDARD: return SpriteID.SideIcons.MAGIC;
 			case SPELLS_ANCIENT: return SpriteID.SideIcons.SPELLBOOK_ANCIENT_MAGICKS;

@@ -29,12 +29,15 @@ import com.dopaminesimulator.cards.CardCatalogue;
 import com.dopaminesimulator.cards.CardOrigin;
 import com.dopaminesimulator.cards.CardOrigins;
 import com.dopaminesimulator.cards.CardSet;
+import com.dopaminesimulator.cards.NpcCardArt;
 import com.dopaminesimulator.cards.Rarity;
 import com.dopaminesimulator.cards.Region;
 import com.dopaminesimulator.core.Balance;
 import com.dopaminesimulator.core.DopamineEngine;
 import com.dopaminesimulator.core.DopamineEvent;
+import com.dopaminesimulator.cards.CharacterDeed;
 import com.dopaminesimulator.core.DopamineState;
+import com.dopaminesimulator.ui.CardRenderer;
 import com.dopaminesimulator.feats.FeatTrack;
 import com.dopaminesimulator.feats.Feat;
 import com.dopaminesimulator.feats.Feats;
@@ -75,6 +78,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import javax.inject.Inject;
+import javax.inject.Named;
 import javax.swing.SwingUtilities;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -123,6 +127,10 @@ public class DopamineSimulatorPlugin extends Plugin
 	private static final int CROSS_REGION_SENTINEL = 100;
 
 	@Inject
+	@Named("developerMode")
+	private boolean developerMode;
+
+	@Inject
 	private Client client;
 
 	@Inject
@@ -156,6 +164,9 @@ public class DopamineSimulatorPlugin extends Plugin
 
 	@Inject
 	private RevealSoundService revealSounds;
+
+	@Inject
+	private net.runelite.client.input.MouseManager mouseManager;
 
 	@Inject
 	@Getter
@@ -197,6 +208,100 @@ public class DopamineSimulatorPlugin extends Plugin
 	private FloatingTextOverlay floatingTextOverlay;
 	private SurgeInfoBox surgeInfoBox;
 
+
+	private CardViewerOverlay cardViewer;
+
+	private CardSceneOverlay cardScene;
+	private com.dopaminesimulator.systems.CharacterPackService characterPacks;
+
+	private final net.runelite.client.input.MouseAdapter viewerDismiss =
+		new net.runelite.client.input.MouseAdapter()
+		{
+			private int dragFrom = Integer.MIN_VALUE;
+
+			@Override
+			public java.awt.event.MouseEvent mouseDragged(java.awt.event.MouseEvent event)
+			{
+				if (cardViewer == null || !cardViewer.isOpen()
+					|| dragFrom == Integer.MIN_VALUE)
+				{
+					return event;
+				}
+				cardViewer.dragSpin(event.getX() - dragFrom);
+				dragFrom = event.getX();
+				event.consume();
+				return event;
+			}
+
+			@Override
+			public java.awt.event.MouseEvent mouseReleased(java.awt.event.MouseEvent event)
+			{
+				dragFrom = Integer.MIN_VALUE;
+				return event;
+			}
+
+			@Override
+			public java.awt.event.MouseEvent mousePressed(java.awt.event.MouseEvent event)
+			{
+				if (cardViewer == null || !cardViewer.isOpen())
+				{
+					return event;
+				}
+
+				if (javax.swing.SwingUtilities.isMiddleMouseButton(event))
+				{
+					if (cardViewer.containsCanvas(event.getX(), event.getY()))
+					{
+						dragFrom = event.getX();
+						event.consume();
+					}
+					return event;
+				}
+
+				if (cardViewer.containsCanvas(event.getX(), event.getY()))
+				{
+					if (javax.swing.SwingUtilities.isRightMouseButton(event))
+					{
+						cardViewer.flip();
+					}
+					else
+					{
+						cardViewer.click();
+					}
+				}
+				else
+				{
+					cardViewer.close();
+					mouseManager.unregisterMouseListener(this);
+				}
+				event.consume();
+				return event;
+			}
+		};
+
+	private void closeCardViewer()
+	{
+		if (cardViewer != null && cardViewer.isOpen())
+		{
+			cardViewer.close();
+			mouseManager.unregisterMouseListener(viewerDismiss);
+		}
+	}
+
+	public void openCardViewer(Card card)
+	{
+		if (cardViewer == null || card == null || engine == null)
+		{
+			return;
+		}
+		DopamineState state = engine.getState();
+		cardViewer.show(card, state.getStars(card.getId()), state.isShiny(card.getId()),
+			state.isGilded(card.getId()), state.getCopies(card.getId()) > 0);
+
+		mouseManager.unregisterMouseListener(viewerDismiss);
+		mouseManager.registerMouseListener(viewerDismiss);
+	}
+
 	private final Random random = new Random();
 
 	private final Map<Skill, Integer> lastXp = new EnumMap<>(Skill.class);
@@ -222,6 +327,7 @@ public class DopamineSimulatorPlugin extends Plugin
 		clickState = new ClickState();
 		collection = new CollectionService();
 		packService = new PackService(random, collection);
+		characterPacks = new com.dopaminesimulator.systems.CharacterPackService(random, collection);
 		foodService = new GnomeFoodService(random, packService);
 		passService = new PassService(random, packService, collection);
 		bannerService = new BannerService(random, packService, collection);
@@ -249,9 +355,18 @@ public class DopamineSimulatorPlugin extends Plugin
 		overlay = new DopamineOverlay(this, config);
 		overlayManager.add(overlay);
 
+		cardScene = new CardSceneOverlay();
+		overlayManager.add(cardScene);
+
 		revealOverlay = new PackRevealOverlay(client, config, revealSounds, cardArtService,
-			() -> engine == null ? SaveManager.freshState() : engine.getState());
+			() -> engine == null ? SaveManager.freshState() : engine.getState(), cardScene);
 		overlayManager.add(revealOverlay);
+		CardRenderer.setCopiesLookup(cardId -> engine == null ? 0
+			: engine.getState().getCopies(cardId));
+		cardViewer = new CardViewerOverlay(client, cardArtService, cardScene);
+		overlayManager.add(cardViewer);
+
+		revealOverlay.setOnRevealStart(this::closeCardViewer);
 		overlayManager.add(floatingTextOverlay);
 		surgeInfoBox = new SurgeInfoBox(buildIcon(), this, config, clickState);
 		infoBoxManager.addInfoBox(surgeInfoBox);
@@ -275,6 +390,19 @@ public class DopamineSimulatorPlugin extends Plugin
 		infoBoxManager.removeInfoBox(surgeInfoBox);
 		clientToolbar.removeNavigation(navButton);
 		rewards.clearListeners();
+		revealOverlay.dispose();
+		mouseManager.unregisterMouseListener(viewerDismiss);
+		if (cardViewer != null)
+		{
+			overlayManager.remove(cardViewer);
+			cardViewer.dispose();
+			cardViewer = null;
+		}
+		if (cardScene != null)
+		{
+			overlayManager.remove(cardScene);
+			cardScene = null;
+		}
 		if (panel != null)
 		{
 			panel.dispose();
@@ -299,6 +427,131 @@ public class DopamineSimulatorPlugin extends Plugin
 		lastLocation = null;
 		lastHitpoints = -1;
 	}
+	private static final int SLAYER_MASTER_KONAR = 8;
+	private static final int TOA_AMASCUT_LEVEL = 300;
+
+	private int slayerMasterHeld;
+	private int toaRaidLevelHeld;
+
+	@Subscribe
+	public void onVarbitChanged(net.runelite.api.events.VarbitChanged event)
+	{
+		int master = client.getVarbitValue(net.runelite.api.gameval.VarbitID.SLAYER_MASTER);
+		if (master > 0)
+		{
+			slayerMasterHeld = master;
+		}
+		int raidLevel = client.getVarbitValue(
+			net.runelite.api.gameval.VarbitID.TOA_CLIENT_RAID_LEVEL);
+		if (raidLevel > 0)
+		{
+			toaRaidLevelHeld = raidLevel;
+		}
+	}
+
+	@Subscribe
+	public void onChatMessage(net.runelite.api.events.ChatMessage event)
+	{
+		if (engine == null)
+		{
+			return;
+		}
+		net.runelite.api.ChatMessageType type = event.getType();
+		if (type != net.runelite.api.ChatMessageType.GAMEMESSAGE
+			&& type != net.runelite.api.ChatMessageType.SPAM)
+		{
+			return;
+		}
+		String message = net.runelite.client.util.Text
+			.removeTags(event.getMessage()).toLowerCase(java.util.Locale.ROOT);
+		if (message.contains(PACK_EARNED))
+		{
+			return;
+		}
+		CharacterDeed deed = deedFor(message);
+		if (deed != null)
+		{
+			awardCharacterPack(deed);
+			return;
+		}
+		noteUnmatched(message);
+	}
+
+	private static final String[] DEED_KEYWORDS = {
+		"theatre of blood", "tombs of amascut", "gauntlet", "zilyana", "slayer task",
+		"completed your task",
+	};
+
+	private void noteUnmatched(String message)
+	{
+		for (String keyword : DEED_KEYWORDS)
+		{
+			if (message.contains(keyword))
+			{
+				log.info("deed candidate went unmatched: {}", message);
+				return;
+			}
+		}
+	}
+
+	private CharacterDeed deedFor(String message)
+	{
+		if (message.contains("your completed theatre of blood"))
+		{
+			return message.contains("hard mode") ? CharacterDeed.VERZIK : CharacterDeed.VANESCULA;
+		}
+		if (message.contains("your completed tombs of amascut"))
+		{
+			return toaRaidLevelHeld >= TOA_AMASCUT_LEVEL
+				? CharacterDeed.AMASCUT : CharacterDeed.MAISA;
+		}
+		if (message.contains("gauntlet completion count"))
+		{
+			return message.contains("corrupted") ? CharacterDeed.SEREN : CharacterDeed.ILFEEN;
+		}
+		if (message.contains("commander zilyana kill count"))
+		{
+			return CharacterDeed.ZILYANA;
+		}
+		if (message.contains("you have completed your task"))
+		{
+			CharacterDeed earned = slayerMasterHeld == SLAYER_MASTER_KONAR
+				? CharacterDeed.KONAR : null;
+			slayerMasterHeld = 0;
+			return earned;
+		}
+		return null;
+	}
+
+	private static final String PACK_EARNED = " pack earned - ";
+
+	private void awardCharacterPack(CharacterDeed deed)
+	{
+		engine.getState().addCharacterPack(deed.getCardId());
+		persist();
+		rebuildPanel();
+		client.addChatMessage(ChatMessageType.GAMEMESSAGE, "",
+			"<col=ffc46a>" + deed.getCharacterName() + "</col>" + PACK_EARNED
+				+ deed.getDeed() + ". Open it from Feats > Deeds.", null);
+	}
+
+	public void openCharacterPack(CharacterDeed deed)
+	{
+		clientThread.invoke(() ->
+		{
+			if (!isPlayable() || deed == null)
+			{
+				return;
+			}
+			for (Card card : characterPacks.open(engine.getState(), deed, rewards))
+			{
+				announce(card);
+			}
+			persist();
+			rebuildPanel();
+		});
+	}
+
 	@Subscribe
 	public void onGameTick(GameTick event)
 	{
@@ -360,7 +613,6 @@ public class DopamineSimulatorPlugin extends Plugin
 		DopamineState state = engine.getState();
 		long now = System.currentTimeMillis();
 
-		// A plated dish is waiting on a click, so nothing may take its place.
 		if (state.getLifetimePoints() < ClickState.SURGE_UNLOCK_AT
 			|| clickState.isSurging(now) || clickState.isPlated(now))
 		{
@@ -376,10 +628,6 @@ public class DopamineSimulatorPlugin extends Plugin
 		serve(GnomeFood.roll(random));
 	}
 
-	/**
-	 * Puts a dish in front of the player. Nothing is paid out here: the dish is
-	 * only worth something to whoever clicks it before the window runs out.
-	 */
 	private void serve(GnomeFood food)
 	{
 		clickState.serve(food, System.currentTimeMillis());
@@ -394,7 +642,6 @@ public class DopamineSimulatorPlugin extends Plugin
 		refreshPanel();
 	}
 
-	/** Pays out whatever was on the plate, if this click came in time. */
 	private void eat(long now)
 	{
 		GnomeFood food = clickState == null ? null : clickState.eat(now);
@@ -472,8 +719,6 @@ public class DopamineSimulatorPlugin extends Plugin
 		int maxed = 0;
 		for (Skill skill : Skill.values())
 		{
-
-			// Skill.values() includes Overall, which is the sum of the rest.
 			if (skill == Skill.OVERALL)
 			{
 				continue;
@@ -488,7 +733,6 @@ public class DopamineSimulatorPlugin extends Plugin
 		state.raiseFeatProgress(FeatTrack.TOTAL_XP, totalXp);
 		state.raiseFeatProgress(FeatTrack.SKILLS_MAXED, maxed);
 
-		// Raised from the account, so FeatSystem never sees these two move.
 		announceRank(Feat.CLIMBER, climberBefore);
 		announceRank(Feat.MAXED, maxedBefore);
 	}
@@ -595,22 +839,12 @@ public class DopamineSimulatorPlugin extends Plugin
 		return engine != null && client.getGameState() == GameState.LOGGED_IN;
 	}
 
-	/**
-	 * Raises the run's high-water mark of passive income. Only ever raises, so the
-	 * click button keeps its value across a break instead of collapsing to its floor
-	 * the moment the last half hour of earnings ages out of the window.
-	 */
 	private void trackPeakIncome()
 	{
 		raisePeak(engine.getState(), incomeTracker, clickState == null
 			? 1d : clickState.incomeMultiplier(System.currentTimeMillis()));
 	}
 
-	/**
-	 * Static and free of the client so the behaviour that matters — that the peak
-	 * survives a break, and that a surge cannot be banked into it — can be driven
-	 * directly rather than only by playing.
-	 */
 	static void raisePeak(DopamineState state, IncomeTracker tracker, double foodMultiplier)
 	{
 		long tick = state.getTick();
@@ -622,8 +856,6 @@ public class DopamineSimulatorPlugin extends Plugin
 		double live = Math.max(0d,
 			tracker.totalPerHour(tick) - tracker.perHour(PointSource.CLICK, tick));
 
-		// Divided back out, or a 60s Worm hole banks its 4x into the peak for the
-		// rest of the run. The surge is applied at payout time instead, once.
 		double sustained = foodMultiplier <= 0d ? live : live / foodMultiplier;
 		if (sustained > state.getPeakPassivePerHour())
 		{
@@ -653,8 +885,6 @@ public class DopamineSimulatorPlugin extends Plugin
 				return;
 			}
 
-			// Before the payout, so a dish that lifts clicks, or sours them, is
-			// already running for the click that ate it.
 			eat(System.currentTimeMillis());
 			engine.accept(DopamineEvent.click(clickPayout()));
 			refreshPanel();
@@ -911,8 +1141,6 @@ public class DopamineSimulatorPlugin extends Plugin
 			int gained = Prestige.gainFrom(lifetime, state.getInsight());
 			state.prestige(Prestige.insightFor(lifetime));
 
-			// One mastery card per reset, from a track that exists nowhere else.
-			// The stars it banks feed straight back into how fast the next run grows.
 			Card mastery = CardOrigins.prestigeCard(state.getPrestigeCount());
 			if (mastery != null)
 			{
@@ -1004,8 +1232,6 @@ public class DopamineSimulatorPlugin extends Plugin
 			}
 			state.ascend(collectionName);
 
-			// Granted after the burn, so a trophy that happens to sit inside the
-			// collection being ascended is not cleared on its way in.
 			Card trophy = CardOrigins.ascensionCard(state.getTotalAscensions());
 			if (trophy != null)
 			{
@@ -1073,7 +1299,6 @@ public class DopamineSimulatorPlugin extends Plugin
 		}
 		if (reward.getType() == RewardType.FEAT || reward.getType() == RewardType.ACHIEVEMENT)
 		{
-
 			String line = "<col=ffb300>" + reward.getTitle() + "</col> - " + reward.getDetail();
 			clientThread.invokeLater(() ->
 				client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", line, null));
@@ -1130,6 +1355,16 @@ public class DopamineSimulatorPlugin extends Plugin
 	@Subscribe
 	public void onCommandExecuted(CommandExecuted event)
 	{
+		GnomeFood food = GnomeFood.byCommand(event.getCommand());
+		if (food != null)
+		{
+			serveOnCommand(food);
+			return;
+		}
+		if (!developerMode)
+		{
+			return;
+		}
 		if ("resetfeats".equalsIgnoreCase(event.getCommand()))
 		{
 			runReset("resetfeats", "feat ranks",
@@ -1150,21 +1385,10 @@ public class DopamineSimulatorPlugin extends Plugin
 		{
 			completeCards(event.getArguments());
 		}
-		else
-		{
-			GnomeFood food = GnomeFood.byCommand(event.getCommand());
-			if (food != null)
-			{
-				serveOnCommand(food);
-			}
-		}
 	}
 
-	/** What ::adddopamine hands out when it is not told an amount. */
 	private static final double DEV_POINTS = 1_000_000d;
 
-	// Development commands. Like ::resetdopamine they are not gated, so anyone
-	// running the plugin can type them.
 	private void addDopamine(String[] arguments)
 	{
 		if (!isPlayable())
@@ -1205,7 +1429,6 @@ public class DopamineSimulatorPlugin extends Plugin
 		int stars = 1;
 		if (arguments.length > 0)
 		{
-			// "max" spares the reader from remembering what the top star is.
 			if ("max".equalsIgnoreCase(arguments[0]))
 			{
 				stars = Rarity.MAX_STARS;
@@ -1229,7 +1452,6 @@ public class DopamineSimulatorPlugin extends Plugin
 		long copies = 0;
 		for (Card card : CardCatalogue.all())
 		{
-			// An unlock set counts ownership, not copies, so one is the whole card.
 			int wanted = card.getSet().isUnlockSet()
 				? 1 : card.getRarity().copiesForStars(stars);
 			int missing = wanted - state.getCopies(card.getId());
@@ -1320,6 +1542,15 @@ public class DopamineSimulatorPlugin extends Plugin
 			saveManager.save(loadedAccountHash, engine.getState());
 		}
 	}
+	private void rebuildPanel()
+	{
+		DopamineSimulatorPanel current = panel;
+		if (current != null)
+		{
+			current.refreshNow();
+		}
+	}
+
 	private void refreshPanel()
 	{
 		DopamineSimulatorPanel current = panel;
@@ -1337,8 +1568,6 @@ public class DopamineSimulatorPlugin extends Plugin
 			return;
 		}
 
-		// Gilding reads the pixels, and those arrive with the item image rather
-		// than with the call for it.
 		cookie.onLoaded(() ->
 		{
 			SurgeInfoBox box = surgeInfoBox;

@@ -111,5 +111,19 @@
       "bosses-yama",
       "bosses-royal-titans"
     ]
+  },
+  {
+    "pool": "CHARACTERS",
+    "origin": "DEEDS",
+    "members": [
+      "characters-verzik-vitur",
+      "characters-vanescula-drakan",
+      "characters-seren",
+      "characters-konar-quo-maten",
+      "characters-amascut",
+      "characters-ilfeen",
+      "characters-maisa",
+      "characters-commander-zilyana"
+    ]
   }
 ]

@@ -79,7 +79,8 @@ public class WrappedLabel extends JComponent
 		{
 			lines.add(current.toString());
 		}
-		Dimension size = new Dimension(wrapWidth, Math.max(lineHeight, lines.size() * lineHeight));
+		Dimension size = new Dimension(wrapWidth,
+			Math.max(lineHeight, lines.size() * lineHeight) + 2);
 		setPreferredSize(size);
 		setMinimumSize(size);
 		setMaximumSize(size);

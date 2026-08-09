@@ -43,6 +43,8 @@ public final class CardData
 
 	private static final String ORIGINS = "/com/dopaminesimulator/cards/origins.json";
 
+	private static final String NPC_ART = "/com/dopaminesimulator/cards/npc-card-art.json";
+
 	public static final class Entry
 	{
 		public String id;
@@ -59,6 +61,42 @@ public final class CardData
 		public String set;
 		public String description;
 		public List<String> members = new ArrayList<>();
+	}
+
+	public static final class NpcArtEntry
+	{
+		public String id;
+		public String displayName;
+		public int npcId;
+		public int animationId;
+		public int zoom;
+		public int verticalOffset;
+		public int backdropColour;
+		public int sceneryModelId = -1;
+		public int sceneryZoom;
+		public int accentColour;
+		public String epithet;
+		public String roleTag;
+		public String mechanicTag;
+		public int metalDark;
+		public int metalMid;
+		public int metalLight;
+		public int plateColour;
+		public int glowColour;
+		public int pillarModelId = -1;
+		public int pillarModelIdRight = -1;
+		public int pillarZoom;
+		public int pillarRotation;
+		public int pillarRotationRight;
+		public int foreModelId = -1;
+		public int foreZoom;
+		public int foreRotation;
+		public int altNpcId = -1;
+		public int altAnimationId = -1;
+		public int altZoom;
+		public int altVerticalOffset;
+		public boolean bloodDrips;
+		public String backMotif;
 	}
 
 	public static final class OriginEntry
@@ -183,6 +221,127 @@ public final class CardData
 			reader.endObject();
 			return e;
 		});
+	}
+
+	public static List<NpcArtEntry> loadNpcArt()
+	{
+		return read(NPC_ART, reader ->
+		{
+			NpcArtEntry e = new NpcArtEntry();
+			reader.beginObject();
+			while (reader.hasNext())
+			{
+				switch (reader.nextName())
+				{
+					case "id":
+						e.id = reader.nextString();
+						break;
+					case "displayName":
+						e.displayName = reader.nextString();
+						break;
+					case "epithet":
+						e.epithet = reader.nextString();
+						break;
+					case "roleTag":
+						e.roleTag = reader.nextString();
+						break;
+					case "mechanicTag":
+						e.mechanicTag = reader.nextString();
+						break;
+					case "backdropColour":
+						e.backdropColour = colour(reader.nextString());
+						break;
+					case "accentColour":
+						e.accentColour = colour(reader.nextString());
+						break;
+					case "metalDark":
+						e.metalDark = colour(reader.nextString());
+						break;
+					case "metalMid":
+						e.metalMid = colour(reader.nextString());
+						break;
+					case "metalLight":
+						e.metalLight = colour(reader.nextString());
+						break;
+					case "plateColour":
+						e.plateColour = colour(reader.nextString());
+						break;
+					case "glowColour":
+						e.glowColour = colour(reader.nextString());
+						break;
+					case "npcId":
+						e.npcId = reader.nextInt();
+						break;
+					case "animationId":
+						e.animationId = reader.nextInt();
+						break;
+					case "zoom":
+						e.zoom = reader.nextInt();
+						break;
+					case "verticalOffset":
+						e.verticalOffset = reader.nextInt();
+						break;
+					case "sceneryModelId":
+						e.sceneryModelId = reader.nextInt();
+						break;
+					case "sceneryZoom":
+						e.sceneryZoom = reader.nextInt();
+						break;
+					case "pillarModelId":
+						e.pillarModelId = reader.nextInt();
+						break;
+					case "pillarModelIdRight":
+						e.pillarModelIdRight = reader.nextInt();
+						break;
+					case "pillarZoom":
+						e.pillarZoom = reader.nextInt();
+						break;
+					case "pillarRotation":
+						e.pillarRotation = reader.nextInt();
+						break;
+					case "pillarRotationRight":
+						e.pillarRotationRight = reader.nextInt();
+						break;
+					case "foreModelId":
+						e.foreModelId = reader.nextInt();
+						break;
+					case "foreZoom":
+						e.foreZoom = reader.nextInt();
+						break;
+					case "foreRotation":
+						e.foreRotation = reader.nextInt();
+						break;
+					case "altNpcId":
+						e.altNpcId = reader.nextInt();
+						break;
+					case "altAnimationId":
+						e.altAnimationId = reader.nextInt();
+						break;
+					case "altZoom":
+						e.altZoom = reader.nextInt();
+						break;
+					case "altVerticalOffset":
+						e.altVerticalOffset = reader.nextInt();
+						break;
+					case "bloodDrips":
+						e.bloodDrips = reader.nextBoolean();
+						break;
+					case "backMotif":
+						e.backMotif = reader.nextString();
+						break;
+					default:
+						reader.skipValue();
+				}
+			}
+			reader.endObject();
+			return e;
+		});
+	}
+
+	private static int colour(String hex)
+	{
+		String digits = hex.startsWith("#") ? hex.substring(1) : hex;
+		return Integer.parseInt(digits, 16);
 	}
 
 	private interface ElementReader<T>

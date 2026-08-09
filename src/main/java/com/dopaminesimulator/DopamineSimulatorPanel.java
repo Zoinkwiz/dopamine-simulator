@@ -59,6 +59,7 @@ import com.dopaminesimulator.points.ClickState;
 import com.dopaminesimulator.points.GnomeFood;
 import com.dopaminesimulator.points.PointSource;
 import com.dopaminesimulator.ui.CardComponent;
+import com.dopaminesimulator.ui.CharacterPackRow;
 import com.dopaminesimulator.ui.ClickButton;
 import com.dopaminesimulator.ui.BannerHeader;
 import com.dopaminesimulator.ui.FeatRow;
@@ -148,12 +149,12 @@ public class DopamineSimulatorPanel extends PluginPanel
 	private Tab selectedTab = Tab.PLAY;
 	private Card selectedCard;
 	private CardSet selectedSet = CardSet.QUESTS;
-	private boolean allSets;
+	private boolean allSets = true;
 	private CardSet expandedInAll;
 	private int buyQuantity = 1;
 	private boolean collectionsExpanded;
 	private String cardSearch = "";
-	private boolean showingAchievements;
+	private int featsView;
 	private int shopView;
 	private final JTextField searchField = new JTextField();
 	DopamineSimulatorPanel(DopamineSimulatorPlugin plugin, DopamineSimulatorConfig config)
@@ -251,7 +252,6 @@ public class DopamineSimulatorPanel extends PluginPanel
 			@Override
 			public void setBorder(Border border)
 			{
-
 			}
 
 			@Override
@@ -265,7 +265,6 @@ public class DopamineSimulatorPanel extends PluginPanel
 				g.fillRoundRect(0, 0, w, h, 5, 5);
 				if (isSelected())
 				{
-
 					g.setColor(Skin.GOLD);
 					g.fillRect(2, h - 2, w - 4, 2);
 				}
@@ -292,6 +291,19 @@ public class DopamineSimulatorPanel extends PluginPanel
 		rebuild();
 		return true;
 	}
+	public void refreshNow()
+	{
+		if (!refreshQueued.compareAndSet(false, true))
+		{
+			return;
+		}
+		SwingUtilities.invokeLater(() ->
+		{
+			refreshQueued.set(false);
+			rebuild();
+		});
+	}
+
 	public void refresh()
 	{
 		if (selectedTab == Tab.CARDS)
@@ -480,7 +492,6 @@ public class DopamineSimulatorPanel extends PluginPanel
 		GnomeFood plated = clicks.getPlated(now);
 		if (plated != null)
 		{
-			// A trap gets the red warning instead, from dangerLabel.
 			return plated.isTrap()
 				? null : "EAT " + String.format("%.0fs", clicks.plateSecondsRemaining(now));
 		}
@@ -655,7 +666,6 @@ public class DopamineSimulatorPanel extends PluginPanel
 		BufferedImage art = plugin.getCardArtService().get(featured);
 		if (art == null)
 		{
-
 			plugin.getCardArtService().onLoaded(featured,
 				() -> SwingUtilities.invokeLater(this::refresh));
 		}
@@ -815,8 +825,8 @@ public class DopamineSimulatorPanel extends PluginPanel
 		}
 
 		shopContent.add(sectionLabel("Packs"));
-		shopContent.add(hint("Bigger packs hold more cards and better odds. "
-			+ "Curated draws only from the set chosen on the Cards tab."));
+		shopContent.add(hint("Bigger packs hold more cards and better odds. Curated draws from"
+			+ " one set, and which set rotates each day."));
 		shopContent.add(Box.createVerticalStrut(4));
 		shopContent.add(buildQuantitySelector());
 		shopContent.add(Box.createVerticalStrut(5));
@@ -854,9 +864,12 @@ public class DopamineSimulatorPanel extends PluginPanel
 			effect.append("  •  +").append(Math.round((tier.getLuck() - 1d) * 100d))
 				.append("% top odds");
 		}
-		String name = tier.isTargetsSet()
-			? tier.getDisplayName() + " (" + selectedSet.getDisplayName() + ")"
-			: tier.getDisplayName();
+		String name = tier.getDisplayName();
+		CardSet curated = curatedSetToday();
+		if (tier.isTargetsSet())
+		{
+			effect.insert(0, curated.getDisplayName() + " today  •  ");
+		}
 		ShopRow row = new ShopRow(
 			buyQuantity > 1 ? name + " x" + buyQuantity : name,
 			effect.toString(),
@@ -865,7 +878,7 @@ public class DopamineSimulatorPanel extends PluginPanel
 			String.valueOf(totalCards),
 			affordable,
 			state.getPoints() / cost,
-			r -> plugin.buyPacks(tier, selectedSet, buyQuantity));
+			r -> plugin.buyPacks(tier, curated, buyQuantity));
 		row.setIcon(plugin.getGameIcons().forPack(tier));
 		row.setToolTipText(tier.getDescription()
 			+ "  \u2022  " + BigNumbers.format(tier.getCostPerCopy()) + " per copy"
@@ -882,7 +895,9 @@ public class DopamineSimulatorPanel extends PluginPanel
 	{
 		int stars = state.getTotalStars();
 		int maxStars = CardCatalogue.size() * Rarity.MAX_STARS;
-		double complete = maxStars == 0 ? 0d : stars * 100d / maxStars;
+		int unique = state.getUniqueCardsOwned();
+		int catalogue = CardCatalogue.size();
+		double complete = catalogue == 0 ? 0d : unique * 100d / catalogue;
 
 		JLabel header = new JLabel(String.format("%.1f%% complete", complete));
 		header.setFont(FontManager.getRunescapeBoldFont());
@@ -902,6 +917,7 @@ public class DopamineSimulatorPanel extends PluginPanel
 		overall.setMaximumSize(new Dimension(Integer.MAX_VALUE, 15));
 		cardsContent.add(overall);
 		cardsContent.add(Box.createVerticalStrut(5));
+		buildCharacterPacks(state);
 		cardsContent.add(hint(BigNumbers.format(stars) + " of " + BigNumbers.format(maxStars)
 			+ " stars" + variantSummary(state)));
 		cardsContent.add(Box.createVerticalStrut(8));
@@ -990,20 +1006,17 @@ public class DopamineSimulatorPanel extends PluginPanel
 	private List<Card> visibleCards()
 	{
 		List<Card> all = allSets ? CardCatalogue.all() : CardCatalogue.bySet(selectedSet);
-		if (cardSearch.isEmpty())
-		{
-			return all;
-		}
-
-		String needle = cardSearch.toLowerCase();
 		List<Card> matches = new ArrayList<>();
+		String needle = cardSearch.toLowerCase();
 		for (Card card : all)
 		{
-			if (card.getName().toLowerCase().contains(needle))
+			if (cardSearch.isEmpty() || card.getName().toLowerCase().contains(needle))
 			{
 				matches.add(card);
 			}
 		}
+		matches.sort(Comparator.comparingInt((Card card) -> card.getRarity().ordinal())
+			.thenComparing(Card::getName));
 		return matches;
 	}
 
@@ -1012,7 +1025,6 @@ public class DopamineSimulatorPanel extends PluginPanel
 		StringBuilder text = new StringBuilder();
 		if (state.getDust() > 0)
 		{
-
 			text.append("  •  ").append(BigNumbers.format(state.getDust()))
 				.append(" dust");
 		}
@@ -1027,16 +1039,67 @@ public class DopamineSimulatorPanel extends PluginPanel
 		return text.toString();
 	}
 
+	private static List<CardSet> orderedSets()
+	{
+		List<CardSet> sets = new ArrayList<>();
+		sets.add(CardSet.CHARACTERS);
+		for (CardSet set : CardSet.values())
+		{
+			if (set != CardSet.CHARACTERS)
+			{
+				sets.add(set);
+			}
+		}
+		return sets;
+	}
+
+	private static final CardSet[] CURATED_EXCLUDED = {CardSet.CHARACTERS};
+
+	private static CardSet curatedSetToday()
+	{
+		List<CardSet> pool = new ArrayList<>();
+		for (CardSet set : CardSet.values())
+		{
+			boolean excluded = false;
+			for (CardSet skip : CURATED_EXCLUDED)
+			{
+				excluded |= set == skip;
+			}
+			if (excluded)
+			{
+				continue;
+			}
+			int packable = 0;
+			for (Rarity rarity : Rarity.values())
+			{
+				packable += CardCatalogue.packPool(set, rarity).size();
+			}
+			if (packable >= 8)
+			{
+				pool.add(set);
+			}
+		}
+		if (pool.isEmpty())
+		{
+			return CardSet.QUESTS;
+		}
+		long day = java.time.LocalDate.now().toEpochDay();
+		return pool.get((int) Math.floorMod(day, pool.size()));
+	}
+
 	private JPanel buildSetSelector(DopamineState state)
 	{
 		JPanel row = new JPanel(new BorderLayout(4, 0));
 		row.setBackground(Skin.BG);
 		row.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-		CardSet[] sets = CardSet.values();
-		Object[] options = new Object[sets.length + 1];
+		List<CardSet> sets = orderedSets();
+		Object[] options = new Object[sets.size() + 1];
 		options[0] = ALL_SETS;
-		System.arraycopy(sets, 0, options, 1, sets.length);
+		for (int i = 0; i < sets.size(); i++)
+		{
+			options[i + 1] = sets.get(i);
+		}
 
 		JComboBox<Object> picker = new JComboBox<>(options);
 		picker.setSelectedItem(allSets ? ALL_SETS : selectedSet);
@@ -1094,6 +1157,42 @@ public class DopamineSimulatorPanel extends PluginPanel
 	{
 		return "x" + String.format(multiplier >= 10d ? "%.0f" : "%.2f", multiplier);
 	}
+	private void buildCharacterPacks(DopamineState state)
+	{
+		int held = 0;
+		for (com.dopaminesimulator.cards.CharacterDeed deed
+			: com.dopaminesimulator.cards.CharacterDeed.values())
+		{
+			held += state.getCharacterPacks(deed.getCardId());
+		}
+		if (held == 0)
+		{
+			return;
+		}
+		WrappedLabel waiting = hint(held == 1
+			? "1 character pack waiting in Feats > Deeds."
+			: held + " character packs waiting in Feats > Deeds.");
+		waiting.setToolTipText("Open them from the Deeds view on the Feats tab.");
+		cardsContent.add(waiting);
+		cardsContent.add(Box.createVerticalStrut(4));
+	}
+
+	private void buildDeedGuide(DopamineState state)
+	{
+		cardsContent.add(sectionLabel("How to earn them", "Feats tab to open"));
+		cardsContent.add(Box.createVerticalStrut(3));
+		for (com.dopaminesimulator.cards.CharacterDeed deed
+			: com.dopaminesimulator.cards.CharacterDeed.values())
+		{
+			boolean owned = state.getCopies(deed.getCardId()) > 0;
+			WrappedLabel line = hint((owned ? "* " : "- ") + deed.getCharacterName()
+				+ ":  " + deed.getDeed());
+			line.setToolTipText(deed.getCharacterName() + " - " + deed.getDeed());
+			cardsContent.add(line);
+		}
+		cardsContent.add(Box.createVerticalStrut(6));
+	}
+
 	private void buildSelectedSet(DopamineState state)
 	{
 		if (allSets)
@@ -1109,6 +1208,11 @@ public class DopamineSimulatorPanel extends PluginPanel
 			cardSearch.isEmpty()
 				? owned + "/" + cards.size() + " cards"
 				: cards.size() + " matching"));
+		if (selectedSet == CardSet.CHARACTERS)
+		{
+			cardsContent.add(Box.createVerticalStrut(3));
+			buildDeedGuide(state);
+		}
 		PointSource powers = CollectionBonus.sourceFor(selectedSet);
 		JLabel effect = new JLabel(powers.getDisplayName() + " "
 			+ multiplierText(CollectionBonus.multiplierFor(state, powers)));
@@ -1136,7 +1240,7 @@ public class DopamineSimulatorPanel extends PluginPanel
 		}
 		buildCardGrid(state, cards, columns, cardWidth);
 	}
-    
+
 	private void buildAllSets(DopamineState state)
 	{
 		List<Card> cards = visibleCards();
@@ -1146,8 +1250,8 @@ public class DopamineSimulatorPanel extends PluginPanel
 			cardSearch.isEmpty()
 				? state.getUniqueCardsOwned() + "/" + CardCatalogue.size() + " cards"
 				: cards.size() + " matching"));
-		// The picker no longer names the set packs draw from, so say it out loud.
-		cardsContent.add(hint("Curated packs and banner pulls still draw from "
+
+		cardsContent.add(hint("Banner pulls still draw from "
 			+ selectedSet.getDisplayName() + "."));
 		cardsContent.add(Box.createVerticalStrut(6));
 
@@ -1169,7 +1273,7 @@ public class DopamineSimulatorPanel extends PluginPanel
 			return;
 		}
 
-		for (CardSet set : CardSet.values())
+		for (CardSet set : orderedSets())
 		{
 			List<Card> inSet = bySet.get(set);
 			if (inSet == null)
@@ -1210,7 +1314,7 @@ public class DopamineSimulatorPanel extends PluginPanel
 		int total, int columns, int cardWidth)
 	{
 		int shown = 0;
-		for (CardSet set : CardSet.values())
+		for (CardSet set : orderedSets())
 		{
 			List<Card> inSet = bySet.get(set);
 			if (inSet == null)
@@ -1428,33 +1532,34 @@ public class DopamineSimulatorPanel extends PluginPanel
 		CardComponent big = new CardComponent(card, stars, owned, 72, plugin.getCardArtService(),
 			state.isShiny(card.getId()), state.isGilded(card.getId()));
 		big.playIntro();
-		big.setOnClick(c -> {
-			selectedCard = null;
-			rebuild();
-		});
+
+		big.setOnClick(plugin::openCardViewer);
+		big.setToolTipText("Click to view in-game");
 		detail.add(big, BorderLayout.WEST);
 		JPanel text = new JPanel();
 		text.setLayout(new BoxLayout(text, BoxLayout.Y_AXIS));
 		text.setBackground(Skin.CARD_DEEP);
 		JLabel name = new JLabel(owned ? card.getName() : "???");
+		name.setToolTipText(owned ? card.getName() : "Not yet owned");
 		name.setFont(FontManager.getRunescapeBoldFont());
 		name.setForeground(card.getRarity().getColour());
 		name.setAlignmentX(Component.LEFT_ALIGNMENT);
 		text.add(name);
-		JLabel meta = new JLabel(card.getRarity().getDisplayName()
-			+ "  •  " + card.getSet().getDisplayName());
+		String metaText = card.getRarity().getDisplayName()
+			+ "  •  " + card.getSet().getDisplayName();
+		JLabel meta = new JLabel(metaText);
+		meta.setToolTipText(metaText);
 		meta.setFont(FontManager.getRunescapeSmallFont());
 		meta.setForeground(Skin.MUTED);
 		meta.setAlignmentX(Component.LEFT_ALIGNMENT);
 		text.add(meta);
 
-		// Without this the panel sends people to buy Curated packs for cards that
-		// packs cannot contain.
 		CardOrigin origin = CardOrigins.of(card);
 		if (origin.isExclusive())
 		{
 			JLabel source = new JLabel(origin.getDisplayName() + "  •  "
 				+ origin.getShortHint());
+			source.setToolTipText(origin.getDisplayName() + ": " + origin.getDescription());
 			source.setFont(FontManager.getRunescapeSmallFont());
 			source.setForeground(origin.getColour());
 			source.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -1486,14 +1591,17 @@ public class DopamineSimulatorPanel extends PluginPanel
 			int per = Dust.costPerCopy(card.getRarity());
 			boolean enough = state.getDust() >= per;
 			StoneButton buy = new StoneButton(enough
-				? "Spend " + per + " dust  (+1 copy)"
-				: per + " dust needed  (" + state.getDust() + ")");
+				? "Spend " + per + " dust"
+				: per + " dust needed");
 			buy.withAccent(enough ? GOLD : Skin.MUTED);
 			buy.setEnabled(enough);
 			buy.setAlignmentX(Component.LEFT_ALIGNMENT);
 			buy.setMaximumSize(new Dimension(Integer.MAX_VALUE, 20));
-			buy.setToolTipText("Dust comes from spare copies of finished cards."
-				+ " It is the only way to pick a specific card.");
+			buy.setToolTipText(enough
+				? "Spend " + per + " dust for one more copy. Dust comes from spare copies of"
+					+ " finished cards, and is the only way to pick a specific card."
+				: "Needs " + per + " dust and you have " + state.getDust()
+					+ ". Dust comes from spare copies of finished cards.");
 			buy.addActionListener(e -> plugin.spendDustOn(card, 1));
 			text.add(Box.createVerticalStrut(4));
 			text.add(buy);
@@ -1600,7 +1708,6 @@ public class DopamineSimulatorPanel extends PluginPanel
 		cascadeTimer = new Timer(CASCADE_INTERVAL_MS, null);
 		cascadeTimer.addActionListener(e ->
 		{
-
 			RewardQueue queue = plugin.getRewards();
 			Reward reward = queue == null ? null : queue.claim();
 			if (reward == null)
@@ -1713,8 +1820,6 @@ public class DopamineSimulatorPanel extends PluginPanel
 		int free = state.getFreeInsight();
 		boolean maxed = Prestige.isMaxed(insight);
 
-		// The count of what is left to spend, not of what the tree costs. A held
-		// budget nobody has touched used to read as having bought the lot.
 		if (free > 0)
 		{
 			block.add(sectionLabel("Insight", free + " insight left"));
@@ -1749,8 +1854,6 @@ public class DopamineSimulatorPanel extends PluginPanel
 			return block;
 		}
 
-		// Offered whenever a run qualifies, even when it adds no insight. Resetting
-		// is the only rethink there is, so it has to stay reachable to be one.
 		String why;
 		if (gain > 0)
 		{
@@ -1872,9 +1975,14 @@ public class DopamineSimulatorPanel extends PluginPanel
 		featsContent.add(featsToggle());
 		featsContent.add(Box.createVerticalStrut(8));
 
-		if (showingAchievements)
+		if (featsView == 1)
 		{
 			buildAchievements(state);
+			return;
+		}
+		if (featsView == 2)
+		{
+			buildDeeds(state);
 			return;
 		}
 
@@ -1911,14 +2019,52 @@ public class DopamineSimulatorPanel extends PluginPanel
 
 	private Segmented featsToggle()
 	{
-		Segmented row = new Segmented(new String[]{"Ranks", "Achievements"},
-			showingAchievements ? 1 : 0, index ->
+		Segmented row = new Segmented(new String[]{"Ranks", "Feats", "Deeds"},
+			featsView, index ->
 			{
-				showingAchievements = index == 1;
+				featsView = index;
 				rebuild();
 			});
 		row.setAlignmentX(Component.LEFT_ALIGNMENT);
 		return row;
+	}
+
+	private void buildDeeds(DopamineState state)
+	{
+		int held = 0;
+		int collected = 0;
+		for (com.dopaminesimulator.cards.CharacterDeed deed
+			: com.dopaminesimulator.cards.CharacterDeed.values())
+		{
+			held += state.getCharacterPacks(deed.getCardId());
+			collected += state.getCopies(deed.getCardId()) > 0 ? 1 : 0;
+		}
+
+		JLabel header = new JLabel(collected + " of "
+			+ com.dopaminesimulator.cards.CharacterDeed.values().length + " characters");
+		header.setFont(FontManager.getRunescapeBoldFont());
+		header.setForeground(GOLD);
+		header.setAlignmentX(Component.LEFT_ALIGNMENT);
+		featsContent.add(header);
+		featsContent.add(Box.createVerticalStrut(3));
+		featsContent.add(hint(held == 0
+			? "No packs waiting. Doing the thing a character is known for earns one."
+			: held + (held == 1 ? " pack waiting." : " packs waiting.")
+				+ " Click one to open it."));
+		featsContent.add(Box.createVerticalStrut(6));
+
+		for (com.dopaminesimulator.cards.CharacterDeed deed
+			: com.dopaminesimulator.cards.CharacterDeed.values())
+		{
+			int packs = state.getCharacterPacks(deed.getCardId());
+			int toPity = Math.max(0, deed.getPity() - state.getCharacterPity(deed.getCardId()));
+			boolean owned = state.getCopies(deed.getCardId()) > 0;
+			CharacterPackRow row = new CharacterPackRow(deed, packs, toPity, owned,
+				plugin::openCharacterPack);
+			row.setAlignmentX(Component.LEFT_ALIGNMENT);
+			featsContent.add(row);
+			featsContent.add(Box.createVerticalStrut(3));
+		}
 	}
 
 	private void buildAchievements(DopamineState state)
@@ -2013,7 +2159,6 @@ public class DopamineSimulatorPanel extends PluginPanel
 		surgeTimer.stop();
 	}
 
-	// A running Swing timer keeps this whole panel alive after shutDown.
 	public void dispose()
 	{
 		surgeTimer.stop();
@@ -2092,6 +2237,7 @@ public class DopamineSimulatorPanel extends PluginPanel
 		SectionHeader header = new SectionHeader(text, trailing);
 		header.setAlignmentX(Component.LEFT_ALIGNMENT);
 		header.setMaximumSize(new Dimension(Integer.MAX_VALUE, 22));
+		header.setToolTipText(trailing == null ? text : text + "  -  " + trailing);
 		return header;
 	}
 	private WrappedLabel hint(String text)

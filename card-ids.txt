@@ -5382,3 +5382,11 @@ other_collectionlog-broken-zombie-helmet
 other_collectionlog-helmet-of-the-moon
 other_collectionlog-squid-beak
 other_collectionlog-jeweller-s-chisel
+characters-verzik-vitur
+characters-commander-zilyana
+characters-seren
+characters-konar-quo-maten
+characters-amascut
+characters-vanescula-drakan
+characters-ilfeen
+characters-maisa
