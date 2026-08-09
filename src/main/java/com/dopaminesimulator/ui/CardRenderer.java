@@ -241,11 +241,15 @@ public final class CardRenderer
 		{
 			int sx0 = sw * i / Turn.STRIPS;
 			int sx1 = sw * (i + 1) / Turn.STRIPS;
-			double x0 = Math.min(bx[i], bx[i + 1]);
-			double x1 = Math.max(bx[i], bx[i + 1]);
+			// Signed, NOT ordered: past a quarter turn the projection runs right to left, and
+			// forcing the destination back into ascending order places each strip at its
+			// mirrored position while its contents stay as they were - which shreds the card
+			// into vertical bands. A negative scale mirrors the strip with its position.
+			double x0 = bx[i];
+			double x1 = bx[i + 1];
 			double y0 = (top[i] + top[i + 1]) / 2d;
 			double y1 = (bottom[i] + bottom[i + 1]) / 2d;
-			if (sx1 <= sx0 || x1 - x0 < 0.01d || y1 - y0 < 0.01d)
+			if (sx1 <= sx0 || Math.abs(x1 - x0) < 0.01d || y1 - y0 < 0.01d)
 			{
 				continue;
 			}

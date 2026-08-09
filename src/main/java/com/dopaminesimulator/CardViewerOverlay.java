@@ -260,8 +260,8 @@ public class CardViewerOverlay extends Overlay
 		graphics.fillRect(0, 0, canvasWidth, canvasHeight);
 
 		graphics.setClip(clipBefore);
-		CardRenderer.drawTurned(graphics, renderFace(showing, now, npcArt != null), turn,
-			CardRenderer.FACE_PAD);
+		CardRenderer.drawTurned(graphics, renderFace(showing, now, npcArt != null, flip < 1d),
+			turn, CardRenderer.FACE_PAD);
 
 		if (modelBox != null)
 		{
@@ -287,7 +287,8 @@ public class CardViewerOverlay extends Overlay
 		return null;
 	}
 
-	private java.awt.image.BufferedImage renderFace(Card showing, long now, boolean modelArt)
+	private java.awt.image.BufferedImage renderFace(Card showing, long now, boolean modelArt,
+												   boolean mirrored)
 	{
 		int ss = CardRenderer.SUPERSAMPLE;
 		int pad = CardRenderer.FACE_PAD;
@@ -313,9 +314,11 @@ public class CardViewerOverlay extends Overlay
 		{
 			CardRenderer.Style style = CardRenderer.styleFor(showing);
 			NpcCardArt back = NpcCardArt.forCard(showing);
-			// Mirrored: we are looking at the back from behind it.
-			g.translate(CARD_WIDTH, 0);
-			g.scale(-1d, 1d);
+			if (mirrored)
+			{
+				g.translate(CARD_WIDTH, 0);
+				g.scale(-1d, 1d);
+			}
 			CardRenderer.drawCardBack(g, 0, 0, CARD_WIDTH, CARD_HEIGHT,
 				back != null ? new java.awt.Color(back.getPlateColour())
 					: new java.awt.Color(0x14, 0x11, 0x1B),
