@@ -986,20 +986,19 @@ public class DopamineSimulatorPanel extends PluginPanel
 	private List<Card> visibleCards()
 	{
 		List<Card> all = allSets ? CardCatalogue.all() : CardCatalogue.bySet(selectedSet);
-		if (cardSearch.isEmpty())
-		{
-			return all;
-		}
-
-		String needle = cardSearch.toLowerCase();
 		List<Card> matches = new ArrayList<>();
+		String needle = cardSearch.toLowerCase();
 		for (Card card : all)
 		{
-			if (card.getName().toLowerCase().contains(needle))
+			if (cardSearch.isEmpty() || card.getName().toLowerCase().contains(needle))
 			{
 				matches.add(card);
 			}
 		}
+		// Least rare first, so a section climbs towards what is worth having. Name breaks the
+		// tie, so a set's order does not shuffle between rebuilds.
+		matches.sort(Comparator.comparingInt((Card card) -> card.getRarity().ordinal())
+			.thenComparing(Card::getName));
 		return matches;
 	}
 
