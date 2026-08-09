@@ -67,7 +67,6 @@ import com.dopaminesimulator.systems.FeatSystem;
 import com.dopaminesimulator.systems.PointSystem;
 import com.dopaminesimulator.ui.CardArtService;
 import com.dopaminesimulator.ui.GameIcons;
-import com.dopaminesimulator.ui.ModelLab;
 import com.google.inject.Provides;
 import java.awt.image.BufferedImage;
 import java.util.Comparator;
@@ -204,7 +203,6 @@ public class DopamineSimulatorPlugin extends Plugin
 	private FloatingTextOverlay floatingTextOverlay;
 	private SurgeInfoBox surgeInfoBox;
 
-	private ModelLab modelLab;
 
 	private CardViewerOverlay cardViewer;
 
@@ -330,7 +328,6 @@ public class DopamineSimulatorPlugin extends Plugin
 		bannerService = new BannerService(random, packService, collection);
 
 		floatingTextOverlay = new FloatingTextOverlay(client, config, gameIcons);
-		modelLab = new ModelLab(client);
 		PointListener listeners = (source, detail, amount, tick) ->
 		{
 			incomeTracker.onPointsGained(source, detail, amount, tick);
@@ -388,11 +385,6 @@ public class DopamineSimulatorPlugin extends Plugin
 		infoBoxManager.removeInfoBox(surgeInfoBox);
 		clientToolbar.removeNavigation(navButton);
 		rewards.clearListeners();
-		if (modelLab != null)
-		{
-			modelLab.close();
-			modelLab = null;
-		}
 		revealOverlay.dispose();
 		mouseManager.unregisterMouseListener(viewerDismiss);
 		if (cardViewer != null)
@@ -558,10 +550,6 @@ public class DopamineSimulatorPlugin extends Plugin
 	@Subscribe
 	public void onGameTick(GameTick event)
 	{
-		if (modelLab != null)
-		{
-			modelLab.tick();
-		}
 		if (engine == null)
 		{
 			return;
@@ -1382,27 +1370,6 @@ public class DopamineSimulatorPlugin extends Plugin
 		{
 			completeCards(event.getArguments());
 		}
-		else if ("modellab".equalsIgnoreCase(event.getCommand()))
-		{
-			if (modelLab != null)
-			{
-				modelLab.command(event.getArguments());
-			}
-		}
-		else if ("deeds".equalsIgnoreCase(event.getCommand()))
-		{
-			deedsCommand(event.getArguments());
-		}
-		else if ("cardface".equalsIgnoreCase(event.getCommand()))
-		{
-			CardViewerOverlay.dumpNextFace();
-			client.addChatMessage(ChatMessageType.GAMEMESSAGE, "",
-				"[cardface] next viewer frame written to cardface.png", null);
-		}
-		else if ("cardlab".equalsIgnoreCase(event.getCommand()))
-		{
-			previewNpcCard(event.getArguments());
-		}
 		else
 		{
 			GnomeFood food = GnomeFood.byCommand(event.getCommand());
@@ -1411,145 +1378,6 @@ public class DopamineSimulatorPlugin extends Plugin
 				serveOnCommand(food);
 			}
 		}
-	}
-
-	private void deedsCommand(String[] arguments)
-	{
-		if (engine == null)
-		{
-			return;
-		}
-		if (arguments == null || arguments.length == 0)
-		{
-			client.addChatMessage(ChatMessageType.GAMEMESSAGE, "",
-				"[deeds] slayer master varbit=" + client.getVarbitValue(
-					net.runelite.api.gameval.VarbitID.SLAYER_MASTER)
-					+ " (Konar is assumed to be " + SLAYER_MASTER_KONAR + ", latched "
-					+ slayerMasterHeld + ")"
-					+ ", toa raid level=" + client.getVarbitValue(
-					net.runelite.api.gameval.VarbitID.TOA_CLIENT_RAID_LEVEL)
-					+ " (latched " + toaRaidLevelHeld + ")", null);
-			DopamineState state = engine.getState();
-			StringBuilder held = new StringBuilder("[deeds] held:");
-			for (CharacterDeed deed : CharacterDeed.values())
-			{
-				held.append(' ').append(deed.name().toLowerCase(java.util.Locale.ROOT))
-					.append('=').append(state.getCharacterPacks(deed.getCardId()))
-					.append('/').append(state.getCharacterPity(deed.getCardId()));
-			}
-			client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", held.toString(), null);
-			client.addChatMessage(ChatMessageType.GAMEMESSAGE, "",
-				"[deeds] <name> grants a pack, [deeds] <name> open opens one.", null);
-			return;
-		}
-
-		CharacterDeed deed = null;
-		for (CharacterDeed candidate : CharacterDeed.values())
-		{
-			if (candidate.name().equalsIgnoreCase(arguments[0]))
-			{
-				deed = candidate;
-				break;
-			}
-		}
-		if (deed == null)
-		{
-			client.addChatMessage(ChatMessageType.GAMEMESSAGE, "",
-				"[deeds] no such character.", null);
-			return;
-		}
-		if (arguments.length > 1 && "open".equalsIgnoreCase(arguments[1]))
-		{
-			openCharacterPack(deed);
-			return;
-		}
-		awardCharacterPack(deed);
-	}
-
-	private void previewNpcCard(String[] arguments)
-	{
-		NpcCardArt art = null;
-		String key = null;
-		int zoom = 0;
-		int dx = 0;
-		int dy = 0;
-		int scenery = 0;
-		int sceneryZoom = 0;
-		int foil = -1;
-		int pzoom = 0;
-		int pspread = 0;
-		int sdy = 0;
-		int prot = -1;
-		int prot2 = -1;
-		int fzoom = 0;
-		int fspread = 0;
-		int fdy = 0;
-		int layers = -1;
-
-		if (arguments != null)
-		{
-			for (String argument : arguments)
-			{
-				int eq = argument.indexOf('=');
-				if (eq <= 0)
-				{
-					NpcCardArt named = NpcCardArt.byId(argument.toLowerCase());
-					if (named != null)
-					{
-						key = argument.toLowerCase();
-						art = named;
-					}
-					continue;
-				}
-				int value;
-				try
-				{
-					value = Integer.parseInt(argument.substring(eq + 1).trim());
-				}
-				catch (NumberFormatException ex)
-				{
-					continue;
-				}
-				switch (argument.substring(0, eq).trim().toLowerCase())
-				{
-					case "zoom": zoom = value; break;
-					case "dx": dx = value; break;
-					case "dy": dy = value; break;
-					case "scenery": scenery = value; break;
-					case "szoom": sceneryZoom = value; break;
-					case "foil": foil = value; break;
-					case "pzoom": pzoom = value; break;
-					case "pspread": pspread = value; break;
-					case "sdy": sdy = value; break;
-					case "prot": prot = value; break;
-					case "prot2": prot2 = value; break;
-					case "fzoom": fzoom = value; break;
-					case "fspread": fspread = value; break;
-					case "fdy": fdy = value; break;
-					case "layers": layers = value; break;
-					default: break;
-				}
-			}
-		}
-
-		revealOverlay.tuneModel(zoom, dx, dy, scenery, sceneryZoom, foil, pzoom, pspread, sdy, prot, prot2, fzoom, fspread, fdy, layers);
-		if (art == null)
-		{
-			client.addChatMessage(ChatMessageType.GAMEMESSAGE, "",
-				"::cardlab <" + String.join("|", NpcCardArt.ids())
-					+ "> [zoom=] [dx=] [dy=] [scenery=|-1 off] [szoom=] [sdy=]"
-					+ " [pzoom=] [pspread=] [prot=/prot2=0-2047] [fzoom=] [fspread=] [fdy=] [layers=1scene|2alcove|4pillars|8npc] [foil=0-100]", null);
-			client.addChatMessage(ChatMessageType.GAMEMESSAGE, "",
-				"[cardlab] " + revealOverlay.modelTuning(), null);
-			return;
-		}
-		client.addChatMessage(ChatMessageType.GAMEMESSAGE, "",
-			"[cardlab] " + art.getDisplayName() + " - " + revealOverlay.modelTuning(), null);
-
-		String cardId = NpcCardArt.idFor(art);
-		Card card = cardId == null ? null : CardCatalogue.byId(cardId);
-		revealOverlay.previewWish(card != null ? card
-			: new Card(key, art.getDisplayName(), CardSet.CHARACTERS, Rarity.LEGENDARY, -1, -1));
 	}
 
 	private static final double DEV_POINTS = 1_000_000d;

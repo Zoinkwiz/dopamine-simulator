@@ -61,12 +61,6 @@ public class CardViewerOverlay extends Overlay
 	private static final double MAX_PITCH = 0.13d;
 
 	private java.awt.image.BufferedImage face;
-	private static boolean dumpFace;
-
-	public static void dumpNextFace()
-	{
-		dumpFace = true;
-	}
 	private static final long PULSE_MS = 420L;
 	private static final long FLIP_MS = 520L;
 
@@ -341,19 +335,6 @@ public class CardViewerOverlay extends Overlay
 			g.setComposite(AlphaComposite.SrcOver);
 		}
 		g.dispose();
-		if (dumpFace)
-		{
-			dumpFace = false;
-			try
-			{
-				java.io.File out = new java.io.File(System.getProperty("java.io.tmpdir"),
-					"cardface.png");
-				javax.imageio.ImageIO.write(face, "png", out);
-			}
-			catch (java.io.IOException ignored)
-			{
-			}
-		}
 		return face;
 	}
 

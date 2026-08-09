@@ -87,42 +87,6 @@ public class NpcModelStage
 	private double py;
 	private boolean altForm;
 
-	public void tune(int zoomOverride, int offsetX, int offsetY, int sceneryOverride,
-					 int sceneryZoomOverride, int pillarZoomOverride, int pillarSpreadPct,
-					 int sceneryOffsetY, int pillarRotationOverride,
-					 int pillarRotationRightOverride, int foreZoomOverride, int foreSpreadPct,
-					 int foreOffsetY, int layerMask)
-	{
-		if (layerMask >= 0 && layerMask != this.layerMask)
-		{
-			this.layerMask = layerMask;
-			builtFor = -1;
-		}
-		this.foreZoomOverride = foreZoomOverride;
-		this.foreOffsetY = foreOffsetY;
-		if (foreSpreadPct != 0)
-		{
-			this.foreSpreadPct = foreSpreadPct;
-		}
-		this.pillarRotationOverride = pillarRotationOverride;
-		this.pillarRotationRightOverride = pillarRotationRightOverride;
-		this.pillarZoomOverride = pillarZoomOverride;
-		if (pillarSpreadPct != 0)
-		{
-			this.pillarSpreadPct = pillarSpreadPct;
-		}
-		this.sceneryOffsetY = sceneryOffsetY;
-		if (this.sceneryOverride != sceneryOverride)
-		{
-			builtFor = -1;
-		}
-		this.zoomOverride = zoomOverride;
-		this.offsetX = offsetX;
-		this.offsetY = offsetY;
-		this.sceneryOverride = sceneryOverride;
-		this.sceneryZoomOverride = sceneryZoomOverride;
-	}
-
 	public void restartTurn()
 	{
 		shownSinceMs = System.currentTimeMillis();
@@ -175,22 +139,6 @@ public class NpcModelStage
 	{
 		this.px = px;
 		this.py = py;
-	}
-
-	public String tuning()
-	{
-		return "zoom=" + (zoomOverride == 0 ? "card" : zoomOverride)
-			+ " dx=" + offsetX + " dy=" + offsetY
-			+ " scenery=" + (sceneryOverride == 0 ? "card" : sceneryOverride)
-			+ " szoom=" + (sceneryZoomOverride == 0 ? "card" : sceneryZoomOverride)
-			+ " sdy=" + sceneryOffsetY
-			+ " pzoom=" + (pillarZoomOverride == 0 ? "card" : pillarZoomOverride)
-			+ " pspread=" + pillarSpreadPct
-			+ " prot=" + (pillarRotationOverride < 0 ? "card" : pillarRotationOverride)
-			+ " prot2=" + (pillarRotationRightOverride < 0 ? "card" : pillarRotationRightOverride)
-			+ " fzoom=" + (foreZoomOverride == 0 ? "card" : foreZoomOverride)
-			+ " fspread=" + foreSpreadPct + " fdy=" + foreOffsetY
-			+ " layers=" + layerMask;
 	}
 
 	private int sceneryModelFor(NpcCardArt art)

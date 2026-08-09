@@ -209,22 +209,6 @@ public class PackRevealOverlay extends Overlay
 		onRevealStart.run();
 	}
 
-	public void tuneModel(int zoomOverride, int offsetX, int offsetY, int scenery, int sceneryZoom,
-						  int foilPercent, int pillarZoom, int pillarSpread, int sceneryDy,
-						  int pillarRotation, int pillarRotationRight, int foreZoom,
-						  int foreSpread, int foreDy, int layerMask)
-	{
-		modelStage.tune(zoomOverride, offsetX, offsetY, scenery, sceneryZoom,
-			pillarZoom, pillarSpread, sceneryDy, pillarRotation, pillarRotationRight,
-			foreZoom, foreSpread, foreDy, layerMask);
-		modelFoil = foilPercent < 0 ? WishReveal.DEFAULT_MODEL_FOIL : foilPercent / 100f;
-	}
-
-	public String modelTuning()
-	{
-		return modelStage.tuning() + " foil=" + Math.round(modelFoil * 100f) + "%";
-	}
-
 	public void push(Reward reward)
 	{
 		revealStarting();
