@@ -100,14 +100,17 @@ public class CardSceneOverlay extends Overlay
 			return null;
 		}
 
-		if (scene == null || scene.getWidth() != cardWidth || scene.getHeight() != cardHeight)
+		int ss = CardRenderer.SUPERSAMPLE;
+		if (scene == null || scene.getWidth() != cardWidth * ss)
 		{
-			scene = new BufferedImage(cardWidth, cardHeight, BufferedImage.TYPE_INT_ARGB);
+			scene = new BufferedImage(cardWidth * ss, cardHeight * ss,
+				BufferedImage.TYPE_INT_ARGB);
 		}
 		Graphics2D g = scene.createGraphics();
 		g.setComposite(java.awt.AlphaComposite.Clear);
-		g.fillRect(0, 0, cardWidth, cardHeight);
+		g.fillRect(0, 0, scene.getWidth(), scene.getHeight());
 		g.setComposite(java.awt.AlphaComposite.SrcOver);
+		g.scale(ss, ss);
 		CardRenderer.drawArtScene(g, card, box, px, py);
 		g.dispose();
 

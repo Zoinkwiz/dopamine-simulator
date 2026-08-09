@@ -123,6 +123,9 @@ public final class CardRenderer
 	 * transform, because perspective is not affine and both halves of a model card must agree
 	 * on it exactly.
 	 */
+	/** The face is rendered at this multiple and comes down through the warp, so text survives. */
+	public static final int SUPERSAMPLE = 2;
+
 	public static final class Turn
 	{
 		private static final double EYE = 2.6d;
@@ -133,18 +136,22 @@ public final class CardRenderer
 		private final double scale;
 		private final double yaw;
 		private final double pitch;
+		private final int w;
+		private final int h;
 
-		public Turn(double cx, double cy, double scale, double yaw, double pitch)
+		public Turn(double cx, double cy, double scale, double yaw, double pitch, int w, int h)
 		{
 			this.cx = cx;
 			this.cy = cy;
 			this.scale = scale;
 			this.yaw = yaw;
 			this.pitch = pitch;
+			this.w = w;
+			this.h = h;
 		}
 
 		/** Projects a card-local point onto the canvas. */
-		public Point2D.Double project(double lx, double ly, int w, int h)
+		public Point2D.Double project(double lx, double ly)
 		{
 			double u = lx - w / 2d;
 			double v = ly - h / 2d;
@@ -157,12 +164,12 @@ public final class CardRenderer
 		}
 
 		/** The turned outline of a card-local rectangle. */
-		public Shape outline(java.awt.Rectangle local, int w, int h)
+		public Shape outline(java.awt.Rectangle local)
 		{
-			Point2D.Double tl = project(local.x, local.y, w, h);
-			Point2D.Double tr = project(local.x + local.width, local.y, w, h);
-			Point2D.Double br = project(local.x + local.width, local.y + local.height, w, h);
-			Point2D.Double bl = project(local.x, local.y + local.height, w, h);
+			Point2D.Double tl = project(local.x, local.y);
+			Point2D.Double tr = project(local.x + local.width, local.y);
+			Point2D.Double br = project(local.x + local.width, local.y + local.height);
+			Point2D.Double bl = project(local.x, local.y + local.height);
 			Path2D.Double quad = new Path2D.Double();
 			quad.moveTo(tl.x, tl.y);
 			quad.lineTo(tr.x, tr.y);
@@ -182,35 +189,38 @@ public final class CardRenderer
 	 */
 	public static void drawTurned(Graphics2D graphics, BufferedImage face, Turn turn)
 	{
-		int w = face.getWidth();
-		int h = face.getHeight();
+		int sw = face.getWidth();
+		int sh = face.getHeight();
 		Object hintBefore = graphics.getRenderingHint(RenderingHints.KEY_INTERPOLATION);
 		graphics.setRenderingHint(RenderingHints.KEY_INTERPOLATION,
 			RenderingHints.VALUE_INTERPOLATION_BILINEAR);
 
+		// Boundaries are computed once and shared, so strip i ends exactly where i+1 begins.
+		// Widening each strip to cover the seams is what blurred a card that was not even turned.
+		int[] bx = new int[Turn.STRIPS + 1];
+		int[] top = new int[Turn.STRIPS + 1];
+		int[] bottom = new int[Turn.STRIPS + 1];
+		for (int i = 0; i <= Turn.STRIPS; i++)
+		{
+			double lx = turn.w * (double) i / Turn.STRIPS;
+			bx[i] = (int) Math.round(turn.project(lx, 0).x);
+			top[i] = (int) Math.round(turn.project(lx, 0).y);
+			bottom[i] = (int) Math.round(turn.project(lx, turn.h).y);
+		}
+
 		for (int i = 0; i < Turn.STRIPS; i++)
 		{
-			int sx0 = w * i / Turn.STRIPS;
-			int sx1 = w * (i + 1) / Turn.STRIPS;
-			if (sx1 <= sx0)
+			int sx0 = sw * i / Turn.STRIPS;
+			int sx1 = sw * (i + 1) / Turn.STRIPS;
+			int dx0 = Math.min(bx[i], bx[i + 1]);
+			int dx1 = Math.max(bx[i], bx[i + 1]);
+			int dy0 = Math.min(top[i], top[i + 1]);
+			int dy1 = Math.max(bottom[i], bottom[i + 1]);
+			if (sx1 <= sx0 || dx1 <= dx0 || dy1 <= dy0)
 			{
 				continue;
 			}
-			Point2D.Double top0 = turn.project(sx0, 0, w, h);
-			Point2D.Double top1 = turn.project(sx1, 0, w, h);
-			Point2D.Double bottom0 = turn.project(sx0, h, w, h);
-
-			double x0 = Math.min(top0.x, top1.x);
-			double x1 = Math.max(top0.x, top1.x);
-			int dx0 = (int) Math.floor(x0);
-			int dx1 = (int) Math.ceil(x1) + 1;
-			int dy0 = (int) Math.round(top0.y);
-			int dy1 = (int) Math.round(bottom0.y);
-			if (dx1 <= dx0 || dy1 <= dy0)
-			{
-				continue;
-			}
-			graphics.drawImage(face, dx0, dy0, dx1, dy1, sx0, 0, sx1, h, null);
+			graphics.drawImage(face, dx0, dy0, dx1, dy1, sx0, 0, sx1, sh, null);
 		}
 
 		if (hintBefore != null)
@@ -990,7 +1000,7 @@ public final class CardRenderer
 			return;
 		}
 		int barH = Math.max(4, cardHeight / 78);
-		int labelH = Math.max(9, cardHeight / 34);
+		int labelH = Math.max(10, cardHeight / 26);
 
 		g.setColor(new Color(255, 255, 255, 24));
 		g.fillRoundRect(x, y, width, barH, barH, barH);
@@ -1267,7 +1277,8 @@ public final class CardRenderer
 		g.fillRoundRect(0, 0, width, height, radius, radius);
 	}
 
-	private static void drawBadges(Graphics2D g, Card card, int width, int height, int artBottom)
+	private static void drawBadges(Graphics2D g, Card card, int width, int height, int artTop,
+								   int artBottom)
 	{
 		NpcCardArt art = NpcCardArt.forCard(card);
 		if (art == null)
@@ -1287,7 +1298,7 @@ public final class CardRenderer
 			int tw = fm.stringWidth(art.getRoleTag()) + Math.max(14, height / 22);
 			int th = fm.getHeight() + 3;
 			int bx = 0;
-			int by = Math.max(10, height / 22);
+			int by = Math.max(2, artTop - th - 2);
 			Path2D.Double flag = new Path2D.Double();
 			flag.moveTo(bx, by);
 			flag.lineTo(bx + tw, by);
@@ -1557,7 +1568,7 @@ public final class CardRenderer
 		else
 		{
 			java.awt.Rectangle b = artBounds(width, height);
-			drawBadges(g, card, width, height, b.y + b.height);
+			drawBadges(g, card, width, height, b.y, b.y + b.height);
 		}
 		if (NpcCardArt.forCard(card) == null)
 		{

@@ -175,16 +175,17 @@ public class CardViewerOverlay extends Overlay
 		NpcCardArt npcArt = NpcCardArt.forCard(showing);
 
 		CardRenderer.Turn turn = new CardRenderer.Turn(cx, cy, scale,
-			(pointerX - 0.5d) * 2d * MAX_YAW, (pointerY - 0.5d) * 2d * MAX_PITCH);
+			(pointerX - 0.5d) * 2d * MAX_YAW, (pointerY - 0.5d) * 2d * MAX_PITCH,
+			CARD_WIDTH, CARD_HEIGHT);
 
 		Rectangle artLocal = CardRenderer.artBounds(CARD_WIDTH, CARD_HEIGHT);
 		Rectangle modelBox = npcArt == null ? null
-			: turn.outline(artLocal, CARD_WIDTH, CARD_HEIGHT).getBounds();
+			: turn.outline(artLocal).getBounds();
 
 		java.awt.Shape artShape = null;
 		if (npcArt != null)
 		{
-			artShape = turn.outline(artLocal, CARD_WIDTH, CARD_HEIGHT);
+			artShape = turn.outline(artLocal);
 
 			java.awt.geom.Area undimmed = new java.awt.geom.Area(clipBefore != null
 				? clipBefore : new Rectangle(0, 0, canvasWidth, canvasHeight));
@@ -224,15 +225,17 @@ public class CardViewerOverlay extends Overlay
 
 	private java.awt.image.BufferedImage renderFace(Card showing, long now, boolean modelArt)
 	{
+		int ss = CardRenderer.SUPERSAMPLE;
 		if (face == null)
 		{
-			face = new java.awt.image.BufferedImage(CARD_WIDTH, CARD_HEIGHT,
+			face = new java.awt.image.BufferedImage(CARD_WIDTH * ss, CARD_HEIGHT * ss,
 				java.awt.image.BufferedImage.TYPE_INT_ARGB);
 		}
 		Graphics2D g = face.createGraphics();
 		g.setComposite(AlphaComposite.Clear);
-		g.fillRect(0, 0, CARD_WIDTH, CARD_HEIGHT);
+		g.fillRect(0, 0, face.getWidth(), face.getHeight());
 		g.setComposite(AlphaComposite.SrcOver);
+		g.scale(ss, ss);
 		g.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING,
 			java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
 		g.setRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION,
