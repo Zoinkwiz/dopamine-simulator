@@ -204,8 +204,8 @@ public class CardViewerOverlay extends Overlay
 		graphics.setColor(DIM);
 		graphics.fillRect(0, 0, canvasWidth, canvasHeight);
 
-		CardRenderer.drawTurned(graphics, renderFace(showing, now, npcArt != null), turn);
 		graphics.setClip(clipBefore);
+		CardRenderer.drawTurned(graphics, renderFace(showing, now, npcArt != null), turn);
 
 		if (modelBox != null)
 		{
@@ -256,6 +256,12 @@ public class CardViewerOverlay extends Overlay
 		}
 		CardRenderer.drawSpecular(g, showing, 0, 0, CARD_WIDTH, CARD_HEIGHT, pointerX, pointerY,
 			modelArt, now);
+		if (modelArt)
+		{
+			g.setComposite(AlphaComposite.Clear);
+			g.fill(CardRenderer.artShape(CARD_WIDTH, CARD_HEIGHT));
+			g.setComposite(AlphaComposite.SrcOver);
+		}
 		g.dispose();
 		if (dumpFace)
 		{
