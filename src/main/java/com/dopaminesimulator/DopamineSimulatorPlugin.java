@@ -529,7 +529,7 @@ public class DopamineSimulatorPlugin extends Plugin
 		rebuildPanel();
 		client.addChatMessage(ChatMessageType.GAMEMESSAGE, "",
 			"<col=ffc46a>" + deed.getCharacterName() + "</col> pack earned - "
-				+ deed.getDeed() + ". Open it from the Cards tab.", null);
+				+ deed.getDeed() + ". Open it from Feats > Deeds.", null);
 	}
 
 	public void openCharacterPack(CharacterDeed deed)
