@@ -552,14 +552,15 @@ public final class CardRenderer
 	private static void drawInvertedAnkh(Graphics2D g, int cx, int cy, double r)
 	{
 		java.awt.Stroke before = g.getStroke();
-		float weight = (float) Math.max(1.6d, r / 5d);
-		g.setStroke(new BasicStroke(weight, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-		g.draw(new java.awt.geom.Line2D.Double(cx, cy - r, cx, cy + r * 0.24d));
-		g.draw(new java.awt.geom.Line2D.Double(cx - r * 0.62d, cy - r * 0.52d,
-			cx + r * 0.62d, cy - r * 0.52d));
-		double loop = r * 0.52d;
-		g.draw(new java.awt.geom.Ellipse2D.Double(cx - loop, cy + r * 0.24d - loop * 0.18d,
-			loop * 2, loop * 2));
+		float weight = (float) Math.max(1.5d, r / 5.5d);
+		g.setStroke(new BasicStroke(weight, BasicStroke.CAP_BUTT, BasicStroke.JOIN_ROUND));
+		double loopR = r * 0.30d;
+		double loopCy = cy + r * 0.45d;
+		g.draw(new java.awt.geom.Line2D.Double(cx, cy - r * 0.75d, cx, loopCy - loopR));
+		g.draw(new java.awt.geom.Line2D.Double(cx - r * 0.42d, cy - r * 0.34d,
+			cx + r * 0.42d, cy - r * 0.34d));
+		g.draw(new java.awt.geom.Ellipse2D.Double(cx - loopR, loopCy - loopR,
+			loopR * 2, loopR * 2));
 		g.setStroke(before);
 	}
 
