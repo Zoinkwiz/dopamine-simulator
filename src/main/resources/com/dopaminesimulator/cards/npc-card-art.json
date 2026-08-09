@@ -94,7 +94,7 @@
 		"foreModelId": -1,
 		"foreZoom": 0,
 		"foreRotation": 0,
-		"backMotif": "CRYSTAL"
+		"backMotif": "SEREN"
 	},
 	{
 		"id": "characters-konar-quo-maten",
@@ -158,7 +158,7 @@
 		"foreModelId": -1,
 		"foreZoom": 0,
 		"foreRotation": 0,
-		"backMotif": "SCARAB"
+		"backMotif": "ANKH"
 	},
 	{
 		"id": "characters-ilfeen",
@@ -190,7 +190,7 @@
 		"foreModelId": -1,
 		"foreZoom": 0,
 		"foreRotation": 0,
-		"backMotif": "LEAF"
+		"backMotif": "CRYSTAL"
 	},
 	{
 		"id": "characters-maisa",

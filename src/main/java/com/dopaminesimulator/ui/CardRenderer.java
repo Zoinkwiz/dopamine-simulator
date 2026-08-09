@@ -241,8 +241,10 @@ public final class CardRenderer
 		EYES,
 		BAT,
 		CRYSTAL,
+		SEREN,
 		PEAK,
 		SCARAB,
+		ANKH,
 		LEAF,
 		CRESCENT,
 		STAR;
@@ -431,6 +433,12 @@ public final class CardRenderer
 			case CRYSTAL:
 				drawCrystal(g, cx, cy, r);
 				break;
+			case SEREN:
+				drawSerenSymbol(g, cx, cy, r);
+				break;
+			case ANKH:
+				drawInvertedAnkh(g, cx, cy, r);
+				break;
 			case PEAK:
 				drawPeak(g, cx, cy, r);
 				break;
@@ -494,23 +502,65 @@ public final class CardRenderer
 
 	private static void drawPeak(Graphics2D g, int cx, int cy, double r)
 	{
+		Color rim = g.getColor();
 		Path2D.Double peak = new Path2D.Double();
 		peak.moveTo(cx - r, cy + r * 0.56d);
-		peak.lineTo(cx - r * 0.22d, cy - r * 0.72d);
-		peak.lineTo(cx + r * 0.10d, cy - r * 0.20d);
-		peak.lineTo(cx + r * 0.40d, cy - r * 0.60d);
+		peak.lineTo(cx - r * 0.30d, cy - r * 0.74d);
+		peak.lineTo(cx - r * 0.04d, cy - r * 0.30d);
+		peak.lineTo(cx + r * 0.34d, cy - r * 0.62d);
 		peak.lineTo(cx + r, cy + r * 0.56d);
 		peak.closePath();
+		g.setColor(new Color(0x0A, 0x0A, 0x0C));
 		g.fill(peak);
-		Color body = g.getColor();
-		g.setColor(withAlpha(Color.WHITE, 70));
-		Path2D.Double vent = new Path2D.Double();
-		vent.moveTo(cx - r * 0.22d, cy - r * 0.72d);
-		vent.lineTo(cx + r * 0.02d, cy - r * 0.28d);
-		vent.lineTo(cx - r * 0.44d, cy + r * 0.10d);
-		vent.closePath();
-		g.fill(vent);
-		g.setColor(body);
+		java.awt.Stroke before = g.getStroke();
+		g.setStroke(new BasicStroke((float) Math.max(1d, r / 14d)));
+		g.setColor(withAlpha(rim, 210));
+		g.draw(peak);
+		g.setStroke(before);
+		g.setColor(rim);
+	}
+
+	private static void drawSerenSymbol(Graphics2D g, int cx, int cy, double r)
+	{
+		java.awt.Stroke before = g.getStroke();
+		Color ink = g.getColor();
+		Path2D.Double outer = diamond(cx, cy, r, r);
+		g.setColor(withAlpha(ink, 70));
+		g.fill(outer);
+		g.setStroke(new BasicStroke((float) Math.max(1.6d, r / 5.5d), BasicStroke.CAP_ROUND,
+			BasicStroke.JOIN_ROUND));
+		g.setColor(withAlpha(Color.WHITE, 235));
+		g.draw(outer);
+		g.setStroke(new BasicStroke((float) Math.max(1.2d, r / 9d), BasicStroke.CAP_ROUND,
+			BasicStroke.JOIN_ROUND));
+		g.setColor(ink);
+		g.draw(diamond(cx, cy, r * 0.46d, r * 0.46d));
+		g.setStroke(before);
+	}
+
+	private static Path2D.Double diamond(double cx, double cy, double rx, double ry)
+	{
+		Path2D.Double shape = new Path2D.Double();
+		shape.moveTo(cx, cy - ry);
+		shape.lineTo(cx + rx, cy);
+		shape.lineTo(cx, cy + ry);
+		shape.lineTo(cx - rx, cy);
+		shape.closePath();
+		return shape;
+	}
+
+	private static void drawInvertedAnkh(Graphics2D g, int cx, int cy, double r)
+	{
+		java.awt.Stroke before = g.getStroke();
+		float weight = (float) Math.max(1.6d, r / 5d);
+		g.setStroke(new BasicStroke(weight, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+		g.draw(new java.awt.geom.Line2D.Double(cx, cy - r, cx, cy + r * 0.24d));
+		g.draw(new java.awt.geom.Line2D.Double(cx - r * 0.62d, cy - r * 0.52d,
+			cx + r * 0.62d, cy - r * 0.52d));
+		double loop = r * 0.52d;
+		g.draw(new java.awt.geom.Ellipse2D.Double(cx - loop, cy + r * 0.24d - loop * 0.18d,
+			loop * 2, loop * 2));
+		g.setStroke(before);
 	}
 
 	private static void drawScarab(Graphics2D g, int cx, int cy, double r)
