@@ -465,26 +465,52 @@ public class DopamineSimulatorPlugin extends Plugin
 		{
 			return;
 		}
-		CharacterDeed deed = deedFor(net.runelite.client.util.Text
-			.removeTags(event.getMessage()).toLowerCase(java.util.Locale.ROOT));
+		String message = net.runelite.client.util.Text
+			.removeTags(event.getMessage()).toLowerCase(java.util.Locale.ROOT);
+		CharacterDeed deed = deedFor(message);
 		if (deed != null)
 		{
 			awardCharacterPack(deed);
+			return;
+		}
+		noteUnmatched(message);
+	}
+
+	private static final String[] DEED_KEYWORDS = {
+		"theatre of blood", "tombs of amascut", "gauntlet", "zilyana", "slayer task",
+		"completed your task",
+	};
+
+	private static boolean completes(String message)
+	{
+		return message.contains("completion time") || message.contains("completion count")
+			|| message.contains("count is");
+	}
+
+	private void noteUnmatched(String message)
+	{
+		for (String keyword : DEED_KEYWORDS)
+		{
+			if (message.contains(keyword))
+			{
+				log.info("deed candidate went unmatched: {}", message);
+				return;
+			}
 		}
 	}
 
 	private CharacterDeed deedFor(String message)
 	{
-		if (message.contains("theatre of blood") && message.contains("completion time"))
+		if (message.contains("theatre of blood") && completes(message))
 		{
 			return message.contains("hard mode") ? CharacterDeed.VERZIK : CharacterDeed.VANESCULA;
 		}
-		if (message.contains("tombs of amascut") && message.contains("completion time"))
+		if (message.contains("tombs of amascut") && completes(message))
 		{
 			return toaRaidLevelHeld >= TOA_AMASCUT_LEVEL
 				? CharacterDeed.AMASCUT : CharacterDeed.MAISA;
 		}
-		if (message.contains("challenge complete") && message.contains("gauntlet"))
+		if (message.contains("gauntlet completion count"))
 		{
 			return message.contains("corrupted") ? CharacterDeed.SEREN : CharacterDeed.ILFEEN;
 		}
