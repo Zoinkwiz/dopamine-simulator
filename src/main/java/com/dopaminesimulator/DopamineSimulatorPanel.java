@@ -154,7 +154,7 @@ public class DopamineSimulatorPanel extends PluginPanel
 	private int buyQuantity = 1;
 	private boolean collectionsExpanded;
 	private String cardSearch = "";
-	private boolean showingAchievements;
+	private int featsView;
 	private int shopView;
 	private final JTextField searchField = new JTextField();
 	DopamineSimulatorPanel(DopamineSimulatorPlugin plugin, DopamineSimulatorConfig config)
@@ -825,8 +825,8 @@ public class DopamineSimulatorPanel extends PluginPanel
 		}
 
 		shopContent.add(sectionLabel("Packs"));
-		shopContent.add(hint("Bigger packs hold more cards and better odds. "
-			+ "Curated draws only from the set chosen on the Cards tab."));
+		shopContent.add(hint("Bigger packs hold more cards and better odds. Curated draws from"
+			+ " one set, and which set rotates each day."));
 		shopContent.add(Box.createVerticalStrut(4));
 		shopContent.add(buildQuantitySelector());
 		shopContent.add(Box.createVerticalStrut(5));
@@ -865,9 +865,10 @@ public class DopamineSimulatorPanel extends PluginPanel
 				.append("% top odds");
 		}
 		String name = tier.getDisplayName();
+		CardSet curated = curatedSetToday();
 		if (tier.isTargetsSet())
 		{
-			effect.insert(0, (allSets ? "Any set" : selectedSet.getDisplayName()) + "  •  ");
+			effect.insert(0, curated.getDisplayName() + " today  •  ");
 		}
 		ShopRow row = new ShopRow(
 			buyQuantity > 1 ? name + " x" + buyQuantity : name,
@@ -877,7 +878,7 @@ public class DopamineSimulatorPanel extends PluginPanel
 			String.valueOf(totalCards),
 			affordable,
 			state.getPoints() / cost,
-			r -> plugin.buyPacks(tier, selectedSet, buyQuantity));
+			r -> plugin.buyPacks(tier, curated, buyQuantity));
 		row.setIcon(plugin.getGameIcons().forPack(tier));
 		row.setToolTipText(tier.getDescription()
 			+ "  \u2022  " + BigNumbers.format(tier.getCostPerCopy()) + " per copy"
@@ -1036,12 +1037,8 @@ public class DopamineSimulatorPanel extends PluginPanel
 		return text.toString();
 	}
 
-	private JPanel buildSetSelector(DopamineState state)
+	private static List<CardSet> orderedSets()
 	{
-		JPanel row = new JPanel(new BorderLayout(4, 0));
-		row.setBackground(Skin.BG);
-		row.setAlignmentX(Component.LEFT_ALIGNMENT);
-
 		List<CardSet> sets = new ArrayList<>();
 		sets.add(CardSet.CHARACTERS);
 		for (CardSet set : CardSet.values())
@@ -1051,6 +1048,50 @@ public class DopamineSimulatorPanel extends PluginPanel
 				sets.add(set);
 			}
 		}
+		return sets;
+	}
+
+	private static final CardSet[] CURATED_EXCLUDED = {CardSet.CHARACTERS};
+
+	private static CardSet curatedSetToday()
+	{
+		List<CardSet> pool = new ArrayList<>();
+		for (CardSet set : CardSet.values())
+		{
+			boolean excluded = false;
+			for (CardSet skip : CURATED_EXCLUDED)
+			{
+				excluded |= set == skip;
+			}
+			if (excluded)
+			{
+				continue;
+			}
+			int packable = 0;
+			for (Rarity rarity : Rarity.values())
+			{
+				packable += CardCatalogue.packPool(set, rarity).size();
+			}
+			if (packable >= 8)
+			{
+				pool.add(set);
+			}
+		}
+		if (pool.isEmpty())
+		{
+			return CardSet.QUESTS;
+		}
+		long day = java.time.LocalDate.now().toEpochDay();
+		return pool.get((int) Math.floorMod(day, pool.size()));
+	}
+
+	private JPanel buildSetSelector(DopamineState state)
+	{
+		JPanel row = new JPanel(new BorderLayout(4, 0));
+		row.setBackground(Skin.BG);
+		row.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+		List<CardSet> sets = orderedSets();
 		Object[] options = new Object[sets.size() + 1];
 		options[0] = ALL_SETS;
 		for (int i = 0; i < sets.size(); i++)
@@ -1114,63 +1155,40 @@ public class DopamineSimulatorPanel extends PluginPanel
 	{
 		return "x" + String.format(multiplier >= 10d ? "%.0f" : "%.2f", multiplier);
 	}
-	private void buildDeedGuide(DopamineState state)
-	{
-		cardsContent.add(sectionLabel("How to earn them", "one pack each time"));
-		cardsContent.add(Box.createVerticalStrut(3));
-		cardsContent.add(hint("Doing the thing a character is known for earns a pack. Every pack"
-			+ " holds a rare chance at them, and enough packs guarantee it."));
-		cardsContent.add(Box.createVerticalStrut(4));
-		for (com.dopaminesimulator.cards.CharacterDeed deed
-			: com.dopaminesimulator.cards.CharacterDeed.values())
-		{
-			int packs = state.getCharacterPacks(deed.getCardId());
-			int toPity = Math.max(0, deed.getPity() - state.getCharacterPity(deed.getCardId()));
-			boolean owned = state.getCopies(deed.getCardId()) > 0;
-			CharacterPackRow row = new CharacterPackRow(deed, packs, toPity, owned,
-				plugin::openCharacterPack);
-			row.setAlignmentX(Component.LEFT_ALIGNMENT);
-			cardsContent.add(row);
-			cardsContent.add(Box.createVerticalStrut(3));
-		}
-		cardsContent.add(Box.createVerticalStrut(4));
-	}
-
 	private void buildCharacterPacks(DopamineState state)
 	{
-		List<com.dopaminesimulator.cards.CharacterDeed> held = new ArrayList<>();
+		int held = 0;
 		for (com.dopaminesimulator.cards.CharacterDeed deed
 			: com.dopaminesimulator.cards.CharacterDeed.values())
 		{
-			if (state.getCharacterPacks(deed.getCardId()) > 0)
-			{
-				held.add(deed);
-			}
+			held += state.getCharacterPacks(deed.getCardId());
 		}
-		if (held.isEmpty())
+		if (held == 0)
 		{
 			return;
 		}
-
-		int total = 0;
-		for (com.dopaminesimulator.cards.CharacterDeed deed : held)
-		{
-			total += state.getCharacterPacks(deed.getCardId());
-		}
-		cardsContent.add(sectionLabel("Deeds", total + (total == 1 ? " pack" : " packs")));
-		cardsContent.add(Box.createVerticalStrut(3));
-		for (com.dopaminesimulator.cards.CharacterDeed deed : held)
-		{
-			int packs = state.getCharacterPacks(deed.getCardId());
-			int toPity = Math.max(0, deed.getPity() - state.getCharacterPity(deed.getCardId()));
-			boolean owned = state.getCopies(deed.getCardId()) > 0;
-			CharacterPackRow row = new CharacterPackRow(deed, packs, toPity, owned,
-				plugin::openCharacterPack);
-			row.setAlignmentX(Component.LEFT_ALIGNMENT);
-			cardsContent.add(row);
-			cardsContent.add(Box.createVerticalStrut(3));
-		}
+		WrappedLabel waiting = hint(held == 1
+			? "1 character pack waiting in Feats > Deeds."
+			: held + " character packs waiting in Feats > Deeds.");
+		waiting.setToolTipText("Open them from the Deeds view on the Feats tab.");
+		cardsContent.add(waiting);
 		cardsContent.add(Box.createVerticalStrut(4));
+	}
+
+	private void buildDeedGuide(DopamineState state)
+	{
+		cardsContent.add(sectionLabel("How to earn them", "Feats tab to open"));
+		cardsContent.add(Box.createVerticalStrut(3));
+		for (com.dopaminesimulator.cards.CharacterDeed deed
+			: com.dopaminesimulator.cards.CharacterDeed.values())
+		{
+			boolean owned = state.getCopies(deed.getCardId()) > 0;
+			WrappedLabel line = hint((owned ? "* " : "- ") + deed.getCharacterName()
+				+ ":  " + deed.getDeed());
+			line.setToolTipText(deed.getCharacterName() + " - " + deed.getDeed());
+			cardsContent.add(line);
+		}
+		cardsContent.add(Box.createVerticalStrut(6));
 	}
 
 	private void buildSelectedSet(DopamineState state)
@@ -1231,7 +1249,7 @@ public class DopamineSimulatorPanel extends PluginPanel
 				? state.getUniqueCardsOwned() + "/" + CardCatalogue.size() + " cards"
 				: cards.size() + " matching"));
 
-		cardsContent.add(hint("Curated packs and banner pulls still draw from "
+		cardsContent.add(hint("Banner pulls still draw from "
 			+ selectedSet.getDisplayName() + "."));
 		cardsContent.add(Box.createVerticalStrut(6));
 
@@ -1253,7 +1271,7 @@ public class DopamineSimulatorPanel extends PluginPanel
 			return;
 		}
 
-		for (CardSet set : CardSet.values())
+		for (CardSet set : orderedSets())
 		{
 			List<Card> inSet = bySet.get(set);
 			if (inSet == null)
@@ -1294,7 +1312,7 @@ public class DopamineSimulatorPanel extends PluginPanel
 		int total, int columns, int cardWidth)
 	{
 		int shown = 0;
-		for (CardSet set : CardSet.values())
+		for (CardSet set : orderedSets())
 		{
 			List<Card> inSet = bySet.get(set);
 			if (inSet == null)
@@ -1955,9 +1973,14 @@ public class DopamineSimulatorPanel extends PluginPanel
 		featsContent.add(featsToggle());
 		featsContent.add(Box.createVerticalStrut(8));
 
-		if (showingAchievements)
+		if (featsView == 1)
 		{
 			buildAchievements(state);
+			return;
+		}
+		if (featsView == 2)
+		{
+			buildDeeds(state);
 			return;
 		}
 
@@ -1994,14 +2017,52 @@ public class DopamineSimulatorPanel extends PluginPanel
 
 	private Segmented featsToggle()
 	{
-		Segmented row = new Segmented(new String[]{"Ranks", "Achievements"},
-			showingAchievements ? 1 : 0, index ->
+		Segmented row = new Segmented(new String[]{"Ranks", "Feats", "Deeds"},
+			featsView, index ->
 			{
-				showingAchievements = index == 1;
+				featsView = index;
 				rebuild();
 			});
 		row.setAlignmentX(Component.LEFT_ALIGNMENT);
 		return row;
+	}
+
+	private void buildDeeds(DopamineState state)
+	{
+		int held = 0;
+		int collected = 0;
+		for (com.dopaminesimulator.cards.CharacterDeed deed
+			: com.dopaminesimulator.cards.CharacterDeed.values())
+		{
+			held += state.getCharacterPacks(deed.getCardId());
+			collected += state.getCopies(deed.getCardId()) > 0 ? 1 : 0;
+		}
+
+		JLabel header = new JLabel(collected + " of "
+			+ com.dopaminesimulator.cards.CharacterDeed.values().length + " characters");
+		header.setFont(FontManager.getRunescapeBoldFont());
+		header.setForeground(GOLD);
+		header.setAlignmentX(Component.LEFT_ALIGNMENT);
+		featsContent.add(header);
+		featsContent.add(Box.createVerticalStrut(3));
+		featsContent.add(hint(held == 0
+			? "No packs waiting. Doing the thing a character is known for earns one."
+			: held + (held == 1 ? " pack waiting." : " packs waiting.")
+				+ " Click one to open it."));
+		featsContent.add(Box.createVerticalStrut(6));
+
+		for (com.dopaminesimulator.cards.CharacterDeed deed
+			: com.dopaminesimulator.cards.CharacterDeed.values())
+		{
+			int packs = state.getCharacterPacks(deed.getCardId());
+			int toPity = Math.max(0, deed.getPity() - state.getCharacterPity(deed.getCardId()));
+			boolean owned = state.getCopies(deed.getCardId()) > 0;
+			CharacterPackRow row = new CharacterPackRow(deed, packs, toPity, owned,
+				plugin::openCharacterPack);
+			row.setAlignmentX(Component.LEFT_ALIGNMENT);
+			featsContent.add(row);
+			featsContent.add(Box.createVerticalStrut(3));
+		}
 	}
 
 	private void buildAchievements(DopamineState state)
