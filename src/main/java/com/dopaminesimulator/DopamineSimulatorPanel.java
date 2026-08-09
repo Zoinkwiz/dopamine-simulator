@@ -149,7 +149,7 @@ public class DopamineSimulatorPanel extends PluginPanel
 	private Tab selectedTab = Tab.PLAY;
 	private Card selectedCard;
 	private CardSet selectedSet = CardSet.QUESTS;
-	private boolean allSets;
+	private boolean allSets = true;
 	private CardSet expandedInAll;
 	private int buyQuantity = 1;
 	private boolean collectionsExpanded;
@@ -864,9 +864,11 @@ public class DopamineSimulatorPanel extends PluginPanel
 			effect.append("  •  +").append(Math.round((tier.getLuck() - 1d) * 100d))
 				.append("% top odds");
 		}
-		String name = tier.isTargetsSet()
-			? tier.getDisplayName() + " (" + selectedSet.getDisplayName() + ")"
-			: tier.getDisplayName();
+		String name = tier.getDisplayName();
+		if (tier.isTargetsSet())
+		{
+			effect.insert(0, (allSets ? "Any set" : selectedSet.getDisplayName()) + "  •  ");
+		}
 		ShopRow row = new ShopRow(
 			buyQuantity > 1 ? name + " x" + buyQuantity : name,
 			effect.toString(),
@@ -1040,10 +1042,21 @@ public class DopamineSimulatorPanel extends PluginPanel
 		row.setBackground(Skin.BG);
 		row.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-		CardSet[] sets = CardSet.values();
-		Object[] options = new Object[sets.length + 1];
+		List<CardSet> sets = new ArrayList<>();
+		sets.add(CardSet.CHARACTERS);
+		for (CardSet set : CardSet.values())
+		{
+			if (set != CardSet.CHARACTERS)
+			{
+				sets.add(set);
+			}
+		}
+		Object[] options = new Object[sets.size() + 1];
 		options[0] = ALL_SETS;
-		System.arraycopy(sets, 0, options, 1, sets.length);
+		for (int i = 0; i < sets.size(); i++)
+		{
+			options[i + 1] = sets.get(i);
+		}
 
 		JComboBox<Object> picker = new JComboBox<>(options);
 		picker.setSelectedItem(allSets ? ALL_SETS : selectedSet);
@@ -1101,6 +1114,28 @@ public class DopamineSimulatorPanel extends PluginPanel
 	{
 		return "x" + String.format(multiplier >= 10d ? "%.0f" : "%.2f", multiplier);
 	}
+	private void buildDeedGuide(DopamineState state)
+	{
+		cardsContent.add(sectionLabel("How to earn them", "one pack each time"));
+		cardsContent.add(Box.createVerticalStrut(3));
+		cardsContent.add(hint("Doing the thing a character is known for earns a pack. Every pack"
+			+ " holds a rare chance at them, and enough packs guarantee it."));
+		cardsContent.add(Box.createVerticalStrut(4));
+		for (com.dopaminesimulator.cards.CharacterDeed deed
+			: com.dopaminesimulator.cards.CharacterDeed.values())
+		{
+			int packs = state.getCharacterPacks(deed.getCardId());
+			int toPity = Math.max(0, deed.getPity() - state.getCharacterPity(deed.getCardId()));
+			boolean owned = state.getCopies(deed.getCardId()) > 0;
+			CharacterPackRow row = new CharacterPackRow(deed, packs, toPity, owned,
+				plugin::openCharacterPack);
+			row.setAlignmentX(Component.LEFT_ALIGNMENT);
+			cardsContent.add(row);
+			cardsContent.add(Box.createVerticalStrut(3));
+		}
+		cardsContent.add(Box.createVerticalStrut(4));
+	}
+
 	private void buildCharacterPacks(DopamineState state)
 	{
 		List<com.dopaminesimulator.cards.CharacterDeed> held = new ArrayList<>();
@@ -1153,6 +1188,11 @@ public class DopamineSimulatorPanel extends PluginPanel
 			cardSearch.isEmpty()
 				? owned + "/" + cards.size() + " cards"
 				: cards.size() + " matching"));
+		if (selectedSet == CardSet.CHARACTERS)
+		{
+			cardsContent.add(Box.createVerticalStrut(3));
+			buildDeedGuide(state);
+		}
 		PointSource powers = CollectionBonus.sourceFor(selectedSet);
 		JLabel effect = new JLabel(powers.getDisplayName() + " "
 			+ multiplierText(CollectionBonus.multiplierFor(state, powers)));
