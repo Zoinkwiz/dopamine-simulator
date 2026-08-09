@@ -70,6 +70,11 @@ public class CardViewerOverlay extends Overlay
 		dumpFace = true;
 	}
 	private static final long PULSE_MS = 420L;
+	private static final long FLIP_MS = 520L;
+
+	private boolean showingBack;
+	private boolean flipSwapped;
+	private long flipStartMs;
 
 	private Card card;
 	private int stars;
@@ -79,6 +84,26 @@ public class CardViewerOverlay extends Overlay
 	private long pulsedAt;
 	private double pointerX = 0.5d;
 	private double pointerY = 0.5d;
+
+	/** Right-click turns the card over. Ignored while a turn is already running. */
+	public void flip()
+	{
+		if (card == null || System.currentTimeMillis() - flipStartMs < FLIP_MS)
+		{
+			return;
+		}
+		flipStartMs = System.currentTimeMillis();
+	}
+
+	/** How far through a flip, 0 to 1. */
+	private double flipProgress(long now)
+	{
+		if (flipStartMs == 0L)
+		{
+			return 1d;
+		}
+		return Math.min(1d, (now - flipStartMs) / (double) FLIP_MS);
+	}
 
 	public void click()
 	{
@@ -118,8 +143,15 @@ public class CardViewerOverlay extends Overlay
 		modelStage.dispose();
 	}
 
+	public void showFront()
+	{
+		showingBack = false;
+		flipStartMs = 0L;
+	}
+
 	public void show(Card card, int stars, boolean shiny, boolean gilded)
 	{
+		showFront();
 		this.card = card;
 		this.stars = stars;
 		this.shiny = shiny;
@@ -181,17 +213,40 @@ public class CardViewerOverlay extends Overlay
 
 		NpcCardArt npcArt = NpcCardArt.forCard(showing);
 
+		double flip = flipProgress(now);
+		if (flip < 1d)
+		{
+			// Past the halfway point the far side is toward us, so the sides swap there - the
+			// card is edge-on at that moment and there is nothing on screen to swap.
+			boolean pastHalf = flip >= 0.5d;
+			if (pastHalf && !flipSwapped)
+			{
+				flipSwapped = true;
+				showingBack = !showingBack;
+			}
+		}
+		else
+		{
+			flipSwapped = false;
+		}
+
+		double flipYaw = flip < 1d ? Math.PI * flip : 0d;
 		CardRenderer.Turn turn = new CardRenderer.Turn(cx, cy, scale,
-			(pointerX - 0.5d) * 2d * MAX_YAW, (pointerY - 0.5d) * 2d * MAX_PITCH,
-			CARD_WIDTH, CARD_HEIGHT);
+			(pointerX - 0.5d) * 2d * MAX_YAW + flipYaw,
+			(pointerY - 0.5d) * 2d * MAX_PITCH, CARD_WIDTH, CARD_HEIGHT);
 
 		Rectangle artLocal = CardRenderer.artBounds(CARD_WIDTH, CARD_HEIGHT);
 		java.awt.Shape artRounded = CardRenderer.artShape(CARD_WIDTH, CARD_HEIGHT);
-		Rectangle modelBox = npcArt == null ? null
+		boolean faceUp = !showingBack;
+		Rectangle modelBox = npcArt == null || !faceUp ? null
 			: turn.outline(artRounded).getBounds();
+		if (!faceUp)
+		{
+			modelStage.hide();
+		}
 
 		java.awt.Shape artShape = null;
-		if (npcArt != null)
+		if (npcArt != null && faceUp)
 		{
 			artShape = turn.outline(artRounded);
 
@@ -254,6 +309,22 @@ public class CardViewerOverlay extends Overlay
 			java.awt.RenderingHints.VALUE_INTERPOLATION_BILINEAR);
 		// The card sits inset by the padding; the warp samples the whole padded span.
 		g.translate(pad, pad);
+		if (showingBack)
+		{
+			CardRenderer.Style style = CardRenderer.styleFor(showing);
+			NpcCardArt back = NpcCardArt.forCard(showing);
+			// Mirrored: we are looking at the back from behind it.
+			g.translate(CARD_WIDTH, 0);
+			g.scale(-1d, 1d);
+			CardRenderer.drawCardBack(g, 0, 0, CARD_WIDTH, CARD_HEIGHT,
+				back != null ? new java.awt.Color(back.getPlateColour())
+					: new java.awt.Color(0x14, 0x11, 0x1B),
+				style.metalMid, style.glow,
+				CardRenderer.BackMotif.of(back == null ? null : back.getBackMotif()),
+				now, 1f, false);
+			g.dispose();
+			return face;
+		}
 		CardRenderer.draw(g, showing, 0, 0, CARD_WIDTH, CARD_HEIGHT, stars, true, now,
 			artService.get(showing), shiny, gilded, modelArt);
 		if (modelArt)

@@ -222,7 +222,14 @@ public class DopamineSimulatorPlugin extends Plugin
 
 				if (cardViewer.containsCanvas(event.getX(), event.getY()))
 				{
-					cardViewer.click();
+					if (javax.swing.SwingUtilities.isRightMouseButton(event))
+					{
+						cardViewer.flip();
+					}
+					else
+					{
+						cardViewer.click();
+					}
 				}
 				else
 				{

@@ -61,7 +61,8 @@
 		"altVerticalOffset": 0,
 		"foreModelId": -1,
 		"foreZoom": 0,
-		"foreRotation": 0
+		"foreRotation": 0,
+		"backMotif": "BAT"
 	},
 	{
 		"id": "characters-seren",
@@ -92,7 +93,8 @@
 		"altVerticalOffset": 0,
 		"foreModelId": -1,
 		"foreZoom": 0,
-		"foreRotation": 0
+		"foreRotation": 0,
+		"backMotif": "CRYSTAL"
 	},
 	{
 		"id": "characters-konar-quo-maten",
@@ -123,7 +125,8 @@
 		"altVerticalOffset": 0,
 		"foreModelId": -1,
 		"foreZoom": 0,
-		"foreRotation": 0
+		"foreRotation": 0,
+		"backMotif": "PEAK"
 	},
 	{
 		"id": "characters-amascut",
@@ -154,7 +157,8 @@
 		"altVerticalOffset": 0,
 		"foreModelId": -1,
 		"foreZoom": 0,
-		"foreRotation": 0
+		"foreRotation": 0,
+		"backMotif": "SCARAB"
 	},
 	{
 		"id": "characters-ilfeen",
@@ -185,7 +189,8 @@
 		"altVerticalOffset": 0,
 		"foreModelId": -1,
 		"foreZoom": 0,
-		"foreRotation": 0
+		"foreRotation": 0,
+		"backMotif": "LEAF"
 	},
 	{
 		"id": "characters-maisa",
@@ -216,7 +221,8 @@
 		"altVerticalOffset": 0,
 		"foreModelId": -1,
 		"foreZoom": 0,
-		"foreRotation": 0
+		"foreRotation": 0,
+		"backMotif": "CRESCENT"
 	},
 	{
 		"id": "characters-commander-zilyana",
@@ -247,6 +253,7 @@
 		"altVerticalOffset": 0,
 		"foreModelId": -1,
 		"foreZoom": 0,
-		"foreRotation": 0
+		"foreRotation": 0,
+		"backMotif": "STAR"
 	}
 ]

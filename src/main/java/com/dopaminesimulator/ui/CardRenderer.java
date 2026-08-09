@@ -265,7 +265,14 @@ public final class CardRenderer
 	public enum BackMotif
 	{
 		COOKIE,
-		EYES;
+		EYES,
+		BAT,
+		CRYSTAL,
+		PEAK,
+		SCARAB,
+		LEAF,
+		CRESCENT,
+		STAR;
 
 		public static BackMotif of(String name)
 		{
@@ -342,15 +349,232 @@ public final class CardRenderer
 		int cx = width / 2;
 		int cy = height / 2;
 		int radius = (int) (height * 0.155d);
+		drawMotif(g, motif, cx, cy, radius, motifColour, animMs, alpha, lit);
+		g.dispose();
+	}
+
+	private static void drawMotif(Graphics2D g, BackMotif motif, int cx, int cy, int radius,
+								  Color glow, long animMs, float alpha, boolean lit)
+	{
+		if (motif == BackMotif.COOKIE)
+		{
+			drawCookieMotif(g, cx, cy, radius, glow, animMs, alpha, lit);
+			return;
+		}
 		if (motif == BackMotif.EYES)
 		{
-			drawEyesMotif(g, cx, cy, radius, motifColour, animMs, alpha, lit);
+			drawEyesMotif(g, cx, cy, radius, glow, animMs, alpha, lit);
+			return;
 		}
-		else
+
+		// Everything else shares a lit medallion and differs only in the device inside it, so a
+		// set of backs reads as one set rather than as eight unrelated drawings.
+		double breathe = 0.9d + 0.1d * Math.sin(animMs / 1100d);
+		int halo = (int) (radius * 1.35d * breathe);
+		g.setPaint(new RadialGradientPaint(new Point2D.Float(cx, cy), Math.max(1f, halo),
+			new float[]{0f, 0.45f, 1f},
+			new Color[]{withAlpha(glow, (int) ((lit ? 110 : 62) * alpha)),
+				withAlpha(glow, (int) (26 * alpha)), withAlpha(glow, 0)},
+			MultipleGradientPaint.CycleMethod.NO_CYCLE));
+		g.fillOval(cx - halo, cy - halo, halo * 2, halo * 2);
+
+		g.setStroke(new BasicStroke(Math.max(1.4f, radius / 22f)));
+		g.setColor(withAlpha(glow, (int) (200 * alpha)));
+		g.drawOval(cx - radius, cy - radius, radius * 2, radius * 2);
+		g.setStroke(new BasicStroke(1f));
+		g.setColor(withAlpha(glow, (int) (90 * alpha)));
+		int inner = (int) (radius * 0.80d);
+		g.drawOval(cx - inner, cy - inner, inner * 2, inner * 2);
+
+		Color ink = withAlpha(lighten(glow, 0.35d), (int) (245 * alpha));
+		g.setColor(ink);
+		double r = radius * 0.62d;
+		switch (motif)
 		{
-			drawCookieMotif(g, cx, cy, radius, motifColour, animMs, alpha, lit);
+			case BAT:
+				drawBat(g, cx, cy, r);
+				break;
+			case CRYSTAL:
+				drawCrystal(g, cx, cy, r);
+				break;
+			case PEAK:
+				drawPeak(g, cx, cy, r);
+				break;
+			case SCARAB:
+				drawScarab(g, cx, cy, r);
+				break;
+			case LEAF:
+				drawLeaf(g, cx, cy, r);
+				break;
+			case CRESCENT:
+				drawCrescent(g, cx, cy, r);
+				break;
+			case STAR:
+				drawSaradominStar(g, cx, cy, r);
+				break;
+			default:
+				break;
 		}
-		g.dispose();
+	}
+
+	/** Vanescula: a vyre on the wing, spread across the medallion. */
+	private static void drawBat(Graphics2D g, int cx, int cy, double r)
+	{
+		Path2D.Double wing = new Path2D.Double();
+		wing.moveTo(cx, cy - r * 0.30d);
+		wing.curveTo(cx - r * 0.34d, cy - r * 0.62d, cx - r * 0.74d, cy - r * 0.52d,
+			cx - r, cy - r * 0.12d);
+		wing.lineTo(cx - r * 0.72d, cy - r * 0.20d);
+		wing.lineTo(cx - r * 0.62d, cy + r * 0.16d);
+		wing.lineTo(cx - r * 0.38d, cy - r * 0.02d);
+		wing.lineTo(cx - r * 0.26d, cy + r * 0.34d);
+		wing.lineTo(cx, cy + r * 0.20d);
+		wing.closePath();
+		g.fill(wing);
+		Path2D.Double mirrored = new Path2D.Double(wing);
+		mirrored.transform(java.awt.geom.AffineTransform.getScaleInstance(-1d, 1d));
+		mirrored.transform(java.awt.geom.AffineTransform.getTranslateInstance(cx * 2d, 0d));
+		g.fill(mirrored);
+		g.fill(new java.awt.geom.Ellipse2D.Double(cx - r * 0.13d, cy - r * 0.34d,
+			r * 0.26d, r * 0.62d));
+	}
+
+	/** Seren: a faceted shard, lit down one face. */
+	private static void drawCrystal(Graphics2D g, int cx, int cy, double r)
+	{
+		Path2D.Double shard = new Path2D.Double();
+		shard.moveTo(cx, cy - r);
+		shard.lineTo(cx + r * 0.52d, cy - r * 0.16d);
+		shard.lineTo(cx, cy + r);
+		shard.lineTo(cx - r * 0.52d, cy - r * 0.16d);
+		shard.closePath();
+		g.fill(shard);
+		Color face = g.getColor();
+		g.setColor(withAlpha(Color.WHITE, 90));
+		Path2D.Double lit = new Path2D.Double();
+		lit.moveTo(cx, cy - r);
+		lit.lineTo(cx + r * 0.52d, cy - r * 0.16d);
+		lit.lineTo(cx, cy + r * 0.30d);
+		lit.closePath();
+		g.fill(lit);
+		g.setColor(face);
+	}
+
+	/** Konar: Karuulm, with the vent burning under it. */
+	private static void drawPeak(Graphics2D g, int cx, int cy, double r)
+	{
+		Path2D.Double peak = new Path2D.Double();
+		peak.moveTo(cx - r, cy + r * 0.56d);
+		peak.lineTo(cx - r * 0.22d, cy - r * 0.72d);
+		peak.lineTo(cx + r * 0.10d, cy - r * 0.20d);
+		peak.lineTo(cx + r * 0.40d, cy - r * 0.60d);
+		peak.lineTo(cx + r, cy + r * 0.56d);
+		peak.closePath();
+		g.fill(peak);
+		Color body = g.getColor();
+		g.setColor(withAlpha(Color.WHITE, 70));
+		Path2D.Double vent = new Path2D.Double();
+		vent.moveTo(cx - r * 0.22d, cy - r * 0.72d);
+		vent.lineTo(cx + r * 0.02d, cy - r * 0.28d);
+		vent.lineTo(cx - r * 0.44d, cy + r * 0.10d);
+		vent.closePath();
+		g.fill(vent);
+		g.setColor(body);
+	}
+
+	/** Amascut: a scarab, wings folded. */
+	private static void drawScarab(Graphics2D g, int cx, int cy, double r)
+	{
+		g.fill(new java.awt.geom.Ellipse2D.Double(cx - r * 0.46d, cy - r * 0.30d,
+			r * 0.92d, r * 1.10d));
+		g.fill(new java.awt.geom.Ellipse2D.Double(cx - r * 0.26d, cy - r * 0.78d,
+			r * 0.52d, r * 0.46d));
+		java.awt.Stroke before = g.getStroke();
+		g.setStroke(new BasicStroke((float) Math.max(1d, r / 12d)));
+		for (int i = -1; i <= 1; i += 2)
+		{
+			g.draw(new java.awt.geom.Line2D.Double(cx + i * r * 0.44d, cy - r * 0.22d,
+				cx + i * r, cy - r * 0.52d));
+			g.draw(new java.awt.geom.Line2D.Double(cx + i * r * 0.46d, cy + r * 0.16d,
+				cx + i * r, cy + r * 0.10d));
+			g.draw(new java.awt.geom.Line2D.Double(cx + i * r * 0.40d, cy + r * 0.52d,
+				cx + i * r * 0.86d, cy + r * 0.76d));
+		}
+		g.setStroke(before);
+	}
+
+	/** Ilfeen: Isafdar, a leaf on its stem. */
+	private static void drawLeaf(Graphics2D g, int cx, int cy, double r)
+	{
+		Path2D.Double leaf = new Path2D.Double();
+		leaf.moveTo(cx, cy - r);
+		leaf.curveTo(cx + r * 0.86d, cy - r * 0.34d, cx + r * 0.58d, cy + r * 0.62d,
+			cx, cy + r * 0.86d);
+		leaf.curveTo(cx - r * 0.58d, cy + r * 0.62d, cx - r * 0.86d, cy - r * 0.34d,
+			cx, cy - r);
+		leaf.closePath();
+		g.fill(leaf);
+		java.awt.Stroke before = g.getStroke();
+		g.setColor(withAlpha(Color.WHITE, 80));
+		g.setStroke(new BasicStroke((float) Math.max(1d, r / 14d)));
+		g.draw(new java.awt.geom.Line2D.Double(cx, cy - r * 0.86d, cx, cy + r * 0.80d));
+		for (int i = 1; i <= 3; i++)
+		{
+			double y = cy - r * 0.52d + i * r * 0.40d;
+			g.draw(new java.awt.geom.Line2D.Double(cx, y, cx - r * 0.40d, y + r * 0.20d));
+			g.draw(new java.awt.geom.Line2D.Double(cx, y, cx + r * 0.40d, y + r * 0.20d));
+		}
+		g.setStroke(before);
+	}
+
+	/** Maisa: the desert moon over Al Kharid. */
+	private static void drawCrescent(Graphics2D g, int cx, int cy, double r)
+	{
+		java.awt.geom.Area moon = new java.awt.geom.Area(
+			new java.awt.geom.Ellipse2D.Double(cx - r, cy - r, r * 2, r * 2));
+		moon.subtract(new java.awt.geom.Area(new java.awt.geom.Ellipse2D.Double(
+			cx - r * 0.42d, cy - r * 1.08d, r * 1.86d, r * 2.16d)));
+		g.fill(moon);
+		for (int i = 0; i < 3; i++)
+		{
+			double a = -0.5d + i * 0.5d;
+			double sx = cx + Math.cos(a) * r * 0.82d;
+			double sy = cy + Math.sin(a) * r * 0.82d;
+			double sz = r * (i == 1 ? 0.16d : 0.10d);
+			Path2D.Double spark = new Path2D.Double();
+			spark.moveTo(sx, sy - sz);
+			spark.lineTo(sx + sz * 0.4d, sy);
+			spark.lineTo(sx, sy + sz);
+			spark.lineTo(sx - sz * 0.4d, sy);
+			spark.closePath();
+			g.fill(spark);
+		}
+	}
+
+	/** Zilyana: the four-pointed star of Saradomin. */
+	private static void drawSaradominStar(Graphics2D g, int cx, int cy, double r)
+	{
+		Path2D.Double star = new Path2D.Double();
+		for (int i = 0; i < 8; i++)
+		{
+			double angle = Math.PI * i / 4d - Math.PI / 2d;
+			double reach = (i % 2 == 0) ? r : r * 0.26d;
+			double x = cx + Math.cos(angle) * reach;
+			double y = cy + Math.sin(angle) * reach;
+			if (i == 0)
+			{
+				star.moveTo(x, y);
+			}
+			else
+			{
+				star.lineTo(x, y);
+			}
+		}
+		star.closePath();
+		g.fill(star);
+		g.setColor(withAlpha(Color.WHITE, 110));
+		g.fill(new java.awt.geom.Ellipse2D.Double(cx - r * 0.16d, cy - r * 0.16d,
+			r * 0.32d, r * 0.32d));
 	}
 
 	private static void drawCookieMotif(Graphics2D g, int cx, int cy, int radius, Color glow,
@@ -480,12 +704,12 @@ public final class CardRenderer
 	 */
 	public static final class Style
 	{
-		final Color metalDark;
-		final Color metalMid;
-		final Color metalLight;
-		final Color plate;
-		final Color glow;
-		final Color accent;
+		public final Color metalDark;
+		public final Color metalMid;
+		public final Color metalLight;
+		public final Color plate;
+		public final Color glow;
+		public final Color accent;
 		final int ornament;
 		final NpcCardArt art;
 		/** How far up its own ramp a tier may go. Below 1 it never reaches metalLight. */
