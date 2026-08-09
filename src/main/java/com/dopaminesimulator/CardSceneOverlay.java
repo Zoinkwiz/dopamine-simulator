@@ -26,24 +26,28 @@ package com.dopaminesimulator;
 
 import com.dopaminesimulator.cards.Card;
 import com.dopaminesimulator.ui.CardRenderer;
+import java.awt.image.BufferedImage;
 import java.awt.Dimension;
 import java.awt.Graphics2D;
 import java.awt.Shape;
-import java.awt.geom.AffineTransform;
 import net.runelite.client.ui.overlay.Overlay;
 import net.runelite.client.ui.overlay.OverlayLayer;
 import net.runelite.client.ui.overlay.OverlayPosition;
 
 public class CardSceneOverlay extends Overlay
 {
+	/** Dropped if nothing submits for this long, so a closed card cannot leave its scene up. */
 	private static final long STALE_MS = 120L;
 
 	private Card card;
 	private java.awt.Rectangle box;
-	private AffineTransform transform;
+	private CardRenderer.Turn turn;
+	private int cardWidth;
+	private int cardHeight;
 	private double px;
 	private double py;
 	private long submittedAt;
+	private BufferedImage scene;
 
 	CardSceneOverlay()
 	{
@@ -51,14 +55,28 @@ public class CardSceneOverlay extends Overlay
 		setLayer(OverlayLayer.UNDER_WIDGETS);
 	}
 
-	public void submit(Card card, java.awt.Rectangle box, AffineTransform transform,
-					   double px, double py)
+	/**
+	 * Offers the scene for this frame.
+	 *
+	 * @param box  the art window in CARD-LOCAL coordinates, so the scene can be drawn flat and
+	 *             turned by the same projection the frame uses.
+	 * @param turn how the card is turned, or null to draw it square on.
+	 */
+	public void submit(Card card, java.awt.Rectangle canvasBox, double px, double py)
+	{
+		submit(card, canvasBox, null, 0, 0, px, py);
+	}
+
+	public void submit(Card card, java.awt.Rectangle box, CardRenderer.Turn turn,
+					   int cardWidth, int cardHeight, double px, double py)
 	{
 		this.px = px;
 		this.py = py;
 		this.card = card;
 		this.box = box;
-		this.transform = transform;
+		this.turn = turn;
+		this.cardWidth = cardWidth;
+		this.cardHeight = cardHeight;
 		this.submittedAt = System.currentTimeMillis();
 	}
 
@@ -71,15 +89,29 @@ public class CardSceneOverlay extends Overlay
 			return null;
 		}
 
-		AffineTransform transformBefore = graphics.getTransform();
-		Shape clipBefore = graphics.getClip();
-		if (transform != null)
+		if (turn == null)
 		{
-			graphics.transform(transform);
+			// The reveal draws its card square on, so the box is already in canvas space.
+			CardRenderer.drawArtScene(graphics, card, box, px, py);
+			return null;
 		}
-		CardRenderer.drawArtScene(graphics, card, box, px, py);
-		graphics.setTransform(transformBefore);
-		graphics.setClip(clipBefore);
+		if (cardWidth <= 0 || cardHeight <= 0)
+		{
+			return null;
+		}
+
+		if (scene == null || scene.getWidth() != cardWidth || scene.getHeight() != cardHeight)
+		{
+			scene = new BufferedImage(cardWidth, cardHeight, BufferedImage.TYPE_INT_ARGB);
+		}
+		Graphics2D g = scene.createGraphics();
+		g.setComposite(java.awt.AlphaComposite.Clear);
+		g.fillRect(0, 0, cardWidth, cardHeight);
+		g.setComposite(java.awt.AlphaComposite.SrcOver);
+		CardRenderer.drawArtScene(g, card, box, px, py);
+		g.dispose();
+
+		CardRenderer.drawTurned(graphics, scene, turn);
 		return null;
 	}
 }

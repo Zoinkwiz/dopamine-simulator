@@ -561,7 +561,7 @@ public class PackRevealOverlay extends Overlay
 				{
 					modelStage.showAt(npcArt, modelBox);
 
-					scene.submit(card.card, modelBox, null, 0d, 0d);
+					scene.submit(card.card, modelBox, 0d, 0d);
 				}
 				graphics.setComposite(originalComposite);
 				graphics.setTransform(originalTransform);

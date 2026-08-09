@@ -118,6 +118,107 @@ public final class CardRenderer
 		return new RoundRectangle2D.Float(b.x, b.y, b.width, b.height, radius, radius);
 	}
 
+	/**
+	 * A card turned about its vertical and horizontal axes. Carries the projection rather than a
+	 * transform, because perspective is not affine and both halves of a model card must agree
+	 * on it exactly.
+	 */
+	public static final class Turn
+	{
+		private static final double EYE = 2.6d;
+		private static final int STRIPS = 30;
+
+		private final double cx;
+		private final double cy;
+		private final double scale;
+		private final double yaw;
+		private final double pitch;
+
+		public Turn(double cx, double cy, double scale, double yaw, double pitch)
+		{
+			this.cx = cx;
+			this.cy = cy;
+			this.scale = scale;
+			this.yaw = yaw;
+			this.pitch = pitch;
+		}
+
+		/** Projects a card-local point onto the canvas. */
+		public Point2D.Double project(double lx, double ly, int w, int h)
+		{
+			double u = lx - w / 2d;
+			double v = ly - h / 2d;
+			double eye = w * EYE;
+			double depth = eye / (eye + u * Math.sin(yaw));
+			double x = cx + u * Math.cos(yaw) * depth * scale;
+			double y = cy + v * depth * scale * Math.cos(pitch)
+				+ Math.sin(pitch) * h * 0.5d * depth * scale * 0.12d;
+			return new Point2D.Double(x, y);
+		}
+
+		/** The turned outline of a card-local rectangle. */
+		public Shape outline(java.awt.Rectangle local, int w, int h)
+		{
+			Point2D.Double tl = project(local.x, local.y, w, h);
+			Point2D.Double tr = project(local.x + local.width, local.y, w, h);
+			Point2D.Double br = project(local.x + local.width, local.y + local.height, w, h);
+			Point2D.Double bl = project(local.x, local.y + local.height, w, h);
+			Path2D.Double quad = new Path2D.Double();
+			quad.moveTo(tl.x, tl.y);
+			quad.lineTo(tr.x, tr.y);
+			quad.lineTo(br.x, br.y);
+			quad.lineTo(bl.x, bl.y);
+			quad.closePath();
+			return quad;
+		}
+	}
+
+	/**
+	 * Draws a rendered card face as if it were turned.
+	 *
+	 * <p>Each strip is placed by projecting its own column, so the edge nearest the eye comes
+	 * out taller than the one going away - the keystone a shear cannot produce. Strips are drawn
+	 * a pixel wide to cover the seams between them.
+	 */
+	public static void drawTurned(Graphics2D graphics, BufferedImage face, Turn turn)
+	{
+		int w = face.getWidth();
+		int h = face.getHeight();
+		Object hintBefore = graphics.getRenderingHint(RenderingHints.KEY_INTERPOLATION);
+		graphics.setRenderingHint(RenderingHints.KEY_INTERPOLATION,
+			RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+
+		for (int i = 0; i < Turn.STRIPS; i++)
+		{
+			int sx0 = w * i / Turn.STRIPS;
+			int sx1 = w * (i + 1) / Turn.STRIPS;
+			if (sx1 <= sx0)
+			{
+				continue;
+			}
+			Point2D.Double top0 = turn.project(sx0, 0, w, h);
+			Point2D.Double top1 = turn.project(sx1, 0, w, h);
+			Point2D.Double bottom0 = turn.project(sx0, h, w, h);
+
+			double x0 = Math.min(top0.x, top1.x);
+			double x1 = Math.max(top0.x, top1.x);
+			int dx0 = (int) Math.floor(x0);
+			int dx1 = (int) Math.ceil(x1) + 1;
+			int dy0 = (int) Math.round(top0.y);
+			int dy1 = (int) Math.round(bottom0.y);
+			if (dx1 <= dx0 || dy1 <= dy0)
+			{
+				continue;
+			}
+			graphics.drawImage(face, dx0, dy0, dx1, dy1, sx0, 0, sx1, h, null);
+		}
+
+		if (hintBefore != null)
+		{
+			graphics.setRenderingHint(RenderingHints.KEY_INTERPOLATION, hintBefore);
+		}
+	}
+
 	public enum BackMotif
 	{
 		COOKIE,
@@ -447,10 +548,6 @@ public final class CardRenderer
 		if (rich)
 		{
 			drawMetalFrame(g, style, width, height, radius);
-			if (style.has(ORN_PRISM))
-			{
-				drawPrismaticSheen(g, width, height, radius, animMs);
-			}
 			if (rarity.ordinal() >= Rarity.UNCOMMON.ordinal())
 			{
 				drawFrameBevel(g, width, height, radius);
@@ -740,7 +837,8 @@ public final class CardRenderer
 				x + width, y + height, withAlpha(Color.BLACK, 150)));
 			g.drawRoundRect(x, y, width - 1, height - 1, radius, radius);
 			g.setStroke(new BasicStroke(1f));
-			g.setPaint(prismPaint(x, y, x + width, y, animMs, 90, 0.35f));
+			g.setPaint(new GradientPaint(x, y, withAlpha(Color.WHITE, 120),
+				x + width, y, withAlpha(Color.WHITE, 30)));
 			g.drawLine(x + radius, y + 1, x + width - radius, y + 1);
 			return;
 		}
@@ -805,7 +903,8 @@ public final class CardRenderer
 		g.fillRoundRect(plateX, y + 1, plateW, plateHeight - 2, 3, 3);
 		if (prismatic)
 		{
-			g.setPaint(prismPaint(plateX, y, plateX + plateW, y, animMs, 190, 0.45f));
+			g.setPaint(new GradientPaint(plateX, y, withAlpha(style.metalLight, 200),
+				plateX + plateW, y, withAlpha(style.metalMid, 150)));
 		}
 		else
 		{
@@ -846,8 +945,8 @@ public final class CardRenderer
 			drawTrackedText(g, line, font, 0.045f, centreX + 1, lineY + 1,
 				new Color(0, 0, 0, 190));
 			java.awt.Paint fill = prismatic
-				? prismPaint(centreX - available / 2f, lineY - metrics.getAscent(),
-					centreX + available / 2f, lineY, animMs, 255, 0.28f)
+				? new GradientPaint(0, lineY - metrics.getAscent(), Color.WHITE,
+					0, lineY, style.metalLight)
 				: new GradientPaint(0, lineY - metrics.getAscent(), Color.WHITE,
 					0, lineY, lighten(card.getRarity().getColour(), 0.25d));
 			drawTrackedText(g, line, font, 0.045f, centreX, lineY, fill);
@@ -1429,23 +1528,6 @@ public final class CardRenderer
 		g.dispose();
 	}
 
-	private static LinearGradientPaint prismPaint(float x1, float y1, float x2, float y2,
-												  long animMs, int alpha, float saturation)
-	{
-		float drift = animMs == 0 ? 0f : (animMs % 7000L) / 7000f;
-		float[] fractions = new float[PRISM_STOPS + 1];
-		Color[] colours = new Color[PRISM_STOPS + 1];
-		for (int i = 0; i <= PRISM_STOPS; i++)
-		{
-			fractions[i] = i / (float) PRISM_STOPS;
-			Color hue = Color.getHSBColor((drift + fractions[i] * 0.8f) % 1f, saturation, 1f);
-			colours[i] = alpha >= 255 ? hue : withAlpha(hue, alpha);
-		}
-
-		float ex = x1 == x2 && y1 == y2 ? x2 + 1f : x2;
-		return new LinearGradientPaint(new Point2D.Float(x1, y1), new Point2D.Float(ex, y2),
-			fractions, colours);
-	}
 
 	private static final double FLOOR_AT = 0.80d;
 
@@ -1484,28 +1566,6 @@ public final class CardRenderer
 		g.dispose();
 	}
 
-	private static void drawPrismaticSheen(Graphics2D g, int width, int height, int radius,
-										   long animMs)
-	{
-		Shape clip = g.getClip();
-		g.setClip(new RoundRectangle2D.Float(0, 0, width, height, radius, radius));
-
-		float phase = animMs == 0 ? 0f : (animMs % 9000L) / 9000f;
-		Color[] prism = new Color[PRISM_STOPS + 1];
-		float[] fractions = new float[PRISM_STOPS + 1];
-		for (int i = 0; i <= PRISM_STOPS; i++)
-		{
-			fractions[i] = i / (float) PRISM_STOPS;
-
-			Color hue = Color.getHSBColor((phase + fractions[i] * 0.75f) % 1f, 0.55f, 1f);
-			prism[i] = withAlpha(hue, 54);
-		}
-		g.setPaint(new LinearGradientPaint(
-			new Point2D.Float(0, 0), new Point2D.Float(width, height),
-			fractions, prism));
-		g.fillRoundRect(0, 0, width, height, radius, radius);
-		g.setClip(clip);
-	}
 
 	private static final int PRISM_STOPS = 5;
 

@@ -57,14 +57,9 @@ public class CardViewerOverlay extends Overlay
 	private final NpcModelStage modelStage;
 	private final CardSceneOverlay scene;
 
-	private static final double MAX_SHEAR_X = 0.032d;
-	private static final double MAX_SHEAR_Y = 0.016d;
 	/** Rotation about the card's vertical and horizontal axes, radians. */
 	private static final double MAX_YAW = 0.20d;
 	private static final double MAX_PITCH = 0.13d;
-	/** Eye distance as a multiple of the card's width. Lower exaggerates the perspective. */
-	private static final double EYE = 2.6d;
-	private static final int STRIPS = 30;
 
 	private java.awt.image.BufferedImage face;
 	private static final long PULSE_MS = 420L;
@@ -85,13 +80,6 @@ public class CardViewerOverlay extends Overlay
 		{
 			modelStage.restartTurn();
 		}
-	}
-
-	private static AffineTransform localTransform(AffineTransform cardTransform)
-	{
-		AffineTransform local = new AffineTransform(cardTransform);
-		local.translate(-CARD_WIDTH / 2d, -CARD_HEIGHT / 2d);
-		return local;
 	}
 
 	public boolean containsCanvas(int x, int y)
@@ -186,22 +174,17 @@ public class CardViewerOverlay extends Overlay
 
 		NpcCardArt npcArt = NpcCardArt.forCard(showing);
 
-		double lean = NpcCardArt.forCard(showing) == null ? 1d : 0d;
-		AffineTransform cardTransform = new AffineTransform();
-		cardTransform.translate(cx, cy);
-		cardTransform.shear(-(pointerY - 0.5d) * 2d * MAX_SHEAR_X * lean,
-			-(pointerX - 0.5d) * 2d * MAX_SHEAR_Y * lean);
-		cardTransform.scale(scale, scale);
+		CardRenderer.Turn turn = new CardRenderer.Turn(cx, cy, scale,
+			(pointerX - 0.5d) * 2d * MAX_YAW, (pointerY - 0.5d) * 2d * MAX_PITCH);
 
-		Rectangle modelBox = npcArt == null ? null : modelBounds(cardTransform);
+		Rectangle artLocal = CardRenderer.artBounds(CARD_WIDTH, CARD_HEIGHT);
+		Rectangle modelBox = npcArt == null ? null
+			: turn.outline(artLocal, CARD_WIDTH, CARD_HEIGHT).getBounds();
 
 		java.awt.Shape artShape = null;
 		if (npcArt != null)
 		{
-			AffineTransform toCard = new AffineTransform(cardTransform);
-			toCard.translate(-CARD_WIDTH / 2d, -CARD_HEIGHT / 2d);
-			artShape = toCard.createTransformedShape(
-				CardRenderer.artShape(CARD_WIDTH, CARD_HEIGHT));
+			artShape = turn.outline(artLocal, CARD_WIDTH, CARD_HEIGHT);
 
 			java.awt.geom.Area undimmed = new java.awt.geom.Area(clipBefore != null
 				? clipBefore : new Rectangle(0, 0, canvasWidth, canvasHeight));
@@ -212,42 +195,20 @@ public class CardViewerOverlay extends Overlay
 		graphics.setColor(DIM);
 		graphics.fillRect(0, 0, canvasWidth, canvasHeight);
 
-		if (npcArt == null)
-		{
-			drawTurned(graphics, renderFace(showing, now), cx, cy, scale,
-				(pointerX - 0.5d) * 2d * MAX_YAW, (pointerY - 0.5d) * 2d * MAX_PITCH);
-		}
-		else
-		{
-			graphics.transform(cardTransform);
-			CardRenderer.draw(graphics, showing, -CARD_WIDTH / 2, -CARD_HEIGHT / 2,
-				CARD_WIDTH, CARD_HEIGHT, stars, true, now,
-				artService.get(showing), shiny, gilded, true);
-			graphics.setTransform(transformBefore);
-		}
+		CardRenderer.drawTurned(graphics, renderFace(showing, now, npcArt != null), turn);
 		graphics.setClip(clipBefore);
 
 		if (modelBox != null)
 		{
 			modelStage.setPointer((pointerX - 0.5d) * 2d, (pointerY - 0.5d) * 2d);
 			modelStage.showAt(npcArt, modelBox);
-			scene.submit(showing, CardRenderer.artBounds(CARD_WIDTH, CARD_HEIGHT),
-				localTransform(cardTransform), (pointerX - 0.5d) * 2d, (pointerY - 0.5d) * 2d);
+			scene.submit(showing, artLocal, turn, CARD_WIDTH, CARD_HEIGHT,
+				(pointerX - 0.5d) * 2d, (pointerY - 0.5d) * 2d);
 			CardRenderer.drawFoilOver(graphics, showing, showing.getRarity(), modelBox, now,
 				WishReveal.DEFAULT_MODEL_FOIL);
-			graphics.transform(cardTransform);
-			CardRenderer.drawChrome(graphics, showing, -CARD_WIDTH / 2, -CARD_HEIGHT / 2,
-				CARD_WIDTH, CARD_HEIGHT, shiny, gilded);
-			graphics.setTransform(transformBefore);
 		}
 
-		if (npcArt != null)
-		{
-			graphics.transform(cardTransform);
-			CardRenderer.drawSpecular(graphics, showing, -CARD_WIDTH / 2, -CARD_HEIGHT / 2,
-				CARD_WIDTH, CARD_HEIGHT, pointerX, pointerY, true, now);
-			graphics.setTransform(transformBefore);
-		}
+
 
 		graphics.setFont(FontManager.getRunescapeSmallFont());
 		graphics.setColor(HINT);
@@ -261,7 +222,7 @@ public class CardViewerOverlay extends Overlay
 		return null;
 	}
 
-	private java.awt.image.BufferedImage renderFace(Card showing, long now)
+	private java.awt.image.BufferedImage renderFace(Card showing, long now, boolean modelArt)
 	{
 		if (face == null)
 		{
@@ -277,77 +238,17 @@ public class CardViewerOverlay extends Overlay
 		g.setRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION,
 			java.awt.RenderingHints.VALUE_INTERPOLATION_BILINEAR);
 		CardRenderer.draw(g, showing, 0, 0, CARD_WIDTH, CARD_HEIGHT, stars, true, now,
-			artService.get(showing), shiny, gilded, false);
+			artService.get(showing), shiny, gilded, modelArt);
+		if (modelArt)
+		{
+			CardRenderer.drawChrome(g, showing, 0, 0, CARD_WIDTH, CARD_HEIGHT, shiny, gilded);
+		}
 		CardRenderer.drawSpecular(g, showing, 0, 0, CARD_WIDTH, CARD_HEIGHT, pointerX, pointerY,
-			false, now);
+			modelArt, now);
 		g.dispose();
 		return face;
 	}
 
-	/**
-	 * Draws the face as if the card were turned by {@code yaw} about its vertical axis and
-	 * {@code pitch} about its horizontal one.
-	 *
-	 * <p>Each strip is placed by projecting its own column, so the edge nearest the eye is drawn
-	 * taller than the one going away - the keystone an affine transform cannot produce. Strips
-	 * are drawn a pixel wide to hide the seams between them.
-	 */
-	private static void drawTurned(Graphics2D graphics, java.awt.image.BufferedImage img,
-								   double cx, double cy, double scale, double yaw, double pitch)
-	{
-		int w = img.getWidth();
-		int h = img.getHeight();
-		double eye = w * EYE;
-		double sin = Math.sin(yaw);
-		double cos = Math.cos(yaw);
-		double pitchScale = Math.cos(pitch);
-		double pitchShift = Math.sin(pitch) * h * 0.5d;
-
-		Object hintBefore = graphics.getRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION);
-		graphics.setRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION,
-			java.awt.RenderingHints.VALUE_INTERPOLATION_BILINEAR);
-
-		for (int i = 0; i < STRIPS; i++)
-		{
-			int sx0 = w * i / STRIPS;
-			int sx1 = w * (i + 1) / STRIPS;
-			if (sx1 <= sx0)
-			{
-				continue;
-			}
-			double u0 = sx0 - w / 2d;
-			double u1 = sx1 - w / 2d;
-			double p0 = eye / (eye + u0 * sin);
-			double p1 = eye / (eye + u1 * sin);
-			double x0 = cx + u0 * cos * p0 * scale;
-			double x1 = cx + u1 * cos * p1 * scale;
-			if (x1 < x0)
-			{
-				double swap = x0;
-				x0 = x1;
-				x1 = swap;
-			}
-
-			double depth = (p0 + p1) / 2d;
-			double stripH = h * depth * scale * pitchScale;
-			double y0 = cy - stripH / 2d + pitchShift * depth * scale * 0.12d;
-
-			int dx0 = (int) Math.floor(x0);
-			int dx1 = (int) Math.ceil(x1) + 1;
-			int dy0 = (int) Math.round(y0);
-			int dy1 = (int) Math.round(y0 + stripH);
-			if (dx1 <= dx0 || dy1 <= dy0)
-			{
-				continue;
-			}
-			graphics.drawImage(img, dx0, dy0, dx1, dy1, sx0, 0, sx1, h, null);
-		}
-
-		if (hintBefore != null)
-		{
-			graphics.setRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION, hintBefore);
-		}
-	}
 
 	private void trackPointer(int cx, int cy, double scale)
 	{
@@ -370,15 +271,4 @@ public class CardViewerOverlay extends Overlay
 		return value < 0d ? 0d : Math.min(value, 1d);
 	}
 
-	private Rectangle modelBounds(AffineTransform cardTransform)
-	{
-		Rectangle local = CardRenderer.artBounds(CARD_WIDTH, CARD_HEIGHT);
-		local.translate(-CARD_WIDTH / 2, -CARD_HEIGHT / 2);
-		Rectangle bounds = cardTransform.createTransformedShape(local).getBounds();
-
-		int overhangX = (int) Math.ceil(Math.abs(cardTransform.getShearX()) * bounds.height);
-		int overhangY = (int) Math.ceil(Math.abs(cardTransform.getShearY()) * bounds.width);
-		bounds.grow(-overhangX, -overhangY);
-		return bounds.isEmpty() ? new Rectangle(bounds.x, bounds.y, 1, 1) : bounds;
 	}
-}
