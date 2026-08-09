@@ -231,13 +231,16 @@ public class CardViewerOverlay extends Overlay
 		}
 
 		double flipYaw = flip < 1d ? Math.PI * flip : 0d;
-		CardRenderer.Turn turn = new CardRenderer.Turn(cx, cy, scale,
-			(pointerX - 0.5d) * 2d * MAX_YAW + flipYaw,
+		double yaw = (pointerX - 0.5d) * 2d * MAX_YAW + flipYaw;
+		// Past a quarter turn the projection runs right to left. The face is drawn mirrored to
+		// cancel that, whichever side is up.
+		boolean mirrored = Math.cos(yaw) < 0d;
+		CardRenderer.Turn turn = new CardRenderer.Turn(cx, cy, scale, yaw,
 			(pointerY - 0.5d) * 2d * MAX_PITCH, CARD_WIDTH, CARD_HEIGHT);
 
 		Rectangle artLocal = CardRenderer.artBounds(CARD_WIDTH, CARD_HEIGHT);
 		java.awt.Shape artRounded = CardRenderer.artShape(CARD_WIDTH, CARD_HEIGHT);
-		boolean faceUp = !showingBack;
+		boolean faceUp = !showingBack && flip >= 1d;
 		Rectangle modelBox = npcArt == null || !faceUp ? null
 			: turn.outline(artRounded).getBounds();
 		if (!faceUp)
@@ -260,7 +263,7 @@ public class CardViewerOverlay extends Overlay
 		graphics.fillRect(0, 0, canvasWidth, canvasHeight);
 
 		graphics.setClip(clipBefore);
-		CardRenderer.drawTurned(graphics, renderFace(showing, now, npcArt != null, flip < 1d),
+		CardRenderer.drawTurned(graphics, renderFace(showing, now, npcArt != null, mirrored),
 			turn, CardRenderer.FACE_PAD);
 
 		if (modelBox != null)
@@ -310,15 +313,15 @@ public class CardViewerOverlay extends Overlay
 			java.awt.RenderingHints.VALUE_INTERPOLATION_BILINEAR);
 		// The card sits inset by the padding; the warp samples the whole padded span.
 		g.translate(pad, pad);
+		if (mirrored)
+		{
+			g.translate(CARD_WIDTH, 0);
+			g.scale(-1d, 1d);
+		}
 		if (showingBack)
 		{
 			CardRenderer.Style style = CardRenderer.styleFor(showing);
 			NpcCardArt back = NpcCardArt.forCard(showing);
-			if (mirrored)
-			{
-				g.translate(CARD_WIDTH, 0);
-				g.scale(-1d, 1d);
-			}
 			CardRenderer.drawCardBack(g, 0, 0, CARD_WIDTH, CARD_HEIGHT,
 				back != null ? new java.awt.Color(back.getPlateColour())
 					: new java.awt.Color(0x14, 0x11, 0x1B),
