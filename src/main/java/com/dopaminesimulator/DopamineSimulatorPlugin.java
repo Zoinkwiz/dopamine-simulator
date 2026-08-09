@@ -78,6 +78,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import javax.inject.Inject;
+import javax.inject.Named;
 import javax.swing.SwingUtilities;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -124,6 +125,10 @@ public class DopamineSimulatorPlugin extends Plugin
 	private static final int SAVE_INTERVAL_TICKS = 100;
 
 	private static final int CROSS_REGION_SENTINEL = 100;
+
+	@Inject
+	@Named("developerMode")
+	private boolean developerMode;
 
 	@Inject
 	private Client client;
@@ -290,8 +295,8 @@ public class DopamineSimulatorPlugin extends Plugin
 			return;
 		}
 		DopamineState state = engine.getState();
-		cardViewer.show(card, state.getStars(card.getId()),
-			state.isShiny(card.getId()), state.isGilded(card.getId()));
+		cardViewer.show(card, state.getStars(card.getId()), state.isShiny(card.getId()),
+			state.isGilded(card.getId()), state.getCopies(card.getId()) > 0);
 
 		mouseManager.unregisterMouseListener(viewerDismiss);
 		mouseManager.registerMouseListener(viewerDismiss);
@@ -1350,6 +1355,16 @@ public class DopamineSimulatorPlugin extends Plugin
 	@Subscribe
 	public void onCommandExecuted(CommandExecuted event)
 	{
+		GnomeFood food = GnomeFood.byCommand(event.getCommand());
+		if (food != null)
+		{
+			serveOnCommand(food);
+			return;
+		}
+		if (!developerMode)
+		{
+			return;
+		}
 		if ("resetfeats".equalsIgnoreCase(event.getCommand()))
 		{
 			runReset("resetfeats", "feat ranks",
@@ -1369,14 +1384,6 @@ public class DopamineSimulatorPlugin extends Plugin
 		else if ("completecards".equalsIgnoreCase(event.getCommand()))
 		{
 			completeCards(event.getArguments());
-		}
-		else
-		{
-			GnomeFood food = GnomeFood.byCommand(event.getCommand());
-			if (food != null)
-			{
-				serveOnCommand(food);
-			}
 		}
 	}
 

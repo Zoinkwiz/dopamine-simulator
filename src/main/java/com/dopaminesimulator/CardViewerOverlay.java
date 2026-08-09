@@ -72,6 +72,7 @@ public class CardViewerOverlay extends Overlay
 	private int stars;
 	private boolean shiny;
 	private boolean gilded;
+	private boolean owned;
 	private long openedAt;
 	private long pulsedAt;
 	private double pointerX = 0.5d;
@@ -103,7 +104,7 @@ public class CardViewerOverlay extends Overlay
 	public void click()
 	{
 		pulsedAt = System.currentTimeMillis();
-		if (!modelStage.toggleForm(NpcCardArt.forCard(card)))
+		if (!owned || !modelStage.toggleForm(NpcCardArt.forCard(card)))
 		{
 			modelStage.restartTurn();
 		}
@@ -145,8 +146,9 @@ public class CardViewerOverlay extends Overlay
 		flipStartMs = 0L;
 	}
 
-	public void show(Card card, int stars, boolean shiny, boolean gilded)
+	public void show(Card card, int stars, boolean shiny, boolean gilded, boolean owned)
 	{
+		this.owned = owned;
 		showFront();
 		this.card = card;
 		this.stars = stars;
@@ -207,7 +209,7 @@ public class CardViewerOverlay extends Overlay
 
 		trackPointer(cx, cy, scale);
 
-		NpcCardArt npcArt = NpcCardArt.forCard(showing);
+		NpcCardArt npcArt = owned ? NpcCardArt.forCard(showing) : null;
 
 		double flip = flipProgress(now);
 		if (flip < 1d)
@@ -320,7 +322,7 @@ public class CardViewerOverlay extends Overlay
 			g.dispose();
 			return face;
 		}
-		CardRenderer.draw(g, showing, 0, 0, CARD_WIDTH, CARD_HEIGHT, stars, true, now,
+		CardRenderer.draw(g, showing, 0, 0, CARD_WIDTH, CARD_HEIGHT, stars, owned, now,
 			artService.get(showing), shiny, gilded, modelArt);
 		if (modelArt)
 		{
