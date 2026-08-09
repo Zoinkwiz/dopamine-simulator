@@ -236,10 +236,12 @@ public class CardViewerOverlay extends Overlay
 	{
 		int ss = CardRenderer.SUPERSAMPLE;
 		int pad = CardRenderer.FACE_PAD;
-		if (face == null)
+		int fw = (CARD_WIDTH + pad * 2) * ss;
+		int fh = (CARD_HEIGHT + pad * 2) * ss;
+		if (face == null || face.getWidth() != fw || face.getHeight() != fh)
 		{
-			face = new java.awt.image.BufferedImage((CARD_WIDTH + pad * 2) * ss,
-				(CARD_HEIGHT + pad * 2) * ss, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+			face = new java.awt.image.BufferedImage(fw, fh,
+				java.awt.image.BufferedImage.TYPE_INT_ARGB);
 		}
 		Graphics2D g = face.createGraphics();
 		g.setComposite(AlphaComposite.Clear);
@@ -250,6 +252,8 @@ public class CardViewerOverlay extends Overlay
 			java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
 		g.setRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION,
 			java.awt.RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+		// The card sits inset by the padding; the warp samples the whole padded span.
+		g.translate(pad, pad);
 		CardRenderer.draw(g, showing, 0, 0, CARD_WIDTH, CARD_HEIGHT, stars, true, now,
 			artService.get(showing), shiny, gilded, modelArt);
 		if (modelArt)
