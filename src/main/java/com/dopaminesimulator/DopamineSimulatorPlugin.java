@@ -467,6 +467,10 @@ public class DopamineSimulatorPlugin extends Plugin
 		}
 		String message = net.runelite.client.util.Text
 			.removeTags(event.getMessage()).toLowerCase(java.util.Locale.ROOT);
+		if (message.contains(PACK_EARNED))
+		{
+			return;
+		}
 		CharacterDeed deed = deedFor(message);
 		if (deed != null)
 		{
@@ -522,13 +526,15 @@ public class DopamineSimulatorPlugin extends Plugin
 		return null;
 	}
 
+	private static final String PACK_EARNED = " pack earned - ";
+
 	private void awardCharacterPack(CharacterDeed deed)
 	{
 		engine.getState().addCharacterPack(deed.getCardId());
 		persist();
 		rebuildPanel();
 		client.addChatMessage(ChatMessageType.GAMEMESSAGE, "",
-			"<col=ffc46a>" + deed.getCharacterName() + "</col> pack earned - "
+			"<col=ffc46a>" + deed.getCharacterName() + "</col>" + PACK_EARNED
 				+ deed.getDeed() + ". Open it from Feats > Deeds.", null);
 	}
 
