@@ -56,8 +56,8 @@ public enum CardOrigin
 		"Awarded for ascending a maxed collection.",
 		new Color(0xAB, 0x47, 0xBC)),
 
-	DEEDS("Deeds", "Earned in game",
-		"Earned by doing the thing they are known for. Packs never hold these.",
+	DEEDS("Deeds", "Their own pack",
+		"Earned by doing the thing they are known for. Only their own pack holds them.",
 		new Color(0xF0, 0xC4, 0x6A));
 
 	private final String displayName;

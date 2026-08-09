@@ -1480,12 +1480,15 @@ public class DopamineSimulatorPanel extends PluginPanel
 		text.setLayout(new BoxLayout(text, BoxLayout.Y_AXIS));
 		text.setBackground(Skin.CARD_DEEP);
 		JLabel name = new JLabel(owned ? card.getName() : "???");
+		name.setToolTipText(owned ? card.getName() : "Not yet owned");
 		name.setFont(FontManager.getRunescapeBoldFont());
 		name.setForeground(card.getRarity().getColour());
 		name.setAlignmentX(Component.LEFT_ALIGNMENT);
 		text.add(name);
-		JLabel meta = new JLabel(card.getRarity().getDisplayName()
-			+ "  •  " + card.getSet().getDisplayName());
+		String metaText = card.getRarity().getDisplayName()
+			+ "  •  " + card.getSet().getDisplayName();
+		JLabel meta = new JLabel(metaText);
+		meta.setToolTipText(metaText);
 		meta.setFont(FontManager.getRunescapeSmallFont());
 		meta.setForeground(Skin.MUTED);
 		meta.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -1496,6 +1499,7 @@ public class DopamineSimulatorPanel extends PluginPanel
 		{
 			JLabel source = new JLabel(origin.getDisplayName() + "  •  "
 				+ origin.getShortHint());
+			source.setToolTipText(origin.getDisplayName() + ": " + origin.getDescription());
 			source.setFont(FontManager.getRunescapeSmallFont());
 			source.setForeground(origin.getColour());
 			source.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -1527,14 +1531,17 @@ public class DopamineSimulatorPanel extends PluginPanel
 			int per = Dust.costPerCopy(card.getRarity());
 			boolean enough = state.getDust() >= per;
 			StoneButton buy = new StoneButton(enough
-				? "Spend " + per + " dust  (+1 copy)"
-				: per + " dust needed  (" + state.getDust() + ")");
+				? "Spend " + per + " dust"
+				: per + " dust needed");
 			buy.withAccent(enough ? GOLD : Skin.MUTED);
 			buy.setEnabled(enough);
 			buy.setAlignmentX(Component.LEFT_ALIGNMENT);
 			buy.setMaximumSize(new Dimension(Integer.MAX_VALUE, 20));
-			buy.setToolTipText("Dust comes from spare copies of finished cards."
-				+ " It is the only way to pick a specific card.");
+			buy.setToolTipText(enough
+				? "Spend " + per + " dust for one more copy. Dust comes from spare copies of"
+					+ " finished cards, and is the only way to pick a specific card."
+				: "Needs " + per + " dust and you have " + state.getDust()
+					+ ". Dust comes from spare copies of finished cards.");
 			buy.addActionListener(e -> plugin.spendDustOn(card, 1));
 			text.add(Box.createVerticalStrut(4));
 			text.add(buy);
@@ -2127,6 +2134,7 @@ public class DopamineSimulatorPanel extends PluginPanel
 		SectionHeader header = new SectionHeader(text, trailing);
 		header.setAlignmentX(Component.LEFT_ALIGNMENT);
 		header.setMaximumSize(new Dimension(Integer.MAX_VALUE, 22));
+		header.setToolTipText(trailing == null ? text : text + "  -  " + trailing);
 		return header;
 	}
 	private WrappedLabel hint(String text)
