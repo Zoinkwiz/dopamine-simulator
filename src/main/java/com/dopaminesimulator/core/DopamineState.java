@@ -76,6 +76,11 @@ public class DopamineState
 	private double lifetimeWeightedXp;
 	private Map<String, Integer> cardCounts = new HashMap<>();
 
+	/** Unopened character packs, keyed by the character's card id. */
+	private Map<String, Integer> characterPacks = new HashMap<>();
+	/** Packs opened for a character since it last came out, keyed the same way. */
+	private Map<String, Integer> characterPity = new HashMap<>();
+
 	private Map<Rarity, Integer> shards = new EnumMap<>(Rarity.class);
 
 	private Set<String> shinyCards = new LinkedHashSet<>();
@@ -620,6 +625,51 @@ public class DopamineState
 	public boolean isPackUnlocked(PackTier tier)
 	{
 		return tier.isUnlockedAt(lifetimePoints);
+	}
+
+	public int getCharacterPacks(String cardId)
+	{
+		return characterPacks.getOrDefault(cardId, 0);
+	}
+
+	public void addCharacterPack(String cardId)
+	{
+		characterPacks.merge(cardId, 1, Integer::sum);
+	}
+
+	public boolean takeCharacterPack(String cardId)
+	{
+		int held = getCharacterPacks(cardId);
+		if (held <= 0)
+		{
+			return false;
+		}
+		if (held == 1)
+		{
+			characterPacks.remove(cardId);
+		}
+		else
+		{
+			characterPacks.put(cardId, held - 1);
+		}
+		return true;
+	}
+
+	public int getCharacterPity(String cardId)
+	{
+		return characterPity.getOrDefault(cardId, 0);
+	}
+
+	public void setCharacterPity(String cardId, int packs)
+	{
+		if (packs <= 0)
+		{
+			characterPity.remove(cardId);
+		}
+		else
+		{
+			characterPity.put(cardId, packs);
+		}
 	}
 
 	public int getCopies(String cardId)

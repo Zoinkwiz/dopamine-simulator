@@ -35,6 +35,7 @@ import com.dopaminesimulator.cards.Region;
 import com.dopaminesimulator.core.Balance;
 import com.dopaminesimulator.core.DopamineEngine;
 import com.dopaminesimulator.core.DopamineEvent;
+import com.dopaminesimulator.cards.CharacterDeed;
 import com.dopaminesimulator.core.DopamineState;
 import com.dopaminesimulator.ui.CardRenderer;
 import com.dopaminesimulator.feats.FeatTrack;
@@ -208,6 +209,7 @@ public class DopamineSimulatorPlugin extends Plugin
 	private CardViewerOverlay cardViewer;
 
 	private CardSceneOverlay cardScene;
+	private com.dopaminesimulator.systems.CharacterPackService characterPacks;
 
 	private final net.runelite.client.input.MouseAdapter viewerDismiss =
 		new net.runelite.client.input.MouseAdapter()
@@ -289,6 +291,7 @@ public class DopamineSimulatorPlugin extends Plugin
 		clickState = new ClickState();
 		collection = new CollectionService();
 		packService = new PackService(random, collection);
+		characterPacks = new com.dopaminesimulator.systems.CharacterPackService(random, collection);
 		foodService = new GnomeFoodService(random, packService);
 		passService = new PassService(random, packService, collection);
 		bannerService = new BannerService(random, packService, collection);
@@ -394,6 +397,101 @@ public class DopamineSimulatorPlugin extends Plugin
 		lastLocation = null;
 		lastHitpoints = -1;
 	}
+	/**
+	 * Konar's value in the slayer master varbit. Confirm with {@code ::deeds} standing on a task
+	 * from her - the command prints what the game currently reports.
+	 */
+	private static final int SLAYER_MASTER_KONAR = 8;
+	/** Raid level at which the Tombs stop being Maisa's and become Amascut's. */
+	private static final int TOA_AMASCUT_LEVEL = 300;
+
+	@Subscribe
+	public void onChatMessage(net.runelite.api.events.ChatMessage event)
+	{
+		if (engine == null)
+		{
+			return;
+		}
+		net.runelite.api.ChatMessageType type = event.getType();
+		if (type != net.runelite.api.ChatMessageType.GAMEMESSAGE
+			&& type != net.runelite.api.ChatMessageType.SPAM)
+		{
+			return;
+		}
+		CharacterDeed deed = deedFor(net.runelite.client.util.Text
+			.removeTags(event.getMessage()).toLowerCase(java.util.Locale.ROOT));
+		if (deed != null)
+		{
+			awardCharacterPack(deed);
+		}
+	}
+
+	/**
+	 * The deed a chat line represents, or null.
+	 *
+	 * <p>Theatre mode comes from the message itself because the game exposes no varbit for it -
+	 * entry and hard mode name themselves in the completion line, and anything else is a normal
+	 * raid. The Tombs and Konar do have varbits, so those are read rather than guessed at.
+	 */
+	private CharacterDeed deedFor(String message)
+	{
+		if (message.contains("theatre of blood") && message.contains("completion time"))
+		{
+			return message.contains("hard mode") ? CharacterDeed.VERZIK : CharacterDeed.VANESCULA;
+		}
+		if (message.contains("tombs of amascut") && message.contains("completion time"))
+		{
+			int level = client.getVarbitValue(
+				net.runelite.api.gameval.VarbitID.TOA_CLIENT_RAID_LEVEL);
+			return level >= TOA_AMASCUT_LEVEL ? CharacterDeed.AMASCUT : CharacterDeed.MAISA;
+		}
+		if (message.contains("challenge complete") && message.contains("gauntlet"))
+		{
+			return message.contains("corrupted") ? CharacterDeed.SEREN : CharacterDeed.ILFEEN;
+		}
+		if (message.contains("commander zilyana kill count"))
+		{
+			return CharacterDeed.ZILYANA;
+		}
+		if (message.contains("you have completed your task")
+			|| message.contains("you've completed") && message.contains("task"))
+		{
+			return client.getVarbitValue(net.runelite.api.gameval.VarbitID.SLAYER_MASTER)
+				== SLAYER_MASTER_KONAR ? CharacterDeed.KONAR : null;
+		}
+		return null;
+	}
+
+	private void awardCharacterPack(CharacterDeed deed)
+	{
+		DopamineState state = engine.getState();
+		state.addCharacterPack(deed.getCardId());
+		saveManager.save(loadedAccountHash, state);
+		client.addChatMessage(ChatMessageType.GAMEMESSAGE, "",
+			"<col=ffc46a>" + deed.getCharacterName() + "</col> pack earned - "
+				+ deed.getDeed() + ". Open it from the Cards tab.", null);
+	}
+
+	/** Opens one earned pack and reveals whatever it held. */
+	public void openCharacterPack(CharacterDeed deed)
+	{
+		if (engine == null || deed == null)
+		{
+			return;
+		}
+		DopamineState state = engine.getState();
+		java.util.List<Card> pulled = characterPacks.open(state, deed, engine.getRewards());
+		if (pulled.isEmpty())
+		{
+			return;
+		}
+		saveManager.save(loadedAccountHash, state);
+		if (panel != null)
+		{
+			panel.refresh();
+		}
+	}
+
 	@Subscribe
 	public void onGameTick(GameTick event)
 	{
@@ -1228,6 +1326,10 @@ public class DopamineSimulatorPlugin extends Plugin
 				modelLab.command(event.getArguments());
 			}
 		}
+		else if ("deeds".equalsIgnoreCase(event.getCommand()))
+		{
+			deedsCommand(event.getArguments());
+		}
 		else if ("cardface".equalsIgnoreCase(event.getCommand()))
 		{
 			CardViewerOverlay.dumpNextFace();
@@ -1246,6 +1348,62 @@ public class DopamineSimulatorPlugin extends Plugin
 				serveOnCommand(food);
 			}
 		}
+	}
+
+	/**
+	 * Reports what the game says about the deeds we watch for, and grants or opens a pack.
+	 * The slayer master value is worth checking here rather than trusting: the constant Konar
+	 * is matched against was not verifiable from the API alone.
+	 */
+	private void deedsCommand(String[] arguments)
+	{
+		if (engine == null)
+		{
+			return;
+		}
+		if (arguments == null || arguments.length == 0)
+		{
+			client.addChatMessage(ChatMessageType.GAMEMESSAGE, "",
+				"[deeds] slayer master varbit=" + client.getVarbitValue(
+					net.runelite.api.gameval.VarbitID.SLAYER_MASTER)
+					+ " (Konar is assumed to be " + SLAYER_MASTER_KONAR + ")"
+					+ ", toa raid level=" + client.getVarbitValue(
+					net.runelite.api.gameval.VarbitID.TOA_CLIENT_RAID_LEVEL), null);
+			DopamineState state = engine.getState();
+			StringBuilder held = new StringBuilder("[deeds] held:");
+			for (CharacterDeed deed : CharacterDeed.values())
+			{
+				held.append(' ').append(deed.name().toLowerCase(java.util.Locale.ROOT))
+					.append('=').append(state.getCharacterPacks(deed.getCardId()))
+					.append('/').append(state.getCharacterPity(deed.getCardId()));
+			}
+			client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", held.toString(), null);
+			client.addChatMessage(ChatMessageType.GAMEMESSAGE, "",
+				"[deeds] <name> grants a pack, [deeds] <name> open opens one.", null);
+			return;
+		}
+
+		CharacterDeed deed = null;
+		for (CharacterDeed candidate : CharacterDeed.values())
+		{
+			if (candidate.name().equalsIgnoreCase(arguments[0]))
+			{
+				deed = candidate;
+				break;
+			}
+		}
+		if (deed == null)
+		{
+			client.addChatMessage(ChatMessageType.GAMEMESSAGE, "",
+				"[deeds] no such character.", null);
+			return;
+		}
+		if (arguments.length > 1 && "open".equalsIgnoreCase(arguments[1]))
+		{
+			openCharacterPack(deed);
+			return;
+		}
+		awardCharacterPack(deed);
 	}
 
 	private void previewNpcCard(String[] arguments)
