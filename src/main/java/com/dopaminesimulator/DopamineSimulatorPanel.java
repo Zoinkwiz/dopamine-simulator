@@ -291,6 +291,19 @@ public class DopamineSimulatorPanel extends PluginPanel
 		rebuild();
 		return true;
 	}
+	public void refreshNow()
+	{
+		if (!refreshQueued.compareAndSet(false, true))
+		{
+			return;
+		}
+		SwingUtilities.invokeLater(() ->
+		{
+			refreshQueued.set(false);
+			rebuild();
+		});
+	}
+
 	public void refresh()
 	{
 		if (selectedTab == Tab.CARDS)

@@ -507,7 +507,7 @@ public class DopamineSimulatorPlugin extends Plugin
 	{
 		engine.getState().addCharacterPack(deed.getCardId());
 		persist();
-		refreshPanel();
+		rebuildPanel();
 		client.addChatMessage(ChatMessageType.GAMEMESSAGE, "",
 			"<col=ffc46a>" + deed.getCharacterName() + "</col> pack earned - "
 				+ deed.getDeed() + ". Open it from the Cards tab.", null);
@@ -526,7 +526,7 @@ public class DopamineSimulatorPlugin extends Plugin
 				announce(card);
 			}
 			persist();
-			refreshPanel();
+			rebuildPanel();
 		});
 	}
 
@@ -1682,6 +1682,15 @@ public class DopamineSimulatorPlugin extends Plugin
 			saveManager.save(loadedAccountHash, engine.getState());
 		}
 	}
+	private void rebuildPanel()
+	{
+		DopamineSimulatorPanel current = panel;
+		if (current != null)
+		{
+			current.refreshNow();
+		}
+	}
+
 	private void refreshPanel()
 	{
 		DopamineSimulatorPanel current = panel;
