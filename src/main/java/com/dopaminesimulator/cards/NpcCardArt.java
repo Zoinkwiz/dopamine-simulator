@@ -75,6 +75,7 @@ public class NpcCardArt
 	private final int altVerticalOffset;
 
 	private final boolean bloodDrips;
+	private final String backMotif;
 
 	private NpcCardArt(CardData.NpcArtEntry entry)
 	{
@@ -108,6 +109,7 @@ public class NpcCardArt
 		this.altZoom = entry.altZoom;
 		this.altVerticalOffset = entry.altVerticalOffset;
 		this.bloodDrips = entry.bloodDrips;
+		this.backMotif = entry.backMotif;
 	}
 
 	public static NpcCardArt forCard(Card card)

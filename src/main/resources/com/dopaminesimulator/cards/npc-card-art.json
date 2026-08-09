@@ -29,7 +29,8 @@
 		"foreModelId": 35231,
 		"foreZoom": 600,
 		"foreRotation": 0,
-		"bloodDrips": true
+		"bloodDrips": true,
+		"backMotif": "EYES"
 	},
 	{
 		"id": "characters-vanescula-drakan",

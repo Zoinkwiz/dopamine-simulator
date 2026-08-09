@@ -852,46 +852,9 @@ public class PackRevealOverlay extends Overlay
 		{
 			back = CardBack.byId(stateSupplier.get().getSelectedBack());
 		}
-
-		graphics.setColor(back.getBase());
-		graphics.fillRoundRect(0, 0, CARD_WIDTH, CARD_HEIGHT, 8, 8);
-		graphics.setColor(back.getTrim());
-		graphics.setStroke(new BasicStroke(1.5f));
-		graphics.drawRoundRect(0, 0, CARD_WIDTH, CARD_HEIGHT, 8, 8);
-		graphics.drawRoundRect(7, 7, CARD_WIDTH - 14, CARD_HEIGHT - 14, 6, 6);
-
-		int cx = CARD_WIDTH / 2;
-		int cy = CARD_HEIGHT / 2;
-		switch (back.getPattern())
-		{
-			case RINGS:
-				for (int r = 14; r <= 44; r += 10)
-				{
-					graphics.drawOval(cx - r, cy - r, r * 2, r * 2);
-				}
-				break;
-			case RAYS:
-				for (int i = 0; i < 12; i++)
-				{
-					double angle = Math.PI * 2d * i / 12d;
-					graphics.drawLine(cx + (int) (Math.cos(angle) * 14),
-						cy + (int) (Math.sin(angle) * 14),
-						cx + (int) (Math.cos(angle) * 42),
-						cy + (int) (Math.sin(angle) * 42));
-				}
-				break;
-			case LATTICE:
-				for (int offset = -CARD_HEIGHT; offset < CARD_WIDTH; offset += 14)
-				{
-					graphics.drawLine(offset, 8, offset + CARD_HEIGHT, CARD_HEIGHT - 8);
-					graphics.drawLine(offset + CARD_HEIGHT, 8, offset, CARD_HEIGHT - 8);
-				}
-				break;
-			default:
-				graphics.drawLine(cx, 18, cx, CARD_HEIGHT - 18);
-				graphics.drawLine(18, cy, CARD_WIDTH - 18, cy);
-				break;
-		}
+		CardRenderer.drawCardBack(graphics, 0, 0, CARD_WIDTH, CARD_HEIGHT, back.getBase(),
+			back.getTrim(), back.getTrim(), CardRenderer.BackMotif.COOKIE,
+			System.currentTimeMillis(), 1f, false);
 	}
 
 	private void drawGlow(Graphics2D graphics, RevealCard card, float alpha)

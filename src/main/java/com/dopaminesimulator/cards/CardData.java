@@ -96,6 +96,7 @@ public final class CardData
 		public int altZoom;
 		public int altVerticalOffset;
 		public boolean bloodDrips;
+		public String backMotif;
 	}
 
 	public static final class OriginEntry
@@ -324,6 +325,9 @@ public final class CardData
 						break;
 					case "bloodDrips":
 						e.bloodDrips = reader.nextBoolean();
+						break;
+					case "backMotif":
+						e.backMotif = reader.nextString();
 						break;
 					default:
 						reader.skipValue();

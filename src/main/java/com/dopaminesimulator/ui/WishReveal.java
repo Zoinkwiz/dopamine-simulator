@@ -25,6 +25,7 @@
 package com.dopaminesimulator.ui;
 
 import com.dopaminesimulator.cards.Card;
+import com.dopaminesimulator.cards.NpcCardArt;
 import com.dopaminesimulator.cards.Rarity;
 import java.awt.AlphaComposite;
 import java.awt.BasicStroke;
@@ -159,7 +160,8 @@ public final class WishReveal
 			{
 				drawWash(g, width, height, cx, cy, tierColour, ambient * 0.7d, alpha);
 			}
-			drawSeal(g, cx, cy, told ? tierColour : SEAL_NEUTRAL, told, highTier, age, alpha);
+			drawSeal(g, cx, cy, card, told ? tierColour : SEAL_NEUTRAL, told, highTier, age,
+				alpha);
 			g.setClip(clipBefore);
 			g.setComposite(before);
 			return null;
@@ -213,112 +215,25 @@ public final class WishReveal
 		return modelBox;
 	}
 
-	private static void drawSeal(Graphics2D g, int cx, int cy, Color colour,
+	private static void drawSeal(Graphics2D g, int cx, int cy, Card card, Color colour,
 		boolean told, boolean highTier, long age, float alpha)
 	{
 		int w = (int) (CARD_WIDTH * 0.94d);
 		int h = (int) (CARD_HEIGHT * 0.94d);
-		int x = cx - w / 2;
-		int y = cy - h / 2;
-		int arc = Math.max(10, h / 14);
+		CardRenderer.Style style = CardRenderer.styleFor(card);
+		NpcCardArt art = NpcCardArt.forCard(card);
+		Color base = art != null ? new Color(art.getPlateColour()) : new Color(0x14, 0x11, 0x1B);
+		CardRenderer.drawCardBack(g, cx - w / 2, cy - h / 2, w, h, base, style.metalMid, colour,
+			CardRenderer.BackMotif.of(art == null ? null : art.getBackMotif()), age, alpha, told);
 
-		Shape clipBefore = g.getClip();
-		Stroke strokeBefore = g.getStroke();
-
-		g.setPaint(new LinearGradientPaint(
-			new Point2D.Float(x, y), new Point2D.Float(x, y + h),
-			new float[]{0f, 0.55f, 1f},
-			new Color[]{withAlpha(new Color(0x16, 0x12, 0x1E), (int) (250 * alpha)),
-				withAlpha(new Color(0x0B, 0x09, 0x10), (int) (250 * alpha)),
-				withAlpha(mix(new Color(0x0B, 0x09, 0x10), colour, 0.22d), (int) (250 * alpha))}));
-		g.fillRoundRect(x, y, w, h, arc, arc);
-
-		g.setClip(new RoundRectangle2D.Float(x, y, w, h, arc, arc));
-		g.setStroke(new BasicStroke(1f));
-		g.setColor(withAlpha(colour, (int) (16 * alpha)));
-		int step = Math.max(7, h / 24);
-		for (int offset = -h; offset < w + h; offset += step)
-		{
-			g.drawLine(x + offset, y, x + offset + h, y + h);
-			g.drawLine(x + offset + h, y, x + offset, y + h);
-		}
-		g.setClip(clipBefore);
-
-		int inset = Math.max(5, h / 26);
-		g.setStroke(new BasicStroke(1.4f));
-		g.setColor(withAlpha(mix(colour, Color.WHITE, 0.25d), (int) (150 * alpha)));
-		g.drawRoundRect(x, y, w - 1, h - 1, arc, arc);
-		g.setStroke(new BasicStroke(1f));
-		g.setColor(withAlpha(colour, (int) (70 * alpha)));
-		g.drawRoundRect(x + inset, y + inset, w - inset * 2 - 1, h - inset * 2 - 1,
-			arc / 2, arc / 2);
-
-		int tick = Math.max(4, h / 30);
-		g.setStroke(new BasicStroke(1.6f));
-		g.setColor(withAlpha(mix(colour, Color.WHITE, 0.4d), (int) (190 * alpha)));
-		for (int sx = 0; sx < 2; sx++)
-		{
-			for (int sy = 0; sy < 2; sy++)
-			{
-				int px = x + inset + (sx == 0 ? 0 : w - inset * 2);
-				int py = y + inset + (sy == 0 ? 0 : h - inset * 2);
-				g.drawLine(px, py, px + (sx == 0 ? tick : -tick), py);
-				g.drawLine(px, py, px, py + (sy == 0 ? tick : -tick));
-			}
-		}
-
-		double pulse = told ? 1.06d : 1d + 0.09d * Math.sin(age / 1100d * Math.PI * 2d);
-		int radius = (int) (h * 0.155d * pulse);
-
-		g.setColor(withAlpha(colour, (int) ((told ? 70 : 34) * alpha)));
-		int halo = radius + radius / 4;
-		g.fillOval(cx - halo, cy - halo, halo * 2, halo * 2);
-
-		g.setStroke(new BasicStroke(Math.max(1.6f, h / 150f)));
-		g.setColor(withAlpha(colour, (int) (255 * alpha)));
-		g.drawOval(cx - radius, cy - radius, radius * 2, radius * 2);
-		g.setStroke(new BasicStroke(1f));
-		g.setColor(withAlpha(colour, (int) (110 * alpha)));
-		int inner = (int) (radius * 0.78d);
-		g.drawOval(cx - inner, cy - inner, inner * 2, inner * 2);
-
-		for (int i = 0; i < 16; i++)
-		{
-			double angle = Math.PI * 2d * i / 16d;
-			int from = radius + 2;
-			int to = from + (i % 4 == 0 ? tick : tick / 2);
-			g.setColor(withAlpha(colour, (int) ((i % 4 == 0 ? 190 : 90) * alpha)));
-			g.drawLine(cx + (int) (Math.cos(angle) * from), cy + (int) (Math.sin(angle) * from),
-				cx + (int) (Math.cos(angle) * to), cy + (int) (Math.sin(angle) * to));
-		}
-
-		g.setColor(withAlpha(colour, (int) (255 * alpha)));
-		int sigil = (int) (h * 0.072d);
 		if (told && highTier)
 		{
-			fillStar(g, cx, cy, sigil);
+			int sigil = (int) (h * 0.05d);
+			g.setColor(withAlpha(colour, (int) (255 * alpha)));
+			fillStar(g, cx, cy + (int) (h * 0.30d), sigil);
 		}
-		else
-		{
-			Path2D.Double diamond = new Path2D.Double();
-			diamond.moveTo(cx, cy - sigil);
-			diamond.lineTo(cx + sigil * 0.86d, cy);
-			diamond.lineTo(cx, cy + sigil);
-			diamond.lineTo(cx - sigil * 0.86d, cy);
-			diamond.closePath();
-			g.fill(diamond);
-		}
-
-		g.setStroke(strokeBefore);
 	}
 
-	private static Color mix(Color from, Color to, double amount)
-	{
-		return new Color(
-			(int) (from.getRed() + (to.getRed() - from.getRed()) * amount),
-			(int) (from.getGreen() + (to.getGreen() - from.getGreen()) * amount),
-			(int) (from.getBlue() + (to.getBlue() - from.getBlue()) * amount));
-	}
 
 	private static void drawFlash(Graphics2D g, int width, int height, long sinceStrike,
 		boolean highTier, float alpha)

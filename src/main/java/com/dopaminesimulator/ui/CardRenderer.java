@@ -118,6 +118,211 @@ public final class CardRenderer
 		return new RoundRectangle2D.Float(b.x, b.y, b.width, b.height, radius, radius);
 	}
 
+	public enum BackMotif
+	{
+		COOKIE,
+		EYES;
+
+		public static BackMotif of(String name)
+		{
+			if (name != null)
+			{
+				for (BackMotif motif : values())
+				{
+					if (motif.name().equalsIgnoreCase(name))
+					{
+						return motif;
+					}
+				}
+			}
+			return COOKIE;
+		}
+	}
+
+	public static void drawCardBack(Graphics2D graphics, int x, int y, int width, int height,
+									Color base, Color trim, Color motifColour, BackMotif motif,
+									long animMs, float alpha, boolean lit)
+	{
+		if (width < 8 || height < 8)
+		{
+			return;
+		}
+		Graphics2D g = (Graphics2D) graphics.create();
+		g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+		g.translate(x, y);
+		int arc = Math.max(8, height / 14);
+		int a = (int) (255 * alpha);
+
+		g.setPaint(new LinearGradientPaint(
+			new Point2D.Float(0, 0), new Point2D.Float(0, height),
+			new float[]{0f, 0.55f, 1f},
+			new Color[]{withAlpha(lighten(base, 0.35d), a), withAlpha(base, a),
+				withAlpha(darken(base, 0.45d), a)}));
+		g.fillRoundRect(0, 0, width, height, arc, arc);
+
+		Shape clipBefore = g.getClip();
+		g.setClip(new RoundRectangle2D.Float(0, 0, width, height, arc, arc));
+		g.setStroke(new BasicStroke(1f));
+		g.setColor(withAlpha(trim, (int) (18 * alpha)));
+		int step = Math.max(7, height / 24);
+		for (int offset = -height; offset < width + height; offset += step)
+		{
+			g.drawLine(offset, 0, offset + height, height);
+			g.drawLine(offset + height, 0, offset, height);
+		}
+		g.setClip(clipBefore);
+
+		int inset = Math.max(5, height / 26);
+		g.setStroke(new BasicStroke(Math.max(1.2f, height / 220f)));
+		g.setColor(withAlpha(trim, (int) (170 * alpha)));
+		g.drawRoundRect(0, 0, width - 1, height - 1, arc, arc);
+		g.setStroke(new BasicStroke(1f));
+		g.setColor(withAlpha(trim, (int) (80 * alpha)));
+		g.drawRoundRect(inset, inset, width - inset * 2 - 1, height - inset * 2 - 1,
+			arc / 2, arc / 2);
+
+		int tick = Math.max(4, height / 30);
+		g.setStroke(new BasicStroke(1.6f));
+		g.setColor(withAlpha(lighten(trim, 0.4d), (int) (200 * alpha)));
+		for (int sx = 0; sx < 2; sx++)
+		{
+			for (int sy = 0; sy < 2; sy++)
+			{
+				int px = inset + (sx == 0 ? 0 : width - inset * 2);
+				int py = inset + (sy == 0 ? 0 : height - inset * 2);
+				g.drawLine(px, py, px + (sx == 0 ? tick : -tick), py);
+				g.drawLine(px, py, px, py + (sy == 0 ? tick : -tick));
+			}
+		}
+
+		int cx = width / 2;
+		int cy = height / 2;
+		int radius = (int) (height * 0.155d);
+		if (motif == BackMotif.EYES)
+		{
+			drawEyesMotif(g, cx, cy, radius, motifColour, animMs, alpha, lit);
+		}
+		else
+		{
+			drawCookieMotif(g, cx, cy, radius, motifColour, animMs, alpha, lit);
+		}
+		g.dispose();
+	}
+
+	private static void drawCookieMotif(Graphics2D g, int cx, int cy, int radius, Color glow,
+										long animMs, float alpha, boolean lit)
+	{
+		int a = (int) (255 * alpha);
+		int halo = radius + radius / 3;
+		g.setPaint(new RadialGradientPaint(new Point2D.Float(cx, cy), Math.max(1f, halo),
+			new float[]{0f, 1f},
+			new Color[]{withAlpha(glow, (int) ((lit ? 90 : 45) * alpha)), withAlpha(glow, 0)}));
+		g.fillOval(cx - halo, cy - halo, halo * 2, halo * 2);
+
+		// An irregular rim, so it reads as baked rather than as a printed circle.
+		Path2D.Double disc = new Path2D.Double();
+		int points = 48;
+		for (int i = 0; i <= points; i++)
+		{
+			double t = Math.PI * 2d * i / points;
+			double wobble = 1d + 0.035d * Math.sin(t * 7d) + 0.02d * Math.sin(t * 3d + 1.1d);
+			double px = cx + Math.cos(t) * radius * wobble;
+			double py = cy + Math.sin(t) * radius * wobble;
+			if (i == 0)
+			{
+				disc.moveTo(px, py);
+			}
+			else
+			{
+				disc.lineTo(px, py);
+			}
+		}
+		disc.closePath();
+
+		Color dough = new Color(0xC2, 0x8E, 0x4E);
+		g.setPaint(new RadialGradientPaint(
+			new Point2D.Float(cx - radius * 0.3f, cy - radius * 0.35f), Math.max(1f, radius * 1.6f),
+			new float[]{0f, 0.55f, 1f},
+			new Color[]{withAlpha(lighten(dough, 0.32d), a), withAlpha(dough, a),
+				withAlpha(darken(dough, 0.42d), a)}));
+		g.fill(disc);
+		g.setStroke(new BasicStroke(Math.max(1f, radius / 16f)));
+		g.setColor(withAlpha(darken(dough, 0.55d), (int) (200 * alpha)));
+		g.draw(disc);
+
+		// Chips at fixed offsets: a run that reshuffles every frame reads as noise.
+		double[][] chips = {
+			{-0.42d, -0.30d, 0.20d}, {0.28d, -0.44d, 0.16d}, {0.46d, 0.16d, 0.19d},
+			{-0.18d, 0.34d, 0.22d}, {-0.52d, 0.22d, 0.14d}, {0.06d, -0.06d, 0.17d},
+			{0.30d, 0.48d, 0.13d},
+		};
+		Color chip = new Color(0x3A, 0x21, 0x12);
+		for (double[] c : chips)
+		{
+			int size = (int) (radius * c[2]);
+			int px = (int) (cx + radius * c[0]) - size / 2;
+			int py = (int) (cy + radius * c[1]) - size / 2;
+			g.setColor(withAlpha(chip, (int) (235 * alpha)));
+			g.fillOval(px, py, size * 2, (int) (size * 1.7d));
+			g.setColor(withAlpha(lighten(chip, 0.35d), (int) (120 * alpha)));
+			g.fillOval(px + size / 3, py + size / 4, Math.max(1, size), Math.max(1, size / 2));
+		}
+
+		// A slow sheen across the dough, so the emblem is not static.
+		double sweep = (animMs % 4200L) / 4200d;
+		int gx = (int) (cx - radius + sweep * radius * 2);
+		g.setClip(disc);
+		g.setPaint(new LinearGradientPaint(
+			new Point2D.Float(gx - radius * 0.35f, cy), new Point2D.Float(gx + radius * 0.35f, cy),
+			new float[]{0f, 0.5f, 1f},
+			new Color[]{withAlpha(Color.WHITE, 0), withAlpha(Color.WHITE, (int) (34 * alpha)),
+				withAlpha(Color.WHITE, 0)}));
+		g.fillOval(cx - radius * 2, cy - radius, radius * 4, radius * 2);
+		g.setClip(null);
+	}
+
+	private static void drawEyesMotif(Graphics2D g, int cx, int cy, int radius, Color glow,
+									  long animMs, float alpha, boolean lit)
+	{
+		// Six eyes in the dark, the middle pair largest. Each breathes out of phase, so the
+		// cluster looks alive rather than like a pattern.
+		double[][] eyes = {
+			{-1.05d, -0.30d, 0.30d}, {0d, -0.42d, 0.42d}, {1.05d, -0.30d, 0.30d},
+			{-0.72d, 0.36d, 0.24d}, {0d, 0.30d, 0.30d}, {0.72d, 0.36d, 0.24d},
+		};
+		for (int i = 0; i < eyes.length; i++)
+		{
+			double breathe = 0.82d + 0.18d * Math.sin((animMs / 900d) + i * 0.9d);
+			int size = Math.max(2, (int) (radius * eyes[i][2] * (lit ? 1.15d : 1d)));
+			int ex = (int) (cx + radius * eyes[i][0]);
+			int ey = (int) (cy + radius * eyes[i][1]);
+
+			int halo = (int) (size * 3.2d * breathe);
+			g.setPaint(new RadialGradientPaint(new Point2D.Float(ex, ey), Math.max(1f, halo),
+				new float[]{0f, 0.45f, 1f},
+				new Color[]{withAlpha(glow, (int) ((lit ? 150 : 105) * alpha * breathe)),
+					withAlpha(glow, (int) (40 * alpha * breathe)), withAlpha(glow, 0)}));
+			g.fillOval(ex - halo, ey - halo, halo * 2, halo * 2);
+
+			Path2D.Double lens = new Path2D.Double();
+			lens.moveTo(ex - size, ey);
+			lens.quadTo(ex, ey - size * 0.78d, ex + size, ey);
+			lens.quadTo(ex, ey + size * 0.78d, ex - size, ey);
+			lens.closePath();
+			g.setPaint(new RadialGradientPaint(
+				new Point2D.Float(ex, ey), Math.max(1f, size),
+				new float[]{0f, 0.6f, 1f},
+				new Color[]{withAlpha(Color.WHITE, (int) (235 * alpha)),
+					withAlpha(glow, (int) (245 * alpha)),
+					withAlpha(darken(glow, 0.6d), (int) (235 * alpha))}));
+			g.fill(lens);
+
+			g.setColor(withAlpha(new Color(0x18, 0x02, 0x06), (int) (230 * alpha)));
+			int slit = Math.max(1, size / 5);
+			g.fillOval(ex - slit / 2, ey - (int) (size * 0.52d), slit, (int) (size * 1.04d));
+		}
+	}
+
 	public static final int ORN_FILIGREE = 1;
 	public static final int ORN_GEMS = 2;
 	public static final int ORN_PRISM = 4;
@@ -201,7 +406,7 @@ public final class CardRenderer
 		switch (rarity)
 		{
 			case LEGENDARY:
-				return ORN_FILIGREE | ORN_GEMS | ORN_PRISM | ORN_RAIL;
+				return ORN_FILIGREE | ORN_GEMS | ORN_RAIL;
 			case EPIC:
 				return ORN_FILIGREE | ORN_GEMS;
 			case RARE:
@@ -246,7 +451,10 @@ public final class CardRenderer
 			{
 				drawPrismaticSheen(g, width, height, radius, animMs);
 			}
-			drawFrameBevel(g, width, height, radius);
+			if (rarity.ordinal() >= Rarity.UNCOMMON.ordinal())
+			{
+				drawFrameBevel(g, width, height, radius);
+			}
 			if (style.has(ORN_FILIGREE))
 			{
 				drawFiligree(g, style, width, height, radius);
@@ -288,7 +496,7 @@ public final class CardRenderer
 		{
 			drawRarityPip(g, rarity, width, height, shiny, gilded);
 			drawSetBadge(g, card, height);
-			if (!modelArt && rarity.ordinal() >= Rarity.RARE.ordinal())
+			if (!modelArt && rarity.ordinal() >= Rarity.LEGENDARY.ordinal())
 			{
 				drawFoil(g, rarity, artX, artY, artW, artH, animMs);
 			}
