@@ -481,12 +481,6 @@ public class DopamineSimulatorPlugin extends Plugin
 		"completed your task",
 	};
 
-	private static boolean completes(String message)
-	{
-		return message.contains("completion time") || message.contains("completion count")
-			|| message.contains("count is");
-	}
-
 	private void noteUnmatched(String message)
 	{
 		for (String keyword : DEED_KEYWORDS)
@@ -501,11 +495,11 @@ public class DopamineSimulatorPlugin extends Plugin
 
 	private CharacterDeed deedFor(String message)
 	{
-		if (message.contains("theatre of blood") && completes(message))
+		if (message.contains("your completed theatre of blood"))
 		{
 			return message.contains("hard mode") ? CharacterDeed.VERZIK : CharacterDeed.VANESCULA;
 		}
-		if (message.contains("tombs of amascut") && completes(message))
+		if (message.contains("your completed tombs of amascut"))
 		{
 			return toaRaidLevelHeld >= TOA_AMASCUT_LEVEL
 				? CharacterDeed.AMASCUT : CharacterDeed.MAISA;
@@ -518,8 +512,7 @@ public class DopamineSimulatorPlugin extends Plugin
 		{
 			return CharacterDeed.ZILYANA;
 		}
-		if (message.contains("you have completed your task")
-			|| message.contains("you've completed") && message.contains("task"))
+		if (message.contains("you have completed your task"))
 		{
 			CharacterDeed earned = slayerMasterHeld == SLAYER_MASTER_KONAR
 				? CharacterDeed.KONAR : null;
