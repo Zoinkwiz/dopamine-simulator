@@ -134,7 +134,7 @@ public final class CardRenderer
 	public static final class Turn
 	{
 		private static final double EYE = 2.6d;
-		private static final int STRIPS = 30;
+		private static final int STRIPS = 48;
 
 		private final double cx;
 		private final double cy;
@@ -223,30 +223,37 @@ public final class CardRenderer
 
 		// Boundaries are computed once and shared, so strip i ends exactly where i+1 begins.
 		// Widening each strip to cover the seams is what blurred a card that was not even turned.
-		int[] bx = new int[Turn.STRIPS + 1];
-		int[] top = new int[Turn.STRIPS + 1];
-		int[] bottom = new int[Turn.STRIPS + 1];
+		double[] bx = new double[Turn.STRIPS + 1];
+		double[] top = new double[Turn.STRIPS + 1];
+		double[] bottom = new double[Turn.STRIPS + 1];
 		for (int i = 0; i <= Turn.STRIPS; i++)
 		{
 			double lx = -pad + (turn.w + pad * 2d) * i / Turn.STRIPS;
-			bx[i] = (int) Math.round(turn.project(lx, -pad).x);
-			top[i] = (int) Math.round(turn.project(lx, -pad).y);
-			bottom[i] = (int) Math.round(turn.project(lx, turn.h + pad).y);
+			bx[i] = turn.project(lx, -pad).x;
+			top[i] = turn.project(lx, -pad).y;
+			bottom[i] = turn.project(lx, turn.h + pad).y;
 		}
 
+		// Placed through a transform rather than an integer destination rectangle. Rounding each
+		// strip to whole pixels is what left the top and bottom edges as staircases once the
+		// card keystoned; a sub-image lands on fractions of a pixel and the edge stays smooth.
 		for (int i = 0; i < Turn.STRIPS; i++)
 		{
 			int sx0 = sw * i / Turn.STRIPS;
 			int sx1 = sw * (i + 1) / Turn.STRIPS;
-			int dx0 = Math.min(bx[i], bx[i + 1]);
-			int dx1 = Math.max(bx[i], bx[i + 1]);
-			int dy0 = Math.min(top[i], top[i + 1]);
-			int dy1 = Math.max(bottom[i], bottom[i + 1]);
-			if (sx1 <= sx0 || dx1 <= dx0 || dy1 <= dy0)
+			double x0 = Math.min(bx[i], bx[i + 1]);
+			double x1 = Math.max(bx[i], bx[i + 1]);
+			double y0 = (top[i] + top[i + 1]) / 2d;
+			double y1 = (bottom[i] + bottom[i + 1]) / 2d;
+			if (sx1 <= sx0 || x1 - x0 < 0.01d || y1 - y0 < 0.01d)
 			{
 				continue;
 			}
-			graphics.drawImage(face, dx0, dy0, dx1, dy1, sx0, 0, sx1, sh, null);
+			BufferedImage strip = face.getSubimage(sx0, 0, sx1 - sx0, sh);
+			java.awt.geom.AffineTransform place = new java.awt.geom.AffineTransform();
+			place.translate(x0, y0);
+			place.scale((x1 - x0) / (sx1 - sx0), (y1 - y0) / sh);
+			graphics.drawImage(strip, place, null);
 		}
 
 		if (hintBefore != null)
