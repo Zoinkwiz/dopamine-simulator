@@ -481,7 +481,8 @@ public final class CardRenderer
 		Color[] body = rich ? bodyTint(style) : new Color[]{BODY_TOP, BODY_BOTTOM};
 		drawBody(g, innerX, innerY, innerW, innerH, innerRadius,
 			modelArt ? new java.awt.Rectangle(artX, artY, artW, artH) : null, body[0], body[1]);
-		drawArtWindow(g, card, artX, artY, artW, artH, modelArt ? null : art, modelArt, animMs);
+		drawArtWindow(g, card, style, artX, artY, artW, artH, modelArt ? null : art, modelArt,
+			animMs);
 		if (!compact)
 		{
 			drawNamePlate(g, card, style, innerX, artY + artH, innerW,
@@ -669,14 +670,31 @@ public final class CardRenderer
 		g.setPaint(new GradientPaint(x, y, top, x, y + height, bottom));
 		g.fill(body);
 	}
-	private static void drawArtWindow(Graphics2D g, Card card, int x, int y, int width, int height,
-									  BufferedImage art, boolean modelArt, long animMs)
+	/**
+	 * The ground a card's art sits on: its metal's opposite. Cyan rune metal over a warm gold
+	 * ground is the pairing that reads best, and taking the complement gives every tier the
+	 * same relationship instead of leaving it to whichever colours happened to collide.
+	 */
+	private static final int[] GROUNDS = {0x3A63A8, 0x9C7A4A, 0xB08C3A, 0x7A4AA8, 0xC79A3A};
+
+	private static Color groundFor(Card card, Style style)
+	{
+		if (style.art != null)
+		{
+			return style.accent;
+		}
+		return new Color(GROUNDS[(card == null ? Rarity.COMMON : card.getRarity()).ordinal()]);
+	}
+
+	private static void drawArtWindow(Graphics2D g, Card card, Style style, int x, int y,
+									  int width, int height, BufferedImage art, boolean modelArt,
+									  long animMs)
 	{
 		if (width <= 0 || height <= 0)
 		{
 			return;
 		}
-		Color base = card.getRarity().getColour();
+		Color base = groundFor(card, style);
 		Shape clip = g.getClip();
 		int radius = Math.max(2, height / 8);
 		g.setClip(new RoundRectangle2D.Float(x, y, width, height, radius, radius));
@@ -697,7 +715,7 @@ public final class CardRenderer
 			{
 				drawRadiantBurst(g, base, x, y, width, height);
 			}
-			drawSigil(g, card, x, y, width, height);
+			drawSetWatermark(g, card, style, x, y, width, height);
 		}
 
 		if (art != null)
@@ -725,53 +743,19 @@ public final class CardRenderer
 		g.setStroke(new BasicStroke(1f));
 		g.drawRoundRect(x, y, width - 1, height - 1, radius, radius);
 	}
-	private static void drawSigil(Graphics2D g, Card card, int x, int y, int width, int height)
+	private static void drawSetWatermark(Graphics2D g, Card card, Style style, int x, int y,
+										 int width, int height)
 	{
-		int seed = card.getId().hashCode();
-		Color base = card.getRarity().getColour();
-		double cx = x + width / 2d;
-		double cy = y + height / 2d;
-		double maxRadius = Math.min(width, height) * 0.42d;
-		int points = 3 + Math.floorMod(seed, 5);
-		int rings = 2 + Math.floorMod(seed >> 3, 3);
-		double baseRotation = Math.floorMod(seed >> 6, 360) * Math.PI / 180d;
-
-		g.setPaint(new RadialGradientPaint(
-			new Point2D.Double(cx, cy),
-			(float) maxRadius,
-			new float[]{0f, 1f},
-			new Color[]{withAlpha(lighten(base, 0.15d), 90), withAlpha(base, 10)},
-			MultipleGradientPaint.CycleMethod.NO_CYCLE));
-		g.fill(new Ellipse2D.Double(cx - maxRadius, cy - maxRadius, maxRadius * 2, maxRadius * 2));
-		g.setStroke(new BasicStroke(Math.max(1.2f, height / 42f)));
-		for (int ring = 0; ring < rings; ring++)
+		int size = (int) (Math.min(width, height) * 0.66d);
+		if (size < 8)
 		{
-			double scale = 1d - ring * (0.26d / rings * 2);
-			double rotation = baseRotation + ring * (Math.PI / points);
-			int alpha = 150 - ring * 34;
-			if (alpha <= 0)
-			{
-				continue;
-			}
-			g.setColor(withAlpha(lighten(base, 0.5d), alpha));
-			Path2D.Double path = new Path2D.Double();
-			for (int i = 0; i < points; i++)
-			{
-				double angle = rotation + i * 2 * Math.PI / points;
-				double px = cx + Math.cos(angle) * maxRadius * scale;
-				double py = cy + Math.sin(angle) * maxRadius * scale;
-				if (i == 0)
-				{
-					path.moveTo(px, py);
-				}
-				else
-				{
-					path.lineTo(px, py);
-				}
-			}
-			path.closePath();
-			g.draw(path);
+			return;
 		}
+		Composite before = g.getComposite();
+		g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.30f));
+		drawSetSymbol(g, card.getSet(), x + (width - size) / 2, y + (height - size) / 2, size,
+			120, lighten(style.metalLight, 0.2d));
+		g.setComposite(before);
 	}
 	private static void drawArtImage(Graphics2D g, BufferedImage art, int x, int y,
 									 int width, int height)
@@ -965,12 +949,18 @@ public final class CardRenderer
 	}
 	private static void drawSetSymbol(Graphics2D g, CardSet set, int x, int y, int size, int alpha)
 	{
+		drawSetSymbol(g, set, x, y, size, alpha, new Color(0xC8, 0xC8, 0xD2));
+	}
+
+	private static void drawSetSymbol(Graphics2D g, CardSet set, int x, int y, int size, int alpha,
+									  Color colour)
+	{
 		if (size < 4)
 		{
 			return;
 		}
 		int half = size / 2;
-		g.setColor(new Color(0xC8, 0xC8, 0xD2, alpha));
+		g.setColor(withAlpha(colour, alpha));
 		g.setStroke(new BasicStroke(Math.max(1f, size / 7f)));
 
 		switch (set)

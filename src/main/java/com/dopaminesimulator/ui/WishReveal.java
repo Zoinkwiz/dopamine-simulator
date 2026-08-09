@@ -139,7 +139,7 @@ public final class WishReveal
 		BufferedImage art, long age, float alpha, boolean modelArt, float foilIntensity)
 	{
 		Rarity rarity = card.getRarity();
-		Color glow = rarity.getColour();
+		Color glow = CardRenderer.styleFor(card).glow;
 		int cx = width / 2;
 		int cy = (int) (height * 0.44d);
 
