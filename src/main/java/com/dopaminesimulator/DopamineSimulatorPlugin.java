@@ -505,9 +505,9 @@ public class DopamineSimulatorPlugin extends Plugin
 
 	private void awardCharacterPack(CharacterDeed deed)
 	{
-		DopamineState state = engine.getState();
-		state.addCharacterPack(deed.getCardId());
-		saveManager.save(loadedAccountHash, state);
+		engine.getState().addCharacterPack(deed.getCardId());
+		persist();
+		refreshPanel();
 		client.addChatMessage(ChatMessageType.GAMEMESSAGE, "",
 			"<col=ffc46a>" + deed.getCharacterName() + "</col> pack earned - "
 				+ deed.getDeed() + ". Open it from the Cards tab.", null);
