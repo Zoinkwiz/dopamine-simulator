@@ -493,18 +493,18 @@ public final class CardRenderer
 		{
 			drawStars(g, rarity, innerX, innerY + innerH, innerW, height, stars, compact);
 		}
+		if (gilded)
+		{
+			drawGildedTrim(g, artX, artY, artW, artH);
+		}
 		if (style.art == null)
 		{
-			drawRarityPip(g, rarity, width, height, shiny, gilded);
-			drawSetBadge(g, card, height);
 			if (!modelArt && rarity.ordinal() >= Rarity.LEGENDARY.ordinal())
 			{
 				drawFoil(g, rarity, artX, artY, artW, artH, animMs);
 			}
-		}
-		if (gilded)
-		{
-			drawGildedTrim(g, artX, artY, artW, artH);
+			drawRarityPip(g, rarity, width, height, shiny, gilded);
+			drawSetBadge(g, card, height);
 		}
 		if (shiny)
 		{
@@ -721,7 +721,7 @@ public final class CardRenderer
 			{
 				drawRadiantBurst(g, base, x, y, width, height);
 			}
-			drawSetWatermark(g, card, style, x, y, width, height);
+			drawHalo(g, style, x, y, width, height);
 		}
 
 		if (art != null)
@@ -749,19 +749,27 @@ public final class CardRenderer
 		g.setStroke(new BasicStroke(1f));
 		g.drawRoundRect(x, y, width - 1, height - 1, radius, radius);
 	}
-	private static void drawSetWatermark(Graphics2D g, Card card, Style style, int x, int y,
-										 int width, int height)
+	private static void drawHalo(Graphics2D g, Style style, int x, int y, int width, int height)
 	{
-		int size = (int) (Math.min(width, height) * 0.66d);
-		if (size < 8)
+		float radius = Math.min(width, height) * 0.52f;
+		if (radius < 4f)
 		{
 			return;
 		}
-		Composite before = g.getComposite();
-		g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.30f));
-		drawSetSymbol(g, card.getSet(), x + (width - size) / 2, y + (height - size) / 2, size,
-			120, lighten(style.metalLight, 0.2d));
-		g.setComposite(before);
+		float cx = x + width / 2f;
+		float cy = y + height * 0.44f;
+		Color light = lighten(style.metalLight, 0.15d);
+		g.setPaint(new RadialGradientPaint(new Point2D.Float(cx, cy), radius,
+			new float[]{0f, 0.42f, 0.78f, 1f},
+			new Color[]{withAlpha(light, 78), withAlpha(light, 46), withAlpha(light, 14),
+				withAlpha(light, 0)},
+			MultipleGradientPaint.CycleMethod.NO_CYCLE));
+		g.fillRect(x, y, width, height);
+
+		g.setStroke(new BasicStroke(Math.max(1f, height / 90f)));
+		g.setColor(withAlpha(light, 30));
+		int ring = (int) (radius * 0.82d);
+		g.drawOval((int) (cx - ring), (int) (cy - ring), ring * 2, ring * 2);
 	}
 	private static void drawArtImage(Graphics2D g, BufferedImage art, int x, int y,
 									 int width, int height)
