@@ -139,10 +139,13 @@ public final class CardRenderer
 		final Color accent;
 		final int ornament;
 		final NpcCardArt art;
+		/** How far up its own ramp a tier may go. Below 1 it never reaches metalLight. */
+		final double polish;
 
 		Style(Color metalDark, Color metalMid, Color metalLight, Color plate, Color glow,
-			  Color accent, int ornament, NpcCardArt art)
+			  Color accent, int ornament, NpcCardArt art, double polish)
 		{
+			this.polish = polish;
 			this.metalDark = metalDark;
 			this.metalMid = metalMid;
 			this.metalLight = metalLight;
@@ -168,23 +171,30 @@ public final class CardRenderer
 				| (art.isBloodDrips() ? ORN_DRIPS : 0);
 			return new Style(new Color(art.getMetalDark()), new Color(art.getMetalMid()),
 				new Color(art.getMetalLight()), new Color(art.getPlateColour()),
-				new Color(art.getGlowColour()), new Color(art.getAccentColour()), ornament, art);
+				new Color(art.getGlowColour()), new Color(art.getAccentColour()), ornament, art,
+				1d);
 		}
 
 		Rarity rarity = card == null ? Rarity.COMMON : card.getRarity();
-		Color base = rarity.getColour();
-		float[] hsb = Color.RGBtoHSB(base.getRed(), base.getGreen(), base.getBlue(), null);
-		float hue = hsb[0];
-		float sat = Math.max(0.35f, hsb[1]);
-		return new Style(
-			Color.getHSBColor(hue, Math.min(1f, sat * 1.1f), 0.20f),
-			Color.getHSBColor(hue, sat, 0.52f),
-			Color.getHSBColor(hue, sat * 0.45f, 0.94f),
-			Color.getHSBColor(hue, Math.min(1f, sat * 0.9f), 0.07f),
-			base,
-			Color.getHSBColor(hue, sat * 0.7f, 0.88f),
-			ornamentFor(rarity), null);
+		int[] tier = TIERS[rarity.ordinal()];
+		return new Style(new Color(tier[0]), new Color(tier[1]), new Color(tier[2]),
+			new Color(tier[3]), new Color(tier[4]), new Color(tier[2]),
+			ornamentFor(rarity), null, POLISH[rarity.ordinal()]);
 	}
+
+	/**
+	 * metalDark, metalMid, metalLight, plate, glow per rarity: bronze, steel, mithril, adamant,
+	 * rune. Third age is reserved for the authored six-star set.
+	 */
+	private static final int[][] TIERS = {
+		{0x4A331B, 0x8A6335, 0xA67E4B, 0x140E08, 0x6B431C},
+		{0x333A43, 0x6B7783, 0xA3AEBA, 0x0D1014, 0x55677A},
+		{0x1C2660, 0x4560B8, 0x8FA4EA, 0x080A16, 0x4A68D8},
+		{0x0F4034, 0x2F9575, 0x7AE0BB, 0x050F0C, 0x2FBE8A},
+		{0x0C4450, 0x22A2B8, 0x88F2FF, 0x031014, 0x37CDE6},
+	};
+
+	private static final double[] POLISH = {0d, 0.35d, 0.7d, 1d, 1d};
 
 	private static int ornamentFor(Rarity rarity)
 	{
@@ -924,10 +934,25 @@ public final class CardRenderer
 		Color m1 = style.metalDark;
 		Color m2 = style.metalMid;
 		Color m3 = style.metalLight;
+		float[] stops;
+		Color[] ramp;
+		if (style.polish < 0.2d)
+		{
+			stops = new float[]{0f, 0.34f, 0.62f, 0.88f, 1f};
+			ramp = new Color[]{m1, m2, m1, m2, m1};
+		}
+		else if (style.polish < 0.6d)
+		{
+			stops = new float[]{0f, 0.26f, 0.40f, 0.58f, 0.82f, 1f};
+			ramp = new Color[]{m1, m2, m3, m2, m1, m2};
+		}
+		else
+		{
+			stops = new float[]{0f, 0.18f, 0.32f, 0.46f, 0.60f, 0.76f, 0.88f, 1f};
+			ramp = new Color[]{m1, m2, m3, m2, m1, m2, m3, m1};
+		}
 		g.setPaint(new LinearGradientPaint(
-			new Point2D.Float(0, 0), new Point2D.Float(width, height),
-			new float[]{0f, 0.18f, 0.32f, 0.46f, 0.60f, 0.76f, 0.88f, 1f},
-			new Color[]{m1, m2, m3, m2, m1, m2, m3, m1}));
+			new Point2D.Float(0, 0), new Point2D.Float(width, height), stops, ramp));
 		g.fillRoundRect(0, 0, width, height, radius, radius);
 	}
 
