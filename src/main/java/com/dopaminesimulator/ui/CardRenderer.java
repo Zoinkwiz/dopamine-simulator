@@ -1526,9 +1526,8 @@ public final class CardRenderer
 			new RoundRectangle2D.Float(x, y, width, height, radius, radius));
 		if (prismatic)
 		{
-			java.awt.Rectangle art = artBounds(width, height);
-			art.translate(x, y);
-			area.subtract(new java.awt.geom.Area(art));
+			area.subtract(new java.awt.geom.Area(java.awt.geom.AffineTransform
+				.getTranslateInstance(x, y).createTransformedShape(artShape(width, height))));
 		}
 		g.setClip(area);
 
@@ -1617,6 +1616,16 @@ public final class CardRenderer
 		g.fillRect(box.x, box.y, box.width, box.height);
 
 		int floorY = box.y + (int) (box.height * FLOOR_AT);
+
+		float haloR = Math.max(4f, Math.min(box.width, box.height) * 0.46f);
+		g.setPaint(new RadialGradientPaint(
+			new Point2D.Float(box.x + box.width / 2f, box.y + box.height * 0.46f), haloR,
+			new float[]{0f, 0.40f, 0.72f, 1f},
+			new Color[]{withAlpha(accent, 86), withAlpha(accent, 42), withAlpha(accent, 12),
+				withAlpha(accent, 0)},
+			MultipleGradientPaint.CycleMethod.NO_CYCLE));
+		g.fillRect(box.x, box.y, box.width, box.height);
+
 		int poolW = (int) (box.width * 0.86d);
 		int poolH = (int) (box.height * 0.30d);
 		g.setPaint(new RadialGradientPaint(
