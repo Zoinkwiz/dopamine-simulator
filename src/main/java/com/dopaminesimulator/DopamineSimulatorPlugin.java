@@ -515,21 +515,19 @@ public class DopamineSimulatorPlugin extends Plugin
 
 	public void openCharacterPack(CharacterDeed deed)
 	{
-		if (engine == null || deed == null)
+		clientThread.invoke(() ->
 		{
-			return;
-		}
-		DopamineState state = engine.getState();
-		java.util.List<Card> pulled = characterPacks.open(state, deed, engine.getRewards());
-		if (pulled.isEmpty())
-		{
-			return;
-		}
-		saveManager.save(loadedAccountHash, state);
-		if (panel != null)
-		{
-			panel.refresh();
-		}
+			if (!isPlayable() || deed == null)
+			{
+				return;
+			}
+			for (Card card : characterPacks.open(engine.getState(), deed, rewards))
+			{
+				announce(card);
+			}
+			persist();
+			refreshPanel();
+		});
 	}
 
 	@Subscribe

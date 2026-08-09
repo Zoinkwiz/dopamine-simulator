@@ -263,6 +263,69 @@ public final class CardRenderer
 		}
 	}
 
+	public static void drawPackArt(Graphics2D graphics, int x, int y, int width, int height,
+								   Style style, BackMotif motif, long animMs)
+	{
+		if (width < 10 || height < 12)
+		{
+			return;
+		}
+		Graphics2D g = (Graphics2D) graphics.create();
+		g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+		g.translate(x, y);
+
+		int tear = Math.max(3, height / 9);
+		int arc = Math.max(4, width / 6);
+		Shape body = new RoundRectangle2D.Float(0, tear, width, height - tear, arc, arc);
+
+		g.setPaint(new LinearGradientPaint(
+			new Point2D.Float(0, tear), new Point2D.Float(width, height),
+			new float[]{0f, 0.35f, 0.6f, 1f},
+			new Color[]{style.metalDark, style.metalMid, style.metalLight, style.metalDark}));
+		g.fill(body);
+
+		Shape clipBefore = g.getClip();
+		g.clip(body);
+		double sweep = (animMs % 3400L) / 3400d;
+		int gx = (int) (-width + sweep * width * 2.4d);
+		g.setPaint(new LinearGradientPaint(
+			new Point2D.Float(gx, 0), new Point2D.Float(gx + width * 0.42f, height),
+			new float[]{0f, 0.5f, 1f},
+			new Color[]{withAlpha(Color.WHITE, 0), withAlpha(Color.WHITE, 70),
+				withAlpha(Color.WHITE, 0)}));
+		g.fillRect(0, 0, width, height);
+		g.setClip(clipBefore);
+
+		g.setPaint(new LinearGradientPaint(
+			new Point2D.Float(0, 0), new Point2D.Float(0, tear),
+			new float[]{0f, 1f},
+			new Color[]{lighten(style.metalMid, 0.4d), darken(style.metalDark, 0.2d)}));
+		Path2D.Double strip = new Path2D.Double();
+		strip.moveTo(0, tear);
+		strip.lineTo(0, 2);
+		int teeth = Math.max(4, width / 7);
+		for (int i = 0; i <= teeth; i++)
+		{
+			double tx = width * i / (double) teeth;
+			strip.lineTo(tx, i % 2 == 0 ? 0 : 3);
+		}
+		strip.lineTo(width, tear);
+		strip.closePath();
+		g.fill(strip);
+		g.setColor(withAlpha(darken(style.metalDark, 0.4d), 200));
+		g.setStroke(new BasicStroke(1f));
+		g.drawLine(0, tear, width, tear);
+
+		int radius = (int) (Math.min(width, height - tear) * 0.30d);
+		drawMotif(g, motif, width / 2, tear + (height - tear) / 2, radius, style.glow, animMs,
+			1f, false);
+
+		g.setColor(withAlpha(darken(style.metalDark, 0.35d), 220));
+		g.setStroke(new BasicStroke(Math.max(1f, height / 40f)));
+		g.draw(body);
+		g.dispose();
+	}
+
 	public static void drawCardBack(Graphics2D graphics, int x, int y, int width, int height,
 									Color base, Color trim, Color motifColour, BackMotif motif,
 									long animMs, float alpha, boolean lit)

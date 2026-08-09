@@ -59,6 +59,7 @@ import com.dopaminesimulator.points.ClickState;
 import com.dopaminesimulator.points.GnomeFood;
 import com.dopaminesimulator.points.PointSource;
 import com.dopaminesimulator.ui.CardComponent;
+import com.dopaminesimulator.ui.CharacterPackRow;
 import com.dopaminesimulator.ui.ClickButton;
 import com.dopaminesimulator.ui.BannerHeader;
 import com.dopaminesimulator.ui.FeatRow;
@@ -898,6 +899,7 @@ public class DopamineSimulatorPanel extends PluginPanel
 		overall.setMaximumSize(new Dimension(Integer.MAX_VALUE, 15));
 		cardsContent.add(overall);
 		cardsContent.add(Box.createVerticalStrut(5));
+		buildCharacterPacks(state);
 		cardsContent.add(hint(BigNumbers.format(stars) + " of " + BigNumbers.format(maxStars)
 			+ " stars" + variantSummary(state)));
 		cardsContent.add(Box.createVerticalStrut(8));
@@ -1086,6 +1088,43 @@ public class DopamineSimulatorPanel extends PluginPanel
 	{
 		return "x" + String.format(multiplier >= 10d ? "%.0f" : "%.2f", multiplier);
 	}
+	private void buildCharacterPacks(DopamineState state)
+	{
+		List<com.dopaminesimulator.cards.CharacterDeed> held = new ArrayList<>();
+		for (com.dopaminesimulator.cards.CharacterDeed deed
+			: com.dopaminesimulator.cards.CharacterDeed.values())
+		{
+			if (state.getCharacterPacks(deed.getCardId()) > 0)
+			{
+				held.add(deed);
+			}
+		}
+		if (held.isEmpty())
+		{
+			return;
+		}
+
+		int total = 0;
+		for (com.dopaminesimulator.cards.CharacterDeed deed : held)
+		{
+			total += state.getCharacterPacks(deed.getCardId());
+		}
+		cardsContent.add(sectionLabel("Deeds", total + (total == 1 ? " pack" : " packs")));
+		cardsContent.add(Box.createVerticalStrut(3));
+		for (com.dopaminesimulator.cards.CharacterDeed deed : held)
+		{
+			int packs = state.getCharacterPacks(deed.getCardId());
+			int toPity = Math.max(0, deed.getPity() - state.getCharacterPity(deed.getCardId()));
+			boolean owned = state.getCopies(deed.getCardId()) > 0;
+			CharacterPackRow row = new CharacterPackRow(deed, packs, toPity, owned,
+				plugin::openCharacterPack);
+			row.setAlignmentX(Component.LEFT_ALIGNMENT);
+			cardsContent.add(row);
+			cardsContent.add(Box.createVerticalStrut(3));
+		}
+		cardsContent.add(Box.createVerticalStrut(4));
+	}
+
 	private void buildSelectedSet(DopamineState state)
 	{
 		if (allSets)
