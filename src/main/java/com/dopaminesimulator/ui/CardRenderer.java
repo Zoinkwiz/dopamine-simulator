@@ -118,6 +118,89 @@ public final class CardRenderer
 		return new RoundRectangle2D.Float(b.x, b.y, b.width, b.height, radius, radius);
 	}
 
+	public static final int ORN_FILIGREE = 1;
+	public static final int ORN_GEMS = 2;
+	public static final int ORN_PRISM = 4;
+	public static final int ORN_RAIL = 8;
+	public static final int ORN_DRIPS = 16;
+
+	/**
+	 * A card's palette and which ornament it earns. Authored cards bring their own ramp from
+	 * npc-card-art.json; every other card derives one from its rarity, so the same renderer
+	 * draws a common and a six-star without branching on which it has.
+	 */
+	public static final class Style
+	{
+		final Color metalDark;
+		final Color metalMid;
+		final Color metalLight;
+		final Color plate;
+		final Color glow;
+		final Color accent;
+		final int ornament;
+		final NpcCardArt art;
+
+		Style(Color metalDark, Color metalMid, Color metalLight, Color plate, Color glow,
+			  Color accent, int ornament, NpcCardArt art)
+		{
+			this.metalDark = metalDark;
+			this.metalMid = metalMid;
+			this.metalLight = metalLight;
+			this.plate = plate;
+			this.glow = glow;
+			this.accent = accent;
+			this.ornament = ornament;
+			this.art = art;
+		}
+
+		boolean has(int flag)
+		{
+			return (ornament & flag) != 0;
+		}
+	}
+
+	public static Style styleFor(Card card)
+	{
+		NpcCardArt art = NpcCardArt.forCard(card);
+		if (art != null)
+		{
+			int ornament = ORN_FILIGREE | ORN_GEMS | ORN_PRISM | ORN_RAIL
+				| (art.isBloodDrips() ? ORN_DRIPS : 0);
+			return new Style(new Color(art.getMetalDark()), new Color(art.getMetalMid()),
+				new Color(art.getMetalLight()), new Color(art.getPlateColour()),
+				new Color(art.getGlowColour()), new Color(art.getAccentColour()), ornament, art);
+		}
+
+		Rarity rarity = card == null ? Rarity.COMMON : card.getRarity();
+		Color base = rarity.getColour();
+		float[] hsb = Color.RGBtoHSB(base.getRed(), base.getGreen(), base.getBlue(), null);
+		float hue = hsb[0];
+		float sat = Math.max(0.35f, hsb[1]);
+		return new Style(
+			Color.getHSBColor(hue, Math.min(1f, sat * 1.1f), 0.20f),
+			Color.getHSBColor(hue, sat, 0.52f),
+			Color.getHSBColor(hue, sat * 0.45f, 0.94f),
+			Color.getHSBColor(hue, Math.min(1f, sat * 0.9f), 0.07f),
+			base,
+			Color.getHSBColor(hue, sat * 0.7f, 0.88f),
+			ornamentFor(rarity), null);
+	}
+
+	private static int ornamentFor(Rarity rarity)
+	{
+		switch (rarity)
+		{
+			case LEGENDARY:
+				return ORN_FILIGREE | ORN_GEMS | ORN_PRISM | ORN_RAIL;
+			case EPIC:
+				return ORN_FILIGREE | ORN_GEMS;
+			case RARE:
+				return ORN_FILIGREE;
+			default:
+				return 0;
+		}
+	}
+
 	public static void draw(Graphics2D graphics, Card card, int x, int y, int width, int height,
 							int stars, boolean owned, long animMs, BufferedImage art, boolean shiny,
 							boolean gilded, boolean modelArt)
@@ -131,10 +214,12 @@ public final class CardRenderer
 		g.translate(x, y);
 		int radius = Math.max(3, height / 14);
 		Rarity rarity = card.getRarity();
+		Style style = styleFor(card);
+		boolean rich = !isCompact(height);
 		drawShadow(g, width, height, radius);
-		if (modelArt)
+		if (rich && rarity.ordinal() >= Rarity.RARE.ordinal())
 		{
-			drawOuterGlow(g, card, width, height, radius, animMs);
+			drawOuterGlow(g, style, width, height, radius, animMs);
 		}
 		if (!owned)
 		{
@@ -142,23 +227,25 @@ public final class CardRenderer
 			g.dispose();
 			return;
 		}
-		NpcCardArt cardArt = modelArt ? NpcCardArt.forCard(card) : null;
 		drawFrame(g, rarity, width, height, radius,
-			modelArt ? PLATINUM : frameColour(rarity, shiny, gilded));
-		if (cardArt != null)
+			rich ? style.metalMid : frameColour(rarity, shiny, gilded));
+		if (rich)
 		{
-			drawMetalFrame(g, cardArt, width, height, radius);
-		}
-		if (modelArt && cardArt == null)
-		{
-			drawPrismaticSheen(g, width, height, radius, animMs);
-		}
-		if (modelArt)
-		{
+			drawMetalFrame(g, style, width, height, radius);
+			if (style.has(ORN_PRISM))
+			{
+				drawPrismaticSheen(g, width, height, radius, animMs);
+			}
 			drawFrameBevel(g, width, height, radius);
-			drawFiligree(g, card, width, height, radius);
-			drawDrips(g, card, width, height, radius, animMs);
-			drawCornerGems(g, card, width, height, animMs);
+			if (style.has(ORN_FILIGREE))
+			{
+				drawFiligree(g, style, width, height, radius);
+			}
+			drawDrips(g, style, width, height, radius, animMs);
+			if (style.has(ORN_GEMS))
+			{
+				drawCornerGems(g, style, width, height, animMs);
+			}
 		}
 		int border = borderWidth(height);
 		int innerX = border;
@@ -173,25 +260,25 @@ public final class CardRenderer
 		int artW = innerW - (artX - innerX) * 2;
 		int artH = (int) (innerH * (compact ? 0.74d : 0.65d));
 
-		Color[] body = modelArt ? bodyTint(card) : new Color[]{BODY_TOP, BODY_BOTTOM};
+		Color[] body = rich ? bodyTint(style) : new Color[]{BODY_TOP, BODY_BOTTOM};
 		drawBody(g, innerX, innerY, innerW, innerH, innerRadius,
 			modelArt ? new java.awt.Rectangle(artX, artY, artW, artH) : null, body[0], body[1]);
 		drawArtWindow(g, card, artX, artY, artW, artH, modelArt ? null : art, modelArt, animMs);
 		if (!compact)
 		{
-			drawNamePlate(g, card, innerX, artY + artH, innerW,
-				innerH - artH - (artY - innerY), height, modelArt, animMs);
+			drawNamePlate(g, card, style, innerX, artY + artH, innerW,
+				innerH - artH - (artY - innerY), height, style.has(ORN_PRISM), animMs);
 		}
 
-		if (!(modelArt && !compact))
+		if (style.art == null || compact)
 		{
 			drawStars(g, rarity, innerX, innerY + innerH, innerW, height, stars, compact);
 		}
-		if (!modelArt)
+		if (style.art == null)
 		{
 			drawRarityPip(g, rarity, width, height, shiny, gilded);
 			drawSetBadge(g, card, height);
-			if (rarity.ordinal() >= Rarity.RARE.ordinal())
+			if (!modelArt && rarity.ordinal() >= Rarity.RARE.ordinal())
 			{
 				drawFoil(g, rarity, artX, artY, artW, artH, animMs);
 			}
@@ -484,8 +571,9 @@ public final class CardRenderer
 			g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, previous);
 		}
 	}
-	private static void drawNamePlate(Graphics2D g, Card card, int x, int y, int width, int height,
-									  int cardHeight, boolean prismatic, long animMs)
+	private static void drawNamePlate(Graphics2D g, Card card, Style style, int x, int y,
+									  int width, int height, int cardHeight, boolean prismatic,
+									  long animMs)
 	{
 		int starStrip = starStripHeight(cardHeight);
 		int plateHeight = Math.max(1, height - starStrip);
@@ -496,16 +584,8 @@ public final class CardRenderer
 		int inset = Math.max(1, cardHeight / 40);
 		int plateX = x + inset;
 		int plateW = width - inset * 2;
-		Color plateTop = prismatic ? characterShade(card, 0.26f) : null;
-		if (plateTop != null)
-		{
-			g.setPaint(new GradientPaint(plateX, y, plateTop,
-				plateX, y + plateHeight, characterShade(card, 0.13f)));
-		}
-		else
-		{
-			g.setColor(PLATE);
-		}
+		g.setPaint(new GradientPaint(plateX, y, characterShade(style, 0.26f),
+			plateX, y + plateHeight, characterShade(style, 0.13f)));
 		g.fillRoundRect(plateX, y + 1, plateW, plateHeight - 2, 3, 3);
 		if (prismatic)
 		{
@@ -838,12 +918,12 @@ public final class CardRenderer
 		g.fillOval(x + size / 4, y + size / 5, Math.max(1, size / 4), Math.max(1, size / 5));
 	}
 
-	private static void drawMetalFrame(Graphics2D g, NpcCardArt art, int width, int height,
+	private static void drawMetalFrame(Graphics2D g, Style style, int width, int height,
 									   int radius)
 	{
-		Color m1 = new Color(art.getMetalDark());
-		Color m2 = new Color(art.getMetalMid());
-		Color m3 = new Color(art.getMetalLight());
+		Color m1 = style.metalDark;
+		Color m2 = style.metalMid;
+		Color m3 = style.metalLight;
 		g.setPaint(new LinearGradientPaint(
 			new Point2D.Float(0, 0), new Point2D.Float(width, height),
 			new float[]{0f, 0.18f, 0.32f, 0.46f, 0.60f, 0.76f, 0.88f, 1f},
@@ -919,17 +999,12 @@ public final class CardRenderer
 		}
 	}
 
-	private static void drawOuterGlow(Graphics2D g, Card card, int width, int height, int radius,
+	private static void drawOuterGlow(Graphics2D g, Style style, int width, int height, int radius,
 									  long animMs)
 	{
-		NpcCardArt art = NpcCardArt.forCard(card);
-		if (art == null)
-		{
-			return;
-		}
 		double beat = (animMs % 1500L) / 1500d;
 		double pulse = 1d + 0.55d * Math.exp(-beat * 9d) + 0.30d * Math.exp(-Math.max(0d, beat - 0.24d) * 9d);
-		Color glow = new Color(art.getGlowColour());
+		Color glow = style.glow;
 		int spread = (int) (Math.max(6, height / 12) * pulse);
 		for (int i = spread; i > 0; i -= Math.max(1, spread / 7))
 		{
@@ -944,11 +1019,10 @@ public final class CardRenderer
 		}
 	}
 
-	private static void drawDrips(Graphics2D g, Card card, int width, int height, int radius,
+	private static void drawDrips(Graphics2D g, Style style, int width, int height, int radius,
 								  long animMs)
 	{
-		NpcCardArt art = NpcCardArt.forCard(card);
-		if (art == null || !art.isBloodDrips() || height < 120)
+		if (!style.has(ORN_DRIPS) || height < 120)
 		{
 			return;
 		}
@@ -997,15 +1071,14 @@ public final class CardRenderer
 		g.setClip(clip);
 	}
 
-	private static void drawFiligree(Graphics2D g, Card card, int width, int height, int radius)
+	private static void drawFiligree(Graphics2D g, Style style, int width, int height, int radius)
 	{
-		NpcCardArt art = NpcCardArt.forCard(card);
-		if (art == null || height < 120)
+		if (height < 120)
 		{
 			return;
 		}
 		int inset = Math.max(3, borderWidth(height) / 2);
-		g.setColor(withAlpha(new Color(art.getMetalLight()), 110));
+		g.setColor(withAlpha(style.metalLight, 110));
 		g.setStroke(new BasicStroke(Math.max(1f, height / 240f), BasicStroke.CAP_BUTT,
 			BasicStroke.JOIN_MITER, 10f,
 			new float[]{1.6f, 2.4f, 1.6f, 5.2f}, 0f));
@@ -1024,7 +1097,8 @@ public final class CardRenderer
 		g.drawRoundRect(0, 0, width - 1, height - 1, radius, radius);
 	}
 
-	private static void drawCornerGems(Graphics2D g, Card card, int width, int height, long animMs)
+	private static void drawCornerGems(Graphics2D g, Style style, int width, int height,
+									   long animMs)
 	{
 		int size = Math.max(3, height / 52);
 		int pad = Math.max(2, height / 60);
@@ -1038,12 +1112,18 @@ public final class CardRenderer
 			g.setPaint(new RadialGradientPaint(
 				new Point2D.Float(gx + size * 0.34f, gy + size * 0.30f), Math.max(1f, size),
 				new float[]{0f, 0.3f, 1f},
-				new Color[]{Color.WHITE,
-					Color.getHSBColor(((animMs % 7000L) / 7000f + i * 0.25f) % 1f, 0.4f, 1f),
-					new Color(0, 0, 0, 220)},
+				new Color[]{Color.WHITE, gemHue(style, animMs, i), new Color(0, 0, 0, 220)},
 				MultipleGradientPaint.CycleMethod.NO_CYCLE));
 			g.fillOval(gx, gy, size, size);
 		}
+	}
+
+	private static Color gemHue(Style style, long animMs, int index)
+	{
+		float[] hsb = Color.RGBtoHSB(style.accent.getRed(), style.accent.getGreen(),
+			style.accent.getBlue(), null);
+		float drift = ((animMs % 7000L) / 7000f + index * 0.25f) % 1f;
+		return Color.getHSBColor((hsb[0] + (drift - 0.5f) * 0.12f + 1f) % 1f, 0.4f, 1f);
 	}
 
 	private static Font nameFont(int cardHeight)
@@ -1132,23 +1212,16 @@ public final class CardRenderer
 
 	private static final double FLOOR_AT = 0.80d;
 
-	private static Color characterShade(Card card, float brightness)
+	private static Color characterShade(Style style, float brightness)
 	{
-		NpcCardArt art = NpcCardArt.forCard(card);
-		if (art == null)
-		{
-			return null;
-		}
-		Color base = new Color(art.getBackdropColour());
+		Color base = style.art != null ? new Color(style.art.getBackdropColour()) : style.plate;
 		float[] hsb = Color.RGBtoHSB(base.getRed(), base.getGreen(), base.getBlue(), null);
 		return Color.getHSBColor(hsb[0], Math.max(0.55f, hsb[1]), brightness);
 	}
 
-	private static Color[] bodyTint(Card card)
+	private static Color[] bodyTint(Style style)
 	{
-		Color top = characterShade(card, 0.34f);
-		Color bottom = characterShade(card, 0.17f);
-		return top == null ? new Color[]{BODY_TOP, BODY_BOTTOM} : new Color[]{top, bottom};
+		return new Color[]{characterShade(style, 0.34f), characterShade(style, 0.17f)};
 	}
 
 	public static void drawChrome(Graphics2D graphics, Card card, int x, int y, int width,
@@ -1219,7 +1292,7 @@ public final class CardRenderer
 		g.setClip(new RoundRectangle2D.Float(box.x, box.y, box.width, box.height, radius, radius));
 
 		Color accent = new Color(art.getAccentColour());
-		g.setColor(characterShade(card, 0.06f));
+		g.setColor(characterShade(styleFor(card), 0.06f));
 		g.fillRect(box.x, box.y, box.width, box.height);
 
 		int floorY = box.y + (int) (box.height * FLOOR_AT);

@@ -25,7 +25,6 @@
 package com.dopaminesimulator.ui;
 
 import com.dopaminesimulator.cards.Card;
-import com.dopaminesimulator.cards.NpcCardArt;
 import com.dopaminesimulator.cards.Rarity;
 import java.awt.AlphaComposite;
 import java.awt.BasicStroke;
@@ -100,21 +99,10 @@ public final class WishReveal
 
 	private static final int RAYS = 16;
 	private static final int MOTES = 22;
-	private static final int CARD_WIDTH = 150;
-	private static final int CARD_HEIGHT = 210;
 
-	private static final int MODEL_CARD_WIDTH = 260;
-	private static final int MODEL_CARD_HEIGHT = 364;
 
-	private static int cardWidth(Card card)
-	{
-		return NpcCardArt.forCard(card) != null ? MODEL_CARD_WIDTH : CARD_WIDTH;
-	}
-
-	private static int cardHeight(Card card)
-	{
-		return NpcCardArt.forCard(card) != null ? MODEL_CARD_HEIGHT : CARD_HEIGHT;
-	}
+	private static final int CARD_WIDTH = 260;
+	private static final int CARD_HEIGHT = 364;
 
 	private WishReveal()
 	{
@@ -171,7 +159,7 @@ public final class WishReveal
 			{
 				drawWash(g, width, height, cx, cy, tierColour, ambient * 0.7d, alpha);
 			}
-			drawSeal(g, cx, cy, card, told ? tierColour : SEAL_NEUTRAL, told, highTier, age, alpha);
+			drawSeal(g, cx, cy, told ? tierColour : SEAL_NEUTRAL, told, highTier, age, alpha);
 			g.setClip(clipBefore);
 			g.setComposite(before);
 			return null;
@@ -225,11 +213,11 @@ public final class WishReveal
 		return modelBox;
 	}
 
-	private static void drawSeal(Graphics2D g, int cx, int cy, Card card, Color colour,
+	private static void drawSeal(Graphics2D g, int cx, int cy, Color colour,
 		boolean told, boolean highTier, long age, float alpha)
 	{
-		int w = (int) (cardWidth(card) * 0.94d);
-		int h = (int) (cardHeight(card) * 0.94d);
+		int w = (int) (CARD_WIDTH * 0.94d);
+		int h = (int) (CARD_HEIGHT * 0.94d);
 		int x = cx - w / 2;
 		int y = cy - h / 2;
 		int arc = Math.max(10, h / 14);
@@ -375,9 +363,9 @@ public final class WishReveal
 	{
 		double bob = 0d;
 
-		java.awt.Rectangle local = CardRenderer.artBounds(MODEL_CARD_WIDTH, MODEL_CARD_HEIGHT);
-		double originX = cx - MODEL_CARD_WIDTH / 2d * scale;
-		double originY = cy + bob - MODEL_CARD_HEIGHT / 2d * scale;
+		java.awt.Rectangle local = CardRenderer.artBounds(CARD_WIDTH, CARD_HEIGHT);
+		double originX = cx - CARD_WIDTH / 2d * scale;
+		double originY = cy + bob - CARD_HEIGHT / 2d * scale;
 		return new java.awt.Rectangle(
 			(int) Math.round(originX + local.x * scale),
 			(int) Math.round(originY + local.y * scale),
@@ -533,8 +521,8 @@ public final class WishReveal
 		AffineTransform before = g.getTransform();
 		g.translate(cx, cy + bob);
 		g.scale(scale, scale);
-		CardRenderer.drawChrome(g, card, -cardWidth(card) / 2, -cardHeight(card) / 2,
-			cardWidth(card), cardHeight(card), false, false);
+		CardRenderer.drawChrome(g, card, -CARD_WIDTH / 2, -CARD_HEIGHT / 2,
+			CARD_WIDTH, CARD_HEIGHT, false, false);
 		g.setTransform(before);
 	}
 
@@ -546,8 +534,8 @@ public final class WishReveal
 		AffineTransform before = g.getTransform();
 		g.translate(cx, cy + bob);
 		g.scale(scale, scale);
-		CardRenderer.draw(g, card, -cardWidth(card) / 2, -cardHeight(card) / 2,
-			cardWidth(card), cardHeight(card),
+		CardRenderer.draw(g, card, -CARD_WIDTH / 2, -CARD_HEIGHT / 2,
+			CARD_WIDTH, CARD_HEIGHT,
 			0, true, System.currentTimeMillis(), art, false, false, modelArt);
 		g.setTransform(before);
 	}
@@ -555,7 +543,7 @@ public final class WishReveal
 	private static void drawStars(Graphics2D g, int cx, int cy, Color glow, int stars,
 		long sinceStamp, float alpha, boolean prismatic)
 	{
-		int y = cy + (prismatic ? MODEL_CARD_HEIGHT : CARD_HEIGHT) / 2 + 26;
+		int y = cy + CARD_HEIGHT / 2 + 26;
 		int size = 11;
 		int gap = 7;
 		int total = stars * size * 2 + (stars - 1) * gap;
@@ -619,7 +607,7 @@ public final class WishReveal
 			return;
 		}
 
-		int y = cy + cardHeight(card) / 2 + 62;
+		int y = cy + CARD_HEIGHT / 2 + 62;
 		g.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 9));
 		FontMetrics metrics = g.getFontMetrics();
 		String eyebrow = "FEATURED";
