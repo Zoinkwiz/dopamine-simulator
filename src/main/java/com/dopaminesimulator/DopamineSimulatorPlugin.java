@@ -1221,6 +1221,12 @@ public class DopamineSimulatorPlugin extends Plugin
 				modelLab.command(event.getArguments());
 			}
 		}
+		else if ("cardface".equalsIgnoreCase(event.getCommand()))
+		{
+			CardViewerOverlay.dumpNextFace();
+			client.addChatMessage(ChatMessageType.GAMEMESSAGE, "",
+				"[cardface] next viewer frame written to cardface.png", null);
+		}
 		else if ("cardlab".equalsIgnoreCase(event.getCommand()))
 		{
 			previewNpcCard(event.getArguments());

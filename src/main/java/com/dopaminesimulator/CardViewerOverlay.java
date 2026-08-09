@@ -62,6 +62,13 @@ public class CardViewerOverlay extends Overlay
 	private static final double MAX_PITCH = 0.13d;
 
 	private java.awt.image.BufferedImage face;
+	/** Set by ::cardface; writes the next rendered face to a PNG so it can be inspected. */
+	private static boolean dumpFace;
+
+	public static void dumpNextFace()
+	{
+		dumpFace = true;
+	}
 	private static final long PULSE_MS = 420L;
 
 	private Card card;
@@ -250,6 +257,19 @@ public class CardViewerOverlay extends Overlay
 		CardRenderer.drawSpecular(g, showing, 0, 0, CARD_WIDTH, CARD_HEIGHT, pointerX, pointerY,
 			modelArt, now);
 		g.dispose();
+		if (dumpFace)
+		{
+			dumpFace = false;
+			try
+			{
+				java.io.File out = new java.io.File(System.getProperty("java.io.tmpdir"),
+					"cardface.png");
+				javax.imageio.ImageIO.write(face, "png", out);
+			}
+			catch (java.io.IOException ignored)
+			{
+			}
+		}
 		return face;
 	}
 
