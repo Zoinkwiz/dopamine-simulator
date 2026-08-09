@@ -675,7 +675,13 @@ public final class CardRenderer
 	 * ground is the pairing that reads best, and taking the complement gives every tier the
 	 * same relationship instead of leaving it to whichever colours happened to collide.
 	 */
-	private static final int[] GROUNDS = {0x3A63A8, 0x9C7A4A, 0xB08C3A, 0x7A4AA8, 0xC79A3A};
+	/**
+	 * One shared slate under common through epic, so the ladder is carried by the metal, the
+	 * polish and the ornament rather than by a different ground each tier. Legendary keeps its
+	 * gold against the rune ramp - the pairing the lower tiers are measured against.
+	 */
+	private static final int SLATE = 0x414B60;
+	private static final int[] GROUNDS = {SLATE, SLATE, SLATE, SLATE, 0xC79A3A};
 
 	private static Color groundFor(Card card, Style style)
 	{
