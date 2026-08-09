@@ -895,7 +895,9 @@ public class DopamineSimulatorPanel extends PluginPanel
 	{
 		int stars = state.getTotalStars();
 		int maxStars = CardCatalogue.size() * Rarity.MAX_STARS;
-		double complete = maxStars == 0 ? 0d : stars * 100d / maxStars;
+		int unique = state.getUniqueCardsOwned();
+		int catalogue = CardCatalogue.size();
+		double complete = catalogue == 0 ? 0d : unique * 100d / catalogue;
 
 		JLabel header = new JLabel(String.format("%.1f%% complete", complete));
 		header.setFont(FontManager.getRunescapeBoldFont());

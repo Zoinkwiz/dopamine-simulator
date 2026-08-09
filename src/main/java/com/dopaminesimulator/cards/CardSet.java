@@ -98,7 +98,7 @@ public enum CardSet
 			case BOSS_DROPS: return SpriteID.IconActivities25x25.COLLECTIONS_LOGGED;
 			case RAIDS_DROPS: return SpriteID.IconBoss25x25.CHAMBERS_OF_XERIC;
 			case CLUE_DROPS: return SpriteID.IconActivities25x25.CLUE_SCROLL_ALL;
-			case MINIGAME_REWARDS: return SpriteID.IconActivities25x25.RIFTS_CLOSED;
+			case MINIGAME_REWARDS: return SpriteID.AchievementDiaryIcons.RED_MINIGAMES;
 			case ITEMS: return SpriteID.SideIcons.INVENTORY;
 			case MINIGAMES: return SpriteID.SideIcons.MINIGAMES;
 			case DIARIES: return SpriteID.SideIcons.ACHIEVEMENT_DIARIES;

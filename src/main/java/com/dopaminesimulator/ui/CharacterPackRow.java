@@ -20,6 +20,7 @@ public class CharacterPackRow extends JComponent
 	private static final int PACK_W = 30;
 	private static final int PACK_H = 40;
 	private static final int PACK_X = 8;
+	private static final long STILL = 1150L;
 
 	private final CharacterDeed deed;
 	private final int held;
@@ -37,6 +38,15 @@ public class CharacterPackRow extends JComponent
 		this.packsToPity = packsToPity;
 		this.owned = owned;
 		this.style = CardRenderer.styleFor(CardCatalogue.byId(deed.getCardId()));
+		StringBuilder tip = new StringBuilder(deed.getCharacterName())
+			.append(" - ").append(deed.getDeed()).append('.');
+		if (held > 0)
+		{
+			tip.append(' ').append(held).append(held == 1 ? " pack held." : " packs held.");
+		}
+		tip.append(owned ? " Already collected." : " " + packsToPity
+			+ " more packs guarantee it.");
+		setToolTipText(tip.toString());
 		setPreferredSize(new Dimension(0, HEIGHT));
 		setMaximumSize(new Dimension(Integer.MAX_VALUE, HEIGHT));
 		setMinimumSize(new Dimension(0, HEIGHT));
@@ -82,7 +92,7 @@ public class CharacterPackRow extends JComponent
 
 		CardRenderer.drawPackArt(g, PACK_X, (HEIGHT - 2 - PACK_H) / 2, PACK_W, PACK_H, style,
 			CardRenderer.BackMotif.of(deed.getArt() == null ? null : deed.getArt().getBackMotif()),
-			System.currentTimeMillis());
+			STILL);
 
 		int textX = PACK_X + PACK_W + 9;
 		g.setFont(FontManager.getRunescapeBoldFont());
