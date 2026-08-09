@@ -240,7 +240,7 @@ public class CardViewerOverlay extends Overlay
 
 		Rectangle artLocal = CardRenderer.artBounds(CARD_WIDTH, CARD_HEIGHT);
 		java.awt.Shape artRounded = CardRenderer.artShape(CARD_WIDTH, CARD_HEIGHT);
-		boolean faceUp = !showingBack && flip >= 1d;
+		boolean faceUp = !showingBack;
 		Rectangle modelBox = npcArt == null || !faceUp ? null
 			: turn.outline(artRounded).getBounds();
 		if (!faceUp)
