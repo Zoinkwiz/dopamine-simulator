@@ -125,6 +125,11 @@ public final class CardRenderer
 	 */
 	/** The face is rendered at this multiple and comes down through the warp, so text survives. */
 	public static final int SUPERSAMPLE = 2;
+	/**
+	 * Room around the card in the face buffer. The outer glow spreads well past the card's own
+	 * edge, and a buffer cut to the card clips it into a square halo at the corners.
+	 */
+	public static final int FACE_PAD = 60;
 
 	public static final class Turn
 	{
@@ -202,6 +207,14 @@ public final class CardRenderer
 	 */
 	public static void drawTurned(Graphics2D graphics, BufferedImage face, Turn turn)
 	{
+		drawTurned(graphics, face, turn, 0);
+	}
+
+	/**
+	 * @param pad how far past the card, in card-local units, the face extends on every side.
+	 */
+	public static void drawTurned(Graphics2D graphics, BufferedImage face, Turn turn, int pad)
+	{
 		int sw = face.getWidth();
 		int sh = face.getHeight();
 		Object hintBefore = graphics.getRenderingHint(RenderingHints.KEY_INTERPOLATION);
@@ -215,10 +228,10 @@ public final class CardRenderer
 		int[] bottom = new int[Turn.STRIPS + 1];
 		for (int i = 0; i <= Turn.STRIPS; i++)
 		{
-			double lx = turn.w * (double) i / Turn.STRIPS;
-			bx[i] = (int) Math.round(turn.project(lx, 0).x);
-			top[i] = (int) Math.round(turn.project(lx, 0).y);
-			bottom[i] = (int) Math.round(turn.project(lx, turn.h).y);
+			double lx = -pad + (turn.w + pad * 2d) * i / Turn.STRIPS;
+			bx[i] = (int) Math.round(turn.project(lx, -pad).x);
+			top[i] = (int) Math.round(turn.project(lx, -pad).y);
+			bottom[i] = (int) Math.round(turn.project(lx, turn.h + pad).y);
 		}
 
 		for (int i = 0; i < Turn.STRIPS; i++)

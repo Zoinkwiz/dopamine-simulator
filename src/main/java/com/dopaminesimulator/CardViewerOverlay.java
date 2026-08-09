@@ -205,7 +205,8 @@ public class CardViewerOverlay extends Overlay
 		graphics.fillRect(0, 0, canvasWidth, canvasHeight);
 
 		graphics.setClip(clipBefore);
-		CardRenderer.drawTurned(graphics, renderFace(showing, now, npcArt != null), turn);
+		CardRenderer.drawTurned(graphics, renderFace(showing, now, npcArt != null), turn,
+			CardRenderer.FACE_PAD);
 
 		if (modelBox != null)
 		{
@@ -234,10 +235,11 @@ public class CardViewerOverlay extends Overlay
 	private java.awt.image.BufferedImage renderFace(Card showing, long now, boolean modelArt)
 	{
 		int ss = CardRenderer.SUPERSAMPLE;
+		int pad = CardRenderer.FACE_PAD;
 		if (face == null)
 		{
-			face = new java.awt.image.BufferedImage(CARD_WIDTH * ss, CARD_HEIGHT * ss,
-				java.awt.image.BufferedImage.TYPE_INT_ARGB);
+			face = new java.awt.image.BufferedImage((CARD_WIDTH + pad * 2) * ss,
+				(CARD_HEIGHT + pad * 2) * ss, java.awt.image.BufferedImage.TYPE_INT_ARGB);
 		}
 		Graphics2D g = face.createGraphics();
 		g.setComposite(AlphaComposite.Clear);
