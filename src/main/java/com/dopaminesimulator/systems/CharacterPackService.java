@@ -35,7 +35,8 @@ import java.util.Random;
 
 public class CharacterPackService
 {
-	private static final int THEMED_CARDS = 2;
+	private static final int THEMED_CARDS = 1;
+	private static final int BASE_CARDS = 1;
 
 	private final Random random;
 	private final CollectionService collection;
@@ -75,11 +76,20 @@ public class CharacterPackService
 
 		for (int i = 0; i < THEMED_CARDS; i++)
 		{
-			Card themed = randomFrom(state, deed);
+			Card themed = pick(state, deed.pool());
 			if (themed != null)
 			{
 				pulled.add(themed);
 				collection.grant(state, themed, rewards, false, 1);
+			}
+		}
+		for (int i = 0; i < BASE_CARDS; i++)
+		{
+			Card filler = pick(state, basePool());
+			if (filler != null)
+			{
+				pulled.add(filler);
+				collection.grant(state, filler, rewards, false, 1);
 			}
 		}
 		return pulled;
@@ -90,9 +100,8 @@ public class CharacterPackService
 		return Math.max(0, deed.getPity() - state.getCharacterPity(deed.getCardId()));
 	}
 
-	private Card randomFrom(DopamineState state, CharacterDeed deed)
+	private Card pick(DopamineState state, List<Card> pool)
 	{
-		List<Card> pool = deed.pool();
 		if (pool.isEmpty())
 		{
 			return null;
@@ -108,4 +117,24 @@ public class CharacterPackService
 		List<Card> from = missing.isEmpty() ? pool : missing;
 		return from.get(random.nextInt(from.size()));
 	}
+
+	private static List<Card> basePool()
+	{
+		if (BASE == null)
+		{
+			List<Card> base = new ArrayList<>();
+			for (Card card : CardCatalogue.bySet(com.dopaminesimulator.cards.CardSet.ITEMS))
+			{
+				if (card.getRarity().ordinal()
+					<= com.dopaminesimulator.cards.Rarity.UNCOMMON.ordinal())
+				{
+					base.add(card);
+				}
+			}
+			BASE = java.util.Collections.unmodifiableList(base);
+		}
+		return BASE;
+	}
+
+	private static List<Card> BASE;
 }
