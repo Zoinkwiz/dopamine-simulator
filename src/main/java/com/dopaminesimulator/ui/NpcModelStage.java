@@ -41,6 +41,12 @@ public class NpcModelStage
 	private static final long REAPPEAR_GAP_MS = 250L;
 	private static final int TILT_X = 66;
 	private static final int PARALLAX_YAW = 50;
+	/**
+	 * How far the widget models turn with the card, in widget units where 2048 is a full turn.
+	 * The viewer yaws a card by 0.20rad, and anything mounted in a card turns with it, so this
+	 * is that same angle: 0.20 / 2pi * 2048.
+	 */
+	private static final int CARD_YAW = 65;
 
 	private final Client client;
 
@@ -125,6 +131,11 @@ public class NpcModelStage
 		builtFor = -1;
 		shownSinceMs = System.currentTimeMillis();
 		return true;
+	}
+
+	private static int wrap(int rotation)
+	{
+		return (rotation % 2048 + 2048) % 2048;
 	}
 
 	private int npcFor(NpcCardArt art)
@@ -242,6 +253,7 @@ public class NpcModelStage
 
 		int modelX = (box.width - size) / 2 + offsetX;
 		int modelY = (box.height - size) / 2 + offsetY;
+		int cardYaw = (int) (-px * CARD_YAW);
 		int nearX = (int) (-px * box.width * 0.10d);
 		int nearY = 0;
 		int nearYaw = (int) (-px * PARALLAX_YAW);
@@ -260,7 +272,7 @@ public class NpcModelStage
 				: art.getSceneryZoom() > 0 ? art.getSceneryZoom() : art.getZoom();
 			scenery.setModelZoom(sceneryZoom);
 			scenery.setRotationX(TILT_X);
-			scenery.setRotationZ(0);
+			scenery.setRotationZ(wrap(cardYaw));
 			scenery.revalidate();
 		}
 
@@ -287,7 +299,7 @@ public class NpcModelStage
 				baseRot = pillarRotationOverride >= 0 ? pillarRotationOverride
 					: art.getPillarRotation();
 			}
-			pillar.setRotationZ(baseRot);
+			pillar.setRotationZ(wrap(baseRot + cardYaw));
 			pillar.setAnimationId(-1);
 			pillar.setHidden(true);
 			pillar.revalidate();
@@ -305,7 +317,7 @@ public class NpcModelStage
 			fore.setModelZoom(foreZoomOverride != 0 ? foreZoomOverride
 				: art.getForeZoom() > 0 ? art.getForeZoom() : art.getZoom());
 			fore.setRotationX(TILT_X);
-			fore.setRotationZ((art.getForeRotation() + nearYaw % 2048 + 2048) % 2048);
+			fore.setRotationZ(wrap(art.getForeRotation() + nearYaw + cardYaw));
 			fore.setAnimationId(-1);
 			fore.setHidden(true);
 			fore.revalidate();
@@ -320,7 +332,7 @@ public class NpcModelStage
 			part.setOriginalHeight(size);
 			part.setModelZoom(zoomFor(art));
 			part.setRotationX(TILT_X);
-			part.setRotationZ(rotationZ);
+			part.setRotationZ(wrap(rotationZ + cardYaw));
 			part.setAnimationId(animFor(art));
 			part.revalidate();
 		}
