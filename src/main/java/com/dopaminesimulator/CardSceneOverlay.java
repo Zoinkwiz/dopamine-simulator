@@ -36,7 +36,6 @@ import net.runelite.client.ui.overlay.OverlayPosition;
 
 public class CardSceneOverlay extends Overlay
 {
-	/** Dropped if nothing submits for this long, so a closed card cannot leave its scene up. */
 	private static final long STALE_MS = 120L;
 
 	private Card card;
@@ -55,13 +54,6 @@ public class CardSceneOverlay extends Overlay
 		setLayer(OverlayLayer.UNDER_WIDGETS);
 	}
 
-	/**
-	 * Offers the scene for this frame.
-	 *
-	 * @param box  the art window in CARD-LOCAL coordinates, so the scene can be drawn flat and
-	 *             turned by the same projection the frame uses.
-	 * @param turn how the card is turned, or null to draw it square on.
-	 */
 	public void submit(Card card, java.awt.Rectangle canvasBox, double px, double py)
 	{
 		submit(card, canvasBox, null, 0, 0, px, py);
@@ -91,7 +83,6 @@ public class CardSceneOverlay extends Overlay
 
 		if (turn == null)
 		{
-			// The reveal draws its card square on, so the box is already in canvas space.
 			CardRenderer.drawArtScene(graphics, card, box, px, py);
 			return null;
 		}

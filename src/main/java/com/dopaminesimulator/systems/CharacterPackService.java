@@ -33,13 +33,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-/**
- * Opens the packs earned by doing the thing a character is known for.
- *
- * <p>A pack always gives something: a card or two from related content, and the character
- * itself on a rare roll. The roll is bounded - after enough packs the character is given
- * outright, so the tail of the distribution cannot run forever.
- */
 public class CharacterPackService
 {
 	private static final int THEMED_CARDS = 2;
@@ -53,7 +46,6 @@ public class CharacterPackService
 		this.collection = collection;
 	}
 
-	/** The cards a pack gave, character first if it landed. Empty if there was no pack to open. */
 	public List<Card> open(DopamineState state, CharacterDeed deed, RewardQueue rewards)
 	{
 		if (deed == null || !state.takeCharacterPack(deed.getCardId()))
@@ -78,8 +70,6 @@ public class CharacterPackService
 		}
 		else
 		{
-			// Pity keeps counting only while the character is still missing. Once it is held,
-			// a guarantee would just hand over duplicates.
 			state.setCharacterPity(deed.getCardId(), owned ? 0 : opened);
 		}
 
@@ -95,7 +85,6 @@ public class CharacterPackService
 		return pulled;
 	}
 
-	/** Packs still to open for a character before the guarantee. */
 	public int packsUntilPity(DopamineState state, CharacterDeed deed)
 	{
 		return Math.max(0, deed.getPity() - state.getCharacterPity(deed.getCardId()));

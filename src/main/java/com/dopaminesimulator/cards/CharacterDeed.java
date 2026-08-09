@@ -26,14 +26,6 @@ package com.dopaminesimulator.cards;
 
 import lombok.Getter;
 
-/**
- * What a player has to do to earn a shot at a character, and how likely that shot is.
- *
- * <p>Rates are per activity rather than shared, because the same odds cost wildly different
- * amounts of time: a Zilyana kill takes a couple of minutes and a hard mode Theatre most of an
- * hour. Each is set so the expected grind lands around fifty hours of that content, and a pity
- * count bounds the tail so nobody is left chasing a coin flip forever.
- */
 @Getter
 public enum CharacterDeed
 {
@@ -54,15 +46,10 @@ public enum CharacterDeed
 	ZILYANA("characters-commander-zilyana", "Killing Commander Zilyana",
 		0.0015d, 900, CardSet.BOSSES);
 
-	/** The character this deed can award. */
 	private final String cardId;
-	/** What the player did, shown on the pack. */
 	private final String deed;
-	/** Chance per pack opened. */
 	private final double chance;
-	/** Packs after which the character is given outright. */
 	private final int pity;
-	/** Where the pack's consolation cards come from. */
 	private final CardSet themedSet;
 
 	CharacterDeed(String cardId, String deed, double chance, int pity, CardSet themedSet)

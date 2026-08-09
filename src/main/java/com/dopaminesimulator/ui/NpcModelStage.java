@@ -41,12 +41,20 @@ public class NpcModelStage
 	private static final long REAPPEAR_GAP_MS = 250L;
 	private static final int TILT_X = 66;
 	private static final int PARALLAX_YAW = 50;
-	/**
-	 * How far the widget models turn with the card, in widget units where 2048 is a full turn.
-	 * The viewer yaws a card by 0.20rad, and anything mounted in a card turns with it, so this
-	 * is that same angle: 0.20 / 2pi * 2048.
-	 */
 	private static final int CARD_YAW = 65;
+	private static final double SPIN_PER_PIXEL = 5d;
+
+	private int handSpin;
+
+	public void addHandSpin(int dragPixels)
+	{
+		handSpin = (int) Math.round(handSpin + dragPixels * SPIN_PER_PIXEL);
+	}
+
+	public void clearHandSpin()
+	{
+		handSpin = 0;
+	}
 
 	private final Client client;
 
@@ -332,7 +340,7 @@ public class NpcModelStage
 			part.setOriginalHeight(size);
 			part.setModelZoom(zoomFor(art));
 			part.setRotationX(TILT_X);
-			part.setRotationZ(wrap(rotationZ + cardYaw));
+			part.setRotationZ(wrap(rotationZ + cardYaw + handSpin));
 			part.setAnimationId(animFor(art));
 			part.revalidate();
 		}

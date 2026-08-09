@@ -214,11 +214,44 @@ public class DopamineSimulatorPlugin extends Plugin
 	private final net.runelite.client.input.MouseAdapter viewerDismiss =
 		new net.runelite.client.input.MouseAdapter()
 		{
+			private int dragFrom = Integer.MIN_VALUE;
+
+			@Override
+			public java.awt.event.MouseEvent mouseDragged(java.awt.event.MouseEvent event)
+			{
+				if (cardViewer == null || !cardViewer.isOpen()
+					|| dragFrom == Integer.MIN_VALUE)
+				{
+					return event;
+				}
+				cardViewer.dragSpin(event.getX() - dragFrom);
+				dragFrom = event.getX();
+				event.consume();
+				return event;
+			}
+
+			@Override
+			public java.awt.event.MouseEvent mouseReleased(java.awt.event.MouseEvent event)
+			{
+				dragFrom = Integer.MIN_VALUE;
+				return event;
+			}
+
 			@Override
 			public java.awt.event.MouseEvent mousePressed(java.awt.event.MouseEvent event)
 			{
 				if (cardViewer == null || !cardViewer.isOpen())
 				{
+					return event;
+				}
+
+				if (javax.swing.SwingUtilities.isMiddleMouseButton(event))
+				{
+					if (cardViewer.containsCanvas(event.getX(), event.getY()))
+					{
+						dragFrom = event.getX();
+						event.consume();
+					}
 					return event;
 				}
 
@@ -397,13 +430,27 @@ public class DopamineSimulatorPlugin extends Plugin
 		lastLocation = null;
 		lastHitpoints = -1;
 	}
-	/**
-	 * Konar's value in the slayer master varbit. Confirm with {@code ::deeds} standing on a task
-	 * from her - the command prints what the game currently reports.
-	 */
 	private static final int SLAYER_MASTER_KONAR = 8;
-	/** Raid level at which the Tombs stop being Maisa's and become Amascut's. */
 	private static final int TOA_AMASCUT_LEVEL = 300;
+
+	private int slayerMasterHeld;
+	private int toaRaidLevelHeld;
+
+	@Subscribe
+	public void onVarbitChanged(net.runelite.api.events.VarbitChanged event)
+	{
+		int master = client.getVarbitValue(net.runelite.api.gameval.VarbitID.SLAYER_MASTER);
+		if (master > 0)
+		{
+			slayerMasterHeld = master;
+		}
+		int raidLevel = client.getVarbitValue(
+			net.runelite.api.gameval.VarbitID.TOA_CLIENT_RAID_LEVEL);
+		if (raidLevel > 0)
+		{
+			toaRaidLevelHeld = raidLevel;
+		}
+	}
 
 	@Subscribe
 	public void onChatMessage(net.runelite.api.events.ChatMessage event)
@@ -426,13 +473,6 @@ public class DopamineSimulatorPlugin extends Plugin
 		}
 	}
 
-	/**
-	 * The deed a chat line represents, or null.
-	 *
-	 * <p>Theatre mode comes from the message itself because the game exposes no varbit for it -
-	 * entry and hard mode name themselves in the completion line, and anything else is a normal
-	 * raid. The Tombs and Konar do have varbits, so those are read rather than guessed at.
-	 */
 	private CharacterDeed deedFor(String message)
 	{
 		if (message.contains("theatre of blood") && message.contains("completion time"))
@@ -441,9 +481,8 @@ public class DopamineSimulatorPlugin extends Plugin
 		}
 		if (message.contains("tombs of amascut") && message.contains("completion time"))
 		{
-			int level = client.getVarbitValue(
-				net.runelite.api.gameval.VarbitID.TOA_CLIENT_RAID_LEVEL);
-			return level >= TOA_AMASCUT_LEVEL ? CharacterDeed.AMASCUT : CharacterDeed.MAISA;
+			return toaRaidLevelHeld >= TOA_AMASCUT_LEVEL
+				? CharacterDeed.AMASCUT : CharacterDeed.MAISA;
 		}
 		if (message.contains("challenge complete") && message.contains("gauntlet"))
 		{
@@ -456,8 +495,10 @@ public class DopamineSimulatorPlugin extends Plugin
 		if (message.contains("you have completed your task")
 			|| message.contains("you've completed") && message.contains("task"))
 		{
-			return client.getVarbitValue(net.runelite.api.gameval.VarbitID.SLAYER_MASTER)
-				== SLAYER_MASTER_KONAR ? CharacterDeed.KONAR : null;
+			CharacterDeed earned = slayerMasterHeld == SLAYER_MASTER_KONAR
+				? CharacterDeed.KONAR : null;
+			slayerMasterHeld = 0;
+			return earned;
 		}
 		return null;
 	}
@@ -472,7 +513,6 @@ public class DopamineSimulatorPlugin extends Plugin
 				+ deed.getDeed() + ". Open it from the Cards tab.", null);
 	}
 
-	/** Opens one earned pack and reveals whatever it held. */
 	public void openCharacterPack(CharacterDeed deed)
 	{
 		if (engine == null || deed == null)
@@ -1350,11 +1390,6 @@ public class DopamineSimulatorPlugin extends Plugin
 		}
 	}
 
-	/**
-	 * Reports what the game says about the deeds we watch for, and grants or opens a pack.
-	 * The slayer master value is worth checking here rather than trusting: the constant Konar
-	 * is matched against was not verifiable from the API alone.
-	 */
 	private void deedsCommand(String[] arguments)
 	{
 		if (engine == null)
@@ -1366,9 +1401,11 @@ public class DopamineSimulatorPlugin extends Plugin
 			client.addChatMessage(ChatMessageType.GAMEMESSAGE, "",
 				"[deeds] slayer master varbit=" + client.getVarbitValue(
 					net.runelite.api.gameval.VarbitID.SLAYER_MASTER)
-					+ " (Konar is assumed to be " + SLAYER_MASTER_KONAR + ")"
+					+ " (Konar is assumed to be " + SLAYER_MASTER_KONAR + ", latched "
+					+ slayerMasterHeld + ")"
 					+ ", toa raid level=" + client.getVarbitValue(
-					net.runelite.api.gameval.VarbitID.TOA_CLIENT_RAID_LEVEL), null);
+					net.runelite.api.gameval.VarbitID.TOA_CLIENT_RAID_LEVEL)
+					+ " (latched " + toaRaidLevelHeld + ")", null);
 			DopamineState state = engine.getState();
 			StringBuilder held = new StringBuilder("[deeds] held:");
 			for (CharacterDeed deed : CharacterDeed.values())

@@ -118,17 +118,7 @@ public final class CardRenderer
 		return new RoundRectangle2D.Float(b.x, b.y, b.width, b.height, radius, radius);
 	}
 
-	/**
-	 * A card turned about its vertical and horizontal axes. Carries the projection rather than a
-	 * transform, because perspective is not affine and both halves of a model card must agree
-	 * on it exactly.
-	 */
-	/** The face is rendered at this multiple and comes down through the warp, so text survives. */
 	public static final int SUPERSAMPLE = 2;
-	/**
-	 * Room around the card in the face buffer. The outer glow spreads well past the card's own
-	 * edge, and a buffer cut to the card clips it into a square halo at the corners.
-	 */
 	public static final int FACE_PAD = 60;
 
 	public static final class Turn
@@ -155,7 +145,6 @@ public final class CardRenderer
 			this.h = h;
 		}
 
-		/** Projects a card-local point onto the canvas. */
 		public Point2D.Double project(double lx, double ly)
 		{
 			double u = lx - w / 2d;
@@ -168,7 +157,6 @@ public final class CardRenderer
 			return new Point2D.Double(x, y);
 		}
 
-		/** The turned outline of a card-local shape, corners and all. */
 		public Shape outline(Shape local)
 		{
 			Path2D.Double turned = new Path2D.Double();
@@ -198,21 +186,11 @@ public final class CardRenderer
 		}
 	}
 
-	/**
-	 * Draws a rendered card face as if it were turned.
-	 *
-	 * <p>Each strip is placed by projecting its own column, so the edge nearest the eye comes
-	 * out taller than the one going away - the keystone a shear cannot produce. Strips are drawn
-	 * a pixel wide to cover the seams between them.
-	 */
 	public static void drawTurned(Graphics2D graphics, BufferedImage face, Turn turn)
 	{
 		drawTurned(graphics, face, turn, 0);
 	}
 
-	/**
-	 * @param pad how far past the card, in card-local units, the face extends on every side.
-	 */
 	public static void drawTurned(Graphics2D graphics, BufferedImage face, Turn turn, int pad)
 	{
 		int sw = face.getWidth();
@@ -221,8 +199,6 @@ public final class CardRenderer
 		graphics.setRenderingHint(RenderingHints.KEY_INTERPOLATION,
 			RenderingHints.VALUE_INTERPOLATION_BILINEAR);
 
-		// Boundaries are computed once and shared, so strip i ends exactly where i+1 begins.
-		// Widening each strip to cover the seams is what blurred a card that was not even turned.
 		double[] bx = new double[Turn.STRIPS + 1];
 		double[] top = new double[Turn.STRIPS + 1];
 		double[] bottom = new double[Turn.STRIPS + 1];
@@ -234,17 +210,10 @@ public final class CardRenderer
 			bottom[i] = turn.project(lx, turn.h + pad).y;
 		}
 
-		// Placed through a transform rather than an integer destination rectangle. Rounding each
-		// strip to whole pixels is what left the top and bottom edges as staircases once the
-		// card keystoned; a sub-image lands on fractions of a pixel and the edge stays smooth.
 		for (int i = 0; i < Turn.STRIPS; i++)
 		{
 			int sx0 = sw * i / Turn.STRIPS;
 			int sx1 = sw * (i + 1) / Turn.STRIPS;
-			// Signed, NOT ordered: past a quarter turn the projection runs right to left, and
-			// forcing the destination back into ascending order places each strip at its
-			// mirrored position while its contents stay as they were - which shreds the card
-			// into vertical bands. A negative scale mirrors the strip with its position.
 			double x0 = bx[i];
 			double x1 = bx[i + 1];
 			double y0 = (top[i] + top[i + 1]) / 2d;
@@ -371,8 +340,6 @@ public final class CardRenderer
 			return;
 		}
 
-		// Everything else shares a lit medallion and differs only in the device inside it, so a
-		// set of backs reads as one set rather than as eight unrelated drawings.
 		double breathe = 0.9d + 0.1d * Math.sin(animMs / 1100d);
 		int halo = (int) (radius * 1.35d * breathe);
 		g.setPaint(new RadialGradientPaint(new Point2D.Float(cx, cy), Math.max(1f, halo),
@@ -421,7 +388,6 @@ public final class CardRenderer
 		}
 	}
 
-	/** Vanescula: a vyre on the wing, spread across the medallion. */
 	private static void drawBat(Graphics2D g, int cx, int cy, double r)
 	{
 		Path2D.Double wing = new Path2D.Double();
@@ -443,7 +409,6 @@ public final class CardRenderer
 			r * 0.26d, r * 0.62d));
 	}
 
-	/** Seren: a faceted shard, lit down one face. */
 	private static void drawCrystal(Graphics2D g, int cx, int cy, double r)
 	{
 		Path2D.Double shard = new Path2D.Double();
@@ -464,7 +429,6 @@ public final class CardRenderer
 		g.setColor(face);
 	}
 
-	/** Konar: Karuulm, with the vent burning under it. */
 	private static void drawPeak(Graphics2D g, int cx, int cy, double r)
 	{
 		Path2D.Double peak = new Path2D.Double();
@@ -486,7 +450,6 @@ public final class CardRenderer
 		g.setColor(body);
 	}
 
-	/** Amascut: a scarab, wings folded. */
 	private static void drawScarab(Graphics2D g, int cx, int cy, double r)
 	{
 		g.fill(new java.awt.geom.Ellipse2D.Double(cx - r * 0.46d, cy - r * 0.30d,
@@ -507,7 +470,6 @@ public final class CardRenderer
 		g.setStroke(before);
 	}
 
-	/** Ilfeen: Isafdar, a leaf on its stem. */
 	private static void drawLeaf(Graphics2D g, int cx, int cy, double r)
 	{
 		Path2D.Double leaf = new Path2D.Double();
@@ -531,7 +493,6 @@ public final class CardRenderer
 		g.setStroke(before);
 	}
 
-	/** Maisa: the desert moon over Al Kharid. */
 	private static void drawCrescent(Graphics2D g, int cx, int cy, double r)
 	{
 		java.awt.geom.Area moon = new java.awt.geom.Area(
@@ -555,7 +516,6 @@ public final class CardRenderer
 		}
 	}
 
-	/** Zilyana: the four-pointed star of Saradomin. */
 	private static void drawSaradominStar(Graphics2D g, int cx, int cy, double r)
 	{
 		Path2D.Double star = new Path2D.Double();
@@ -591,7 +551,6 @@ public final class CardRenderer
 			new Color[]{withAlpha(glow, (int) ((lit ? 90 : 45) * alpha)), withAlpha(glow, 0)}));
 		g.fillOval(cx - halo, cy - halo, halo * 2, halo * 2);
 
-		// An irregular rim, so it reads as baked rather than as a printed circle.
 		Path2D.Double disc = new Path2D.Double();
 		int points = 48;
 		for (int i = 0; i <= points; i++)
@@ -622,7 +581,6 @@ public final class CardRenderer
 		g.setColor(withAlpha(darken(dough, 0.55d), (int) (200 * alpha)));
 		g.draw(disc);
 
-		// Chips at fixed offsets: a run that reshuffles every frame reads as noise.
 		double[][] chips = {
 			{-0.42d, -0.30d, 0.20d}, {0.28d, -0.44d, 0.16d}, {0.46d, 0.16d, 0.19d},
 			{-0.18d, 0.34d, 0.22d}, {-0.52d, 0.22d, 0.14d}, {0.06d, -0.06d, 0.17d},
@@ -640,7 +598,6 @@ public final class CardRenderer
 			g.fillOval(px + size / 3, py + size / 4, Math.max(1, size), Math.max(1, size / 2));
 		}
 
-		// A slow sheen across the dough, so the emblem is not static.
 		double sweep = (animMs % 4200L) / 4200d;
 		int gx = (int) (cx - radius + sweep * radius * 2);
 		g.setClip(disc);
@@ -656,8 +613,6 @@ public final class CardRenderer
 	private static void drawEyesMotif(Graphics2D g, int cx, int cy, int radius, Color glow,
 									  long animMs, float alpha, boolean lit)
 	{
-		// Six eyes in the dark, the middle pair largest. Each breathes out of phase, so the
-		// cluster looks alive rather than like a pattern.
 		double[][] eyes = {
 			{-1.05d, -0.30d, 0.30d}, {0d, -0.42d, 0.42d}, {1.05d, -0.30d, 0.30d},
 			{-0.72d, 0.36d, 0.24d}, {0d, 0.30d, 0.30d}, {0.72d, 0.36d, 0.24d},
@@ -701,11 +656,6 @@ public final class CardRenderer
 	public static final int ORN_RAIL = 8;
 	public static final int ORN_DRIPS = 16;
 
-	/**
-	 * A card's palette and which ornament it earns. Authored cards bring their own ramp from
-	 * npc-card-art.json; every other card derives one from its rarity, so the same renderer
-	 * draws a common and a six-star without branching on which it has.
-	 */
 	public static final class Style
 	{
 		public final Color metalDark;
@@ -716,7 +666,6 @@ public final class CardRenderer
 		public final Color accent;
 		final int ornament;
 		final NpcCardArt art;
-		/** How far up its own ramp a tier may go. Below 1 it never reaches metalLight. */
 		final double polish;
 
 		Style(Color metalDark, Color metalMid, Color metalLight, Color plate, Color glow,
@@ -759,10 +708,6 @@ public final class CardRenderer
 			ornamentFor(rarity), null, POLISH[rarity.ordinal()]);
 	}
 
-	/**
-	 * metalDark, metalMid, metalLight, plate, glow per rarity: bronze, steel, mithril, adamant,
-	 * rune. Third age is reserved for the authored six-star set.
-	 */
 	private static final int[][] TIERS = {
 		{0x4A331B, 0x8A6335, 0xA67E4B, 0x140E08, 0x6B431C},
 		{0x333A43, 0x6B7783, 0xA3AEBA, 0x0D1014, 0x55677A},
@@ -1038,16 +983,6 @@ public final class CardRenderer
 		g.setPaint(new GradientPaint(x, y, top, x, y + height, bottom));
 		g.fill(body);
 	}
-	/**
-	 * The ground a card's art sits on: its metal's opposite. Cyan rune metal over a warm gold
-	 * ground is the pairing that reads best, and taking the complement gives every tier the
-	 * same relationship instead of leaving it to whichever colours happened to collide.
-	 */
-	/**
-	 * One shared slate under common through epic, so the ladder is carried by the metal, the
-	 * polish and the ornament rather than by a different ground each tier. Legendary keeps its
-	 * gold against the rune ramp - the pairing the lower tiers are measured against.
-	 */
 	private static final int SLATE = 0x414B60;
 	private static final int[] GROUNDS = {SLATE, SLATE, SLATE, SLATE, 0xC79A3A};
 
@@ -1799,7 +1734,6 @@ public final class CardRenderer
 		g.dispose();
 	}
 
-
 	private static final double FLOOR_AT = 0.80d;
 
 	private static Color characterShade(Style style, float brightness)
@@ -1836,7 +1770,6 @@ public final class CardRenderer
 		}
 		g.dispose();
 	}
-
 
 	private static final int PRISM_STOPS = 5;
 

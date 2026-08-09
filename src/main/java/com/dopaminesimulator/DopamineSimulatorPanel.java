@@ -995,8 +995,6 @@ public class DopamineSimulatorPanel extends PluginPanel
 				matches.add(card);
 			}
 		}
-		// Least rare first, so a section climbs towards what is worth having. Name breaks the
-		// tie, so a set's order does not shuffle between rebuilds.
 		matches.sort(Comparator.comparingInt((Card card) -> card.getRarity().ordinal())
 			.thenComparing(Card::getName));
 		return matches;

@@ -57,12 +57,10 @@ public class CardViewerOverlay extends Overlay
 	private final NpcModelStage modelStage;
 	private final CardSceneOverlay scene;
 
-	/** Rotation about the card's vertical and horizontal axes, radians. */
 	private static final double MAX_YAW = 0.20d;
 	private static final double MAX_PITCH = 0.13d;
 
 	private java.awt.image.BufferedImage face;
-	/** Set by ::cardface; writes the next rendered face to a PNG so it can be inspected. */
 	private static boolean dumpFace;
 
 	public static void dumpNextFace()
@@ -85,7 +83,6 @@ public class CardViewerOverlay extends Overlay
 	private double pointerX = 0.5d;
 	private double pointerY = 0.5d;
 
-	/** Right-click turns the card over. Ignored while a turn is already running. */
 	public void flip()
 	{
 		if (card == null || System.currentTimeMillis() - flipStartMs < FLIP_MS)
@@ -95,7 +92,6 @@ public class CardViewerOverlay extends Overlay
 		flipStartMs = System.currentTimeMillis();
 	}
 
-	/** How far through a flip, 0 to 1. */
 	private double flipProgress(long now)
 	{
 		if (flipStartMs == 0L)
@@ -103,6 +99,11 @@ public class CardViewerOverlay extends Overlay
 			return 1d;
 		}
 		return Math.min(1d, (now - flipStartMs) / (double) FLIP_MS);
+	}
+
+	public void dragSpin(int dragPixels)
+	{
+		modelStage.addHandSpin(dragPixels);
 	}
 
 	public void click()
@@ -145,6 +146,7 @@ public class CardViewerOverlay extends Overlay
 
 	public void showFront()
 	{
+		modelStage.clearHandSpin();
 		showingBack = false;
 		flipStartMs = 0L;
 	}
@@ -216,8 +218,6 @@ public class CardViewerOverlay extends Overlay
 		double flip = flipProgress(now);
 		if (flip < 1d)
 		{
-			// Past the halfway point the far side is toward us, so the sides swap there - the
-			// card is edge-on at that moment and there is nothing on screen to swap.
 			boolean pastHalf = flip >= 0.5d;
 			if (pastHalf && !flipSwapped)
 			{
@@ -232,8 +232,6 @@ public class CardViewerOverlay extends Overlay
 
 		double flipYaw = flip < 1d ? Math.PI * flip : 0d;
 		double yaw = (pointerX - 0.5d) * 2d * MAX_YAW + flipYaw;
-		// Past a quarter turn the projection runs right to left. The face is drawn mirrored to
-		// cancel that, whichever side is up.
 		boolean mirrored = Math.cos(yaw) < 0d;
 		CardRenderer.Turn turn = new CardRenderer.Turn(cx, cy, scale, yaw,
 			(pointerY - 0.5d) * 2d * MAX_PITCH, CARD_WIDTH, CARD_HEIGHT);
@@ -276,8 +274,6 @@ public class CardViewerOverlay extends Overlay
 				WishReveal.DEFAULT_MODEL_FOIL);
 		}
 
-
-
 		graphics.setFont(FontManager.getRunescapeSmallFont());
 		graphics.setColor(HINT);
 		String hint = "Click the card for a closer look  -  click away to close";
@@ -311,7 +307,6 @@ public class CardViewerOverlay extends Overlay
 			java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
 		g.setRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION,
 			java.awt.RenderingHints.VALUE_INTERPOLATION_BILINEAR);
-		// The card sits inset by the padding; the warp samples the whole padded span.
 		g.translate(pad, pad);
 		if (mirrored)
 		{
@@ -362,7 +357,6 @@ public class CardViewerOverlay extends Overlay
 		return face;
 	}
 
-
 	private void trackPointer(int cx, int cy, double scale)
 	{
 		net.runelite.api.Point mouse = client.getMouseCanvasPosition();
@@ -383,5 +377,4 @@ public class CardViewerOverlay extends Overlay
 	{
 		return value < 0d ? 0d : Math.min(value, 1d);
 	}
-
 	}

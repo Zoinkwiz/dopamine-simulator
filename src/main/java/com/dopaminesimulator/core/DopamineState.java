@@ -76,9 +76,7 @@ public class DopamineState
 	private double lifetimeWeightedXp;
 	private Map<String, Integer> cardCounts = new HashMap<>();
 
-	/** Unopened character packs, keyed by the character's card id. */
 	private Map<String, Integer> characterPacks = new HashMap<>();
-	/** Packs opened for a character since it last came out, keyed the same way. */
 	private Map<String, Integer> characterPity = new HashMap<>();
 
 	private Map<Rarity, Integer> shards = new EnumMap<>(Rarity.class);
@@ -196,7 +194,6 @@ public class DopamineState
 		}
 		if (featProgress != null)
 		{
-
 			featProgress.remove(null);
 		}
 		if (perkRanks == null)
