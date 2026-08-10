@@ -53,17 +53,6 @@ public class DopamineState
 	private double points;
 	private double lifetimePoints;
 
-	/**
-	 * The best sustained passive income this run has reached, per hour, with food
-	 * surges divided back out. This is what a click is paid from.
-	 *
-	 * It is a high-water mark rather than a live rate because a live rate measures
-	 * the last half hour, not how strong the build is: it decays while idle and the
-	 * first click back prunes the window, which left the button paying its floor of
-	 * one exactly when a player returned. A build does not get weaker while nobody
-	 * is looking at it. Resets on prestige, along with the income it describes.
-	 */
-	private double peakPassivePerHour;
 	private Map<String, Integer> sourceUpgrades = new HashMap<>();
 
 	private long tick;
@@ -155,7 +144,6 @@ public class DopamineState
 		}
 		migrateToDust();
 		migrateMovedCards();
-		seedPeakIncome();
 		if (ascensions == null)
 		{
 			ascensions = new HashMap<>();
@@ -243,7 +231,6 @@ public class DopamineState
 		prestigeCount++;
 		points = 0d;
 		lifetimePoints = 0d;
-		peakPassivePerHour = 0d;
 		sourceUpgrades.clear();
 
 		// The reset is the only rethink there is. Handing every rank back here is
@@ -348,33 +335,6 @@ public class DopamineState
 	public void setBannerPity(Rarity rarity, int value)
 	{
 		bannerPityByRarity.put(rarity, value);
-	}
-
-	/** Below an hour of play the average is mostly noise, and so is the income. */
-	private static final long SEED_PEAK_AFTER_TICKS = 6_000L;
-
-	/**
-	 * Gives an existing save something to pay clicks from.
-	 *
-	 * peakPassivePerHour is newer than the saves it has to load, so a run from
-	 * before it arrives here at zero and every click pays the floor of one point
-	 * until the income window settles a few minutes into the session. That reads as
-	 * a broken button rather than as a system warming up.
-	 *
-	 * The seed is what the run has averaged per hour, which is comfortably under
-	 * what the build earns now: income climbs across a run, so the average trails
-	 * the current rate rather than overshooting it. It only has to stop the button
-	 * looking dead. Live measurement passes it within minutes, and since the peak
-	 * only ever rises, seeding low costs nothing and seeding high would be
-	 * permanent.
-	 */
-	private void seedPeakIncome()
-	{
-		if (peakPassivePerHour > 0d || lifetimePoints <= 0d || tick < SEED_PEAK_AFTER_TICKS)
-		{
-			return;
-		}
-		peakPassivePerHour = lifetimePoints / (tick / Balance.TICKS_PER_HOUR);
 	}
 
 	/**

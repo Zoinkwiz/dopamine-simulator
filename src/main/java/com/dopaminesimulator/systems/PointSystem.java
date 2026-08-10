@@ -67,6 +67,28 @@ public class PointSystem implements DopamineSystem
 	{
 		return "Points";
 	}
+	public static double globalMultiplier(DopamineState state)
+	{
+		return Milestones.globalMultiplier(state.getLifetimePoints(), state)
+			* Feats.multiplierFor(state);
+	}
+
+	public static double buildStrength(DopamineState state)
+	{
+		double hourly = 0d;
+		for (PointSource source : PointSource.values())
+		{
+			if (source == PointSource.CLICK || !state.isSourceUnlocked(source))
+			{
+				continue;
+			}
+			hourly += source.pointsFor(source.getTypicalUnitsPerHour(),
+					state.getSourceUpgradeLevel(source), state.getInsight())
+				* CollectionBonus.multiplierFor(state, source);
+		}
+		return hourly * globalMultiplier(state);
+	}
+
 	@Override
 	public void handle(DopamineState state, DopamineEvent event, RewardQueue rewards)
 	{
@@ -91,9 +113,8 @@ public class PointSystem implements DopamineSystem
 		{
 			points = source.pointsFor(units, state.getSourceUpgradeLevel(source),
 					state.getInsight())
-				* Milestones.globalMultiplier(state.getLifetimePoints(), state)
+				* globalMultiplier(state)
 				* CollectionBonus.multiplierFor(state, source)
-				* Feats.multiplierFor(state)
 				* foodMultiplier.getAsDouble()
 				* affinity;
 		}

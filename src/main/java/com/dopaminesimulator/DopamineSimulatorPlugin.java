@@ -560,7 +560,6 @@ public class DopamineSimulatorPlugin extends Plugin
 			return;
 		}
 		engine.accept(DopamineEvent.tick());
-		trackPeakIncome();
 		rollSeasons();
 		trackMovement();
 		trackHealth();
@@ -839,41 +838,17 @@ public class DopamineSimulatorPlugin extends Plugin
 		return engine != null && client.getGameState() == GameState.LOGGED_IN;
 	}
 
-	private void trackPeakIncome()
-	{
-		raisePeak(engine.getState(), incomeTracker, clickState == null
-			? 1d : clickState.incomeMultiplier(System.currentTimeMillis()));
-	}
-
-	static void raisePeak(DopamineState state, IncomeTracker tracker, double foodMultiplier)
-	{
-		long tick = state.getTick();
-		if (!tracker.hasSettled(tick))
-		{
-			return;
-		}
-
-		double live = Math.max(0d,
-			tracker.totalPerHour(tick) - tracker.perHour(PointSource.CLICK, tick));
-
-		double sustained = foodMultiplier <= 0d ? live : live / foodMultiplier;
-		if (sustained > state.getPeakPassivePerHour())
-		{
-			state.setPeakPassivePerHour(sustained);
-		}
-	}
-
 	public double clickPayout()
 	{
 		if (!isPlayable())
 		{
 			return 1d;
 		}
-		double others = engine.getState().getPeakPassivePerHour();
 		double surge = clickState == null
 			? 1d : clickState.clickPayoutMultiplier(System.currentTimeMillis());
 		return Math.max(1d, PointSource.CLICK_COEFFICIENT
-			* Math.pow(others, PointSource.CLICK_EXPONENT)) * surge;
+			* Math.pow(PointSystem.buildStrength(engine.getState()),
+				PointSource.CLICK_EXPONENT)) * surge;
 	}
 
 	public void click()
