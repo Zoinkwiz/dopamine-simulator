@@ -1160,34 +1160,34 @@ public class DopamineSimulatorPanel extends PluginPanel
 	private void buildCharacterPacks(DopamineState state)
 	{
 		int held = 0;
-		for (com.dopaminesimulator.cards.CharacterDeed deed
-			: com.dopaminesimulator.cards.CharacterDeed.values())
+		for (com.dopaminesimulator.cards.CharacterFollower follower
+			: com.dopaminesimulator.cards.CharacterFollower.values())
 		{
-			held += state.getCharacterPacks(deed.getCardId());
+			held += state.getCharacterPacks(follower.getCardId());
 		}
 		if (held == 0)
 		{
 			return;
 		}
 		WrappedLabel waiting = hint(held == 1
-			? "1 character pack waiting in Feats > Deeds."
-			: held + " character packs waiting in Feats > Deeds.");
-		waiting.setToolTipText("Open them from the Deeds view on the Feats tab.");
+			? "1 follower pack waiting in Feats > Followers."
+			: held + " follower packs waiting in Feats > Followers.");
+		waiting.setToolTipText("Open them from the Followers view on the Feats tab.");
 		cardsContent.add(waiting);
 		cardsContent.add(Box.createVerticalStrut(4));
 	}
 
-	private void buildDeedGuide(DopamineState state)
+	private void buildFollowerGuide(DopamineState state)
 	{
 		cardsContent.add(sectionLabel("How to earn them", "Feats tab to open"));
 		cardsContent.add(Box.createVerticalStrut(3));
-		for (com.dopaminesimulator.cards.CharacterDeed deed
-			: com.dopaminesimulator.cards.CharacterDeed.values())
+		for (com.dopaminesimulator.cards.CharacterFollower follower
+			: com.dopaminesimulator.cards.CharacterFollower.values())
 		{
-			boolean owned = state.getCopies(deed.getCardId()) > 0;
-			WrappedLabel line = hint((owned ? "* " : "- ") + deed.getCharacterName()
-				+ ":  " + deed.getDeed());
-			line.setToolTipText(deed.getCharacterName() + " - " + deed.getDeed());
+			boolean owned = state.getCopies(follower.getCardId()) > 0;
+			WrappedLabel line = hint((owned ? "* " : "- ") + follower.getCharacterName()
+				+ ":  " + follower.getEarnedFrom());
+			line.setToolTipText(follower.getCharacterName() + " - " + follower.getEarnedFrom());
 			cardsContent.add(line);
 		}
 		cardsContent.add(Box.createVerticalStrut(6));
@@ -1211,7 +1211,7 @@ public class DopamineSimulatorPanel extends PluginPanel
 		if (selectedSet == CardSet.CHARACTERS)
 		{
 			cardsContent.add(Box.createVerticalStrut(3));
-			buildDeedGuide(state);
+			buildFollowerGuide(state);
 		}
 		PointSource powers = CollectionBonus.sourceFor(selectedSet);
 		JLabel effect = new JLabel(powers.getDisplayName() + " "
@@ -1982,7 +1982,7 @@ public class DopamineSimulatorPanel extends PluginPanel
 		}
 		if (featsView == 2)
 		{
-			buildDeeds(state);
+			buildFollowers(state);
 			return;
 		}
 
@@ -2019,7 +2019,7 @@ public class DopamineSimulatorPanel extends PluginPanel
 
 	private Segmented featsToggle()
 	{
-		Segmented row = new Segmented(new String[]{"Ranks", "Feats", "Deeds"},
+		Segmented row = new Segmented(new String[]{"Ranks", "Feats", "Followers"},
 			featsView, index ->
 			{
 				featsView = index;
@@ -2029,37 +2029,37 @@ public class DopamineSimulatorPanel extends PluginPanel
 		return row;
 	}
 
-	private void buildDeeds(DopamineState state)
+	private void buildFollowers(DopamineState state)
 	{
 		int held = 0;
 		int collected = 0;
-		for (com.dopaminesimulator.cards.CharacterDeed deed
-			: com.dopaminesimulator.cards.CharacterDeed.values())
+		for (com.dopaminesimulator.cards.CharacterFollower follower
+			: com.dopaminesimulator.cards.CharacterFollower.values())
 		{
-			held += state.getCharacterPacks(deed.getCardId());
-			collected += state.getCopies(deed.getCardId()) > 0 ? 1 : 0;
+			held += state.getCharacterPacks(follower.getCardId());
+			collected += state.getCopies(follower.getCardId()) > 0 ? 1 : 0;
 		}
 
 		JLabel header = new JLabel(collected + " of "
-			+ com.dopaminesimulator.cards.CharacterDeed.values().length + " characters");
+			+ com.dopaminesimulator.cards.CharacterFollower.values().length + " followers");
 		header.setFont(FontManager.getRunescapeBoldFont());
 		header.setForeground(GOLD);
 		header.setAlignmentX(Component.LEFT_ALIGNMENT);
 		featsContent.add(header);
 		featsContent.add(Box.createVerticalStrut(3));
 		featsContent.add(hint(held == 0
-			? "No packs waiting. Doing the thing a character is known for earns one."
+			? "No packs waiting. Doing the thing a follower is known for earns one."
 			: held + (held == 1 ? " pack waiting." : " packs waiting.")
 				+ " Click one to open it."));
 		featsContent.add(Box.createVerticalStrut(6));
 
-		for (com.dopaminesimulator.cards.CharacterDeed deed
-			: com.dopaminesimulator.cards.CharacterDeed.values())
+		for (com.dopaminesimulator.cards.CharacterFollower follower
+			: com.dopaminesimulator.cards.CharacterFollower.values())
 		{
-			int packs = state.getCharacterPacks(deed.getCardId());
-			int toPity = Math.max(0, deed.getPity() - state.getCharacterPity(deed.getCardId()));
-			boolean owned = state.getCopies(deed.getCardId()) > 0;
-			CharacterPackRow row = new CharacterPackRow(deed, packs, toPity, owned,
+			int packs = state.getCharacterPacks(follower.getCardId());
+			int toPity = Math.max(0, follower.getPity() - state.getCharacterPity(follower.getCardId()));
+			boolean owned = state.getCopies(follower.getCardId()) > 0;
+			CharacterPackRow row = new CharacterPackRow(follower, packs, toPity, owned,
 				plugin::openCharacterPack);
 			row.setAlignmentX(Component.LEFT_ALIGNMENT);
 			featsContent.add(row);

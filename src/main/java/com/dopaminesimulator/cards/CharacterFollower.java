@@ -29,7 +29,7 @@ import java.util.List;
 import lombok.Getter;
 
 @Getter
-public enum CharacterDeed
+public enum CharacterFollower
 {
 	VERZIK("characters-verzik-vitur", "Theatre of Blood: Hard Mode",
 		0.014d, 100, "Theatre of Blood"),
@@ -63,22 +63,22 @@ public enum CharacterDeed
 	}
 
 	private final String cardId;
-	private final String deed;
+	private final String earnedFrom;
 	private final double chance;
 	private final int pity;
 	private final String collection;
 	private final String[] extraCards;
 
-	CharacterDeed(String cardId, String deed, double chance, int pity, String collection)
+	CharacterFollower(String cardId, String earnedFrom, double chance, int pity, String collection)
 	{
-		this(cardId, deed, chance, pity, collection, null);
+		this(cardId, earnedFrom, chance, pity, collection, null);
 	}
 
-	CharacterDeed(String cardId, String deed, double chance, int pity, String collection,
+	CharacterFollower(String cardId, String earnedFrom, double chance, int pity, String collection,
 				  String[] extraCards)
 	{
 		this.cardId = cardId;
-		this.deed = deed;
+		this.earnedFrom = earnedFrom;
 		this.chance = chance;
 		this.pity = pity;
 		this.collection = collection;
@@ -124,13 +124,13 @@ public enum CharacterDeed
 		return art == null ? cardId : art.getDisplayName();
 	}
 
-	public static CharacterDeed byCardId(String cardId)
+	public static CharacterFollower byCardId(String cardId)
 	{
-		for (CharacterDeed deed : values())
+		for (CharacterFollower follower : values())
 		{
-			if (deed.cardId.equals(cardId))
+			if (follower.cardId.equals(cardId))
 			{
-				return deed;
+				return follower;
 			}
 		}
 		return null;

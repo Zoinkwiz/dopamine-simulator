@@ -35,7 +35,7 @@ import com.dopaminesimulator.cards.Region;
 import com.dopaminesimulator.core.Balance;
 import com.dopaminesimulator.core.DopamineEngine;
 import com.dopaminesimulator.core.DopamineEvent;
-import com.dopaminesimulator.cards.CharacterDeed;
+import com.dopaminesimulator.cards.CharacterFollower;
 import com.dopaminesimulator.core.DopamineState;
 import com.dopaminesimulator.ui.CardRenderer;
 import com.dopaminesimulator.feats.FeatTrack;
@@ -468,55 +468,55 @@ public class DopamineSimulatorPlugin extends Plugin
 		{
 			return;
 		}
-		CharacterDeed deed = deedFor(message);
-		if (deed != null)
+		CharacterFollower follower = followerFor(message);
+		if (follower != null)
 		{
-			awardCharacterPack(deed);
+			awardCharacterPack(follower);
 			return;
 		}
 		noteUnmatched(message);
 	}
 
-	private static final String[] DEED_KEYWORDS = {
+	private static final String[] FOLLOWER_KEYWORDS = {
 		"theatre of blood", "tombs of amascut", "gauntlet", "zilyana", "slayer task",
 		"completed your task",
 	};
 
 	private void noteUnmatched(String message)
 	{
-		for (String keyword : DEED_KEYWORDS)
+		for (String keyword : FOLLOWER_KEYWORDS)
 		{
 			if (message.contains(keyword))
 			{
-				log.info("deed candidate went unmatched: {}", message);
+				log.info("follower candidate went unmatched: {}", message);
 				return;
 			}
 		}
 	}
 
-	private CharacterDeed deedFor(String message)
+	private CharacterFollower followerFor(String message)
 	{
 		if (message.contains("your completed theatre of blood"))
 		{
-			return message.contains("hard mode") ? CharacterDeed.VERZIK : CharacterDeed.VANESCULA;
+			return message.contains("hard mode") ? CharacterFollower.VERZIK : CharacterFollower.VANESCULA;
 		}
 		if (message.contains("your completed tombs of amascut"))
 		{
 			return toaRaidLevelHeld >= TOA_AMASCUT_LEVEL
-				? CharacterDeed.AMASCUT : CharacterDeed.MAISA;
+				? CharacterFollower.AMASCUT : CharacterFollower.MAISA;
 		}
 		if (message.contains("gauntlet completion count"))
 		{
-			return message.contains("corrupted") ? CharacterDeed.SEREN : CharacterDeed.ILFEEN;
+			return message.contains("corrupted") ? CharacterFollower.SEREN : CharacterFollower.ILFEEN;
 		}
 		if (message.contains("commander zilyana kill count"))
 		{
-			return CharacterDeed.ZILYANA;
+			return CharacterFollower.ZILYANA;
 		}
 		if (message.contains("you have completed your task"))
 		{
-			CharacterDeed earned = slayerMasterHeld == SLAYER_MASTER_KONAR
-				? CharacterDeed.KONAR : null;
+			CharacterFollower earned = slayerMasterHeld == SLAYER_MASTER_KONAR
+				? CharacterFollower.KONAR : null;
 			slayerMasterHeld = 0;
 			return earned;
 		}
@@ -525,25 +525,25 @@ public class DopamineSimulatorPlugin extends Plugin
 
 	private static final String PACK_EARNED = " pack earned - ";
 
-	private void awardCharacterPack(CharacterDeed deed)
+	private void awardCharacterPack(CharacterFollower follower)
 	{
-		engine.getState().addCharacterPack(deed.getCardId());
+		engine.getState().addCharacterPack(follower.getCardId());
 		persist();
 		rebuildPanel();
 		client.addChatMessage(ChatMessageType.GAMEMESSAGE, "",
-			"<col=ffc46a>" + deed.getCharacterName() + "</col>" + PACK_EARNED
-				+ deed.getDeed() + ". Open it from Feats > Deeds.", null);
+			"<col=ffc46a>" + follower.getCharacterName() + "</col>" + PACK_EARNED
+				+ follower.getEarnedFrom() + ". Open it from Feats > Followers.", null);
 	}
 
-	public void openCharacterPack(CharacterDeed deed)
+	public void openCharacterPack(CharacterFollower follower)
 	{
 		clientThread.invoke(() ->
 		{
-			if (!isPlayable() || deed == null)
+			if (!isPlayable() || follower == null)
 			{
 				return;
 			}
-			for (Card card : characterPacks.open(engine.getState(), deed, rewards))
+			for (Card card : characterPacks.open(engine.getState(), follower, rewards))
 			{
 				announce(card);
 			}

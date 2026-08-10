@@ -1,7 +1,7 @@
 package com.dopaminesimulator.ui;
 
 import com.dopaminesimulator.cards.CardCatalogue;
-import com.dopaminesimulator.cards.CharacterDeed;
+import com.dopaminesimulator.cards.CharacterFollower;
 import java.awt.Dimension;
 import java.awt.FontMetrics;
 import java.awt.Graphics;
@@ -22,7 +22,7 @@ public class CharacterPackRow extends JComponent
 	private static final int PACK_X = 8;
 	private static final long STILL = 1150L;
 
-	private final CharacterDeed deed;
+	private final CharacterFollower follower;
 	private final int held;
 	private final int packsToPity;
 	private final boolean owned;
@@ -30,16 +30,16 @@ public class CharacterPackRow extends JComponent
 
 	private boolean hovered;
 
-	public CharacterPackRow(CharacterDeed deed, int held, int packsToPity, boolean owned,
-							Consumer<CharacterDeed> onOpen)
+	public CharacterPackRow(CharacterFollower follower, int held, int packsToPity, boolean owned,
+							Consumer<CharacterFollower> onOpen)
 	{
-		this.deed = deed;
+		this.follower = follower;
 		this.held = held;
 		this.packsToPity = packsToPity;
 		this.owned = owned;
-		this.style = CardRenderer.styleFor(CardCatalogue.byId(deed.getCardId()));
-		StringBuilder tip = new StringBuilder(deed.getCharacterName())
-			.append(" - ").append(deed.getDeed()).append('.');
+		this.style = CardRenderer.styleFor(CardCatalogue.byId(follower.getCardId()));
+		StringBuilder tip = new StringBuilder(follower.getCharacterName())
+			.append(" - ").append(follower.getEarnedFrom()).append('.');
 		if (held > 0)
 		{
 			tip.append(' ').append(held).append(held == 1 ? " pack held." : " packs held.");
@@ -72,7 +72,7 @@ public class CharacterPackRow extends JComponent
 			{
 				if (onOpen != null && held > 0)
 				{
-					onOpen.accept(deed);
+					onOpen.accept(follower);
 				}
 			}
 		});
@@ -91,19 +91,19 @@ public class CharacterPackRow extends JComponent
 		g.drawRoundRect(0, 0, width - 1, HEIGHT - 3, 6, 6);
 
 		CardRenderer.drawPackArt(g, PACK_X, (HEIGHT - 2 - PACK_H) / 2, PACK_W, PACK_H, style,
-			CardRenderer.BackMotif.of(deed.getArt() == null ? null : deed.getArt().getBackMotif()),
+			CardRenderer.BackMotif.of(follower.getArt() == null ? null : follower.getArt().getBackMotif()),
 			STILL);
 
 		int textX = PACK_X + PACK_W + 9;
 		g.setFont(FontManager.getRunescapeBoldFont());
 		g.setColor(Skin.vivid(style.metalLight));
-		String name = deed.getCharacterName() + (held > 1 ? "  x" + held : "");
+		String name = follower.getCharacterName() + (held > 1 ? "  x" + held : "");
 		g.drawString(name, textX, 19);
 
 		g.setFont(FontManager.getRunescapeSmallFont());
 		g.setColor(Skin.MUTED);
 		FontMetrics small = g.getFontMetrics();
-		g.drawString(ellipsise(small, deed.getDeed(), width - textX - 54), textX, 32);
+		g.drawString(ellipsise(small, follower.getEarnedFrom(), width - textX - 54), textX, 32);
 
 		String pity = owned ? "collected"
 			: packsToPity + " to guaranteed";

@@ -26,7 +26,7 @@ package com.dopaminesimulator.systems;
 
 import com.dopaminesimulator.cards.Card;
 import com.dopaminesimulator.cards.CardCatalogue;
-import com.dopaminesimulator.cards.CharacterDeed;
+import com.dopaminesimulator.cards.CharacterFollower;
 import com.dopaminesimulator.core.DopamineState;
 import com.dopaminesimulator.core.RewardQueue;
 import java.util.ArrayList;
@@ -47,36 +47,36 @@ public class CharacterPackService
 		this.collection = collection;
 	}
 
-	public List<Card> open(DopamineState state, CharacterDeed deed, RewardQueue rewards)
+	public List<Card> open(DopamineState state, CharacterFollower follower, RewardQueue rewards)
 	{
-		if (deed == null || !state.takeCharacterPack(deed.getCardId()))
+		if (follower == null || !state.takeCharacterPack(follower.getCardId()))
 		{
 			return java.util.Collections.emptyList();
 		}
 
-		int opened = state.getCharacterPity(deed.getCardId()) + 1;
-		boolean owned = state.getCopies(deed.getCardId()) > 0;
-		boolean landed = random.nextDouble() < deed.getChance() || opened >= deed.getPity();
+		int opened = state.getCharacterPity(follower.getCardId()) + 1;
+		boolean owned = state.getCopies(follower.getCardId()) > 0;
+		boolean landed = random.nextDouble() < follower.getChance() || opened >= follower.getPity();
 
 		List<Card> pulled = new ArrayList<>(THEMED_CARDS + 1);
 		if (landed)
 		{
-			Card character = CardCatalogue.byId(deed.getCardId());
+			Card character = CardCatalogue.byId(follower.getCardId());
 			if (character != null)
 			{
 				pulled.add(character);
 				collection.grant(state, character, rewards, false, 1);
 			}
-			state.setCharacterPity(deed.getCardId(), 0);
+			state.setCharacterPity(follower.getCardId(), 0);
 		}
 		else
 		{
-			state.setCharacterPity(deed.getCardId(), owned ? 0 : opened);
+			state.setCharacterPity(follower.getCardId(), owned ? 0 : opened);
 		}
 
 		for (int i = 0; i < THEMED_CARDS; i++)
 		{
-			Card themed = pick(state, deed.pool());
+			Card themed = pick(state, follower.pool());
 			if (themed != null)
 			{
 				pulled.add(themed);
@@ -95,9 +95,9 @@ public class CharacterPackService
 		return pulled;
 	}
 
-	public int packsUntilPity(DopamineState state, CharacterDeed deed)
+	public int packsUntilPity(DopamineState state, CharacterFollower follower)
 	{
-		return Math.max(0, deed.getPity() - state.getCharacterPity(deed.getCardId()));
+		return Math.max(0, follower.getPity() - state.getCharacterPity(follower.getCardId()));
 	}
 
 	private Card pick(DopamineState state, List<Card> pool)
