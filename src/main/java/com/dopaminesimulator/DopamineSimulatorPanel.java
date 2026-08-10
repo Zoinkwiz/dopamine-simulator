@@ -887,7 +887,7 @@ public class DopamineSimulatorPanel extends PluginPanel
 					+ BigNumbers.format(cost) + " for " + buyQuantity
 				: "")
 			+ "  \u2022  " + (tier.isTargetsSet()
-				? "draws only from " + selectedSet.getDisplayName()
+				? "draws only from " + curated.getDisplayName()
 				: "draws from every set"));
 		return sized(row);
 	}
