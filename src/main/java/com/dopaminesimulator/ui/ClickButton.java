@@ -25,6 +25,7 @@
 package com.dopaminesimulator.ui;
 
 import com.dopaminesimulator.incremental.BigNumbers;
+import com.dopaminesimulator.points.ClickRate;
 import lombok.Setter;
 
 import java.awt.AlphaComposite;
@@ -50,6 +51,7 @@ import java.util.function.DoubleSupplier;
 import javax.accessibility.AccessibleContext;
 import javax.accessibility.AccessibleRole;
 import javax.swing.JComponent;
+import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 
 public class ClickButton extends JComponent
@@ -63,6 +65,7 @@ public class ClickButton extends JComponent
 	private final DoubleSupplier pointsPerClick;
 	private final Runnable onClick;
 	private final Random random = new Random();
+	private final ClickRate rate = new ClickRate();
 	private final List<Particle> particles = new ArrayList<>();
 	private final Timer animator;
 	@Setter
@@ -132,7 +135,10 @@ public class ClickButton extends JComponent
 			@Override
 			public void mousePressed(MouseEvent e)
 			{
-				press();
+				if (SwingUtilities.isLeftMouseButton(e))
+				{
+					press();
+				}
 			}
 		});
 		setFocusable(false);
@@ -181,8 +187,12 @@ public class ClickButton extends JComponent
 	private void press()
 	{
 		pressedAt = System.currentTimeMillis();
-		spawnParticle();
 		wake();
+		if (!rate.take(pressedAt))
+		{
+			return;
+		}
+		spawnParticle();
 		onClick.run();
 	}
 
