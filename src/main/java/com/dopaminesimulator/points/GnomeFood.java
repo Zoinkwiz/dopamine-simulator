@@ -34,7 +34,7 @@ public enum GnomeFood
 {
 
 	CHOCCHIP_CRUNCHIES("Chocchip crunchies", ItemID.CHOCCHIP_CRUNCHIES, 30, 0L,
-		"60 clicks, free"),
+		"200 clicks, free"),
 
 	SPICY_CRUNCHIES("Spicy crunchies", ItemID.SPICY_CRUNCHIES, 20, 10_000L,
 		"Clicks pay 5x for 10s"),
