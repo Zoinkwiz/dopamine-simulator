@@ -60,6 +60,8 @@ public class DopamineState
 	private long lastEarningTick = Long.MIN_VALUE;
 
 	private long totalPacksOpened;
+	private long runPacksOpened;
+	private boolean earlyEpicPulled;
 
 	private int packsSinceLastRare;
 	private double lifetimeWeightedXp;
@@ -231,6 +233,7 @@ public class DopamineState
 		prestigeCount++;
 		points = 0d;
 		lifetimePoints = 0d;
+		runPacksOpened = 0L;
 		sourceUpgrades.clear();
 
 		// The reset is the only rethink there is. Handing every rank back here is

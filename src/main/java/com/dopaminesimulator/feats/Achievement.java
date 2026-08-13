@@ -41,7 +41,7 @@ public enum Achievement
 	GLASS_JAW("Glass Jaw", "Take 500 damage in a single session", false),
 	NIGHT_SHIFT("Night Shift", "Earn from six different sources in one session", false),
 
-	BEGINNERS_LUCK("Beginner's Luck", "Own an Epic inside your first fifty packs", false),
+	BEGINNERS_LUCK("Beginner's Luck", "Pull an Epic in the first fifty packs of a run", false),
 	SPARKLE("Sparkle", "Find your first shiny", false),
 	GILT_TRIP("Gilt Trip", "Find your first gilded card", false),
 	DOUBLE_UP("Double Up", "Own a card that is both shiny and gilded", false),

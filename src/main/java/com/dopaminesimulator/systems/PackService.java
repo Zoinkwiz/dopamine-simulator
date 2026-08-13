@@ -41,6 +41,8 @@ import java.util.Random;
 
 public class PackService
 {
+	public static final int LUCKY_PACKS = 50;
+
 	private final Random random;
 	private final CollectionService collection;
 	public PackService(Random random, CollectionService collection)
@@ -101,6 +103,7 @@ public class PackService
 		RewardQueue rewards)
 	{
 		state.setTotalPacksOpened(state.getTotalPacksOpened() + 1);
+		state.setRunPacksOpened(state.getRunPacksOpened() + 1);
 		double luck = tier.getLuck();
 		List<Card> pulled = new ArrayList<>(tier.getCardCount());
 		boolean satisfiedPity = false;
@@ -117,6 +120,18 @@ public class PackService
 			satisfiedPity = true;
 		}
 		state.setPacksSinceLastRare(satisfiedPity ? 0 : state.getPacksSinceLastRare() + 1);
+
+		if (state.getRunPacksOpened() <= LUCKY_PACKS)
+		{
+			for (Card card : pulled)
+			{
+				if (card.getRarity().ordinal() >= Rarity.EPIC.ordinal())
+				{
+					state.setEarlyEpicPulled(true);
+					break;
+				}
+			}
+		}
 
 		for (Card card : pulled)
 		{

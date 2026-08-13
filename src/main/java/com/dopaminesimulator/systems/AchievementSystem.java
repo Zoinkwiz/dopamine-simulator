@@ -24,11 +24,8 @@
  */
 package com.dopaminesimulator.systems;
 
-import com.dopaminesimulator.cards.Card;
-import com.dopaminesimulator.cards.CardCatalogue;
 import com.dopaminesimulator.cards.CardCollection;
 import com.dopaminesimulator.cards.Dust;
-import com.dopaminesimulator.cards.Rarity;
 import com.dopaminesimulator.core.DopamineEvent;
 import com.dopaminesimulator.core.DopamineState;
 import com.dopaminesimulator.core.DopamineSystem;
@@ -55,7 +52,6 @@ public class AchievementSystem implements DopamineSystem
 	private static final int VARIETY_SKILLS = 10;
 	private static final int NIGHT_SHIFT_SOURCES = 6;
 	private static final int MASHER_CLICKS = 1_000;
-	private static final int LUCKY_PACKS = 50;
 	private static final int PACK_RAT_PACKS = 1_000;
 	private static final int DEDICATION_RANK = 10;
 	private static final int WILDCARDS_PER_ACHIEVEMENT = 1;
@@ -208,7 +204,7 @@ public class AchievementSystem implements DopamineSystem
 				break;
 			}
 		}
-		if (packs > 0 && packs <= LUCKY_PACKS && ownsAtLeast(state, Rarity.EPIC))
+		if (state.isEarlyEpicPulled())
 		{
 			award(state, Achievement.BEGINNERS_LUCK, rewards);
 		}
@@ -242,18 +238,6 @@ public class AchievementSystem implements DopamineSystem
 		{
 			award(state, Achievement.WELL_ROUNDED, rewards);
 		}
-	}
-
-	private boolean ownsAtLeast(DopamineState state, Rarity rarity)
-	{
-		for (Card card : CardCatalogue.byRarity(rarity))
-		{
-			if (state.owns(card.getId()))
-			{
-				return true;
-			}
-		}
-		return false;
 	}
 
 	private void award(DopamineState state, Achievement achievement, RewardQueue rewards)
