@@ -29,23 +29,10 @@ public final class Prestige
 
 	public static final double MIN_LIFETIME = 10_000_000d;
 
-	private static final double SCALE_FROM = 1_000_000d;
-
-	private static final double PER_DECADE = 22d;
+	public static final int PER_RESET = 1;
 
 	private Prestige()
 	{
-	}
-
-	// From what a run earned. Stars no longer reset, so they cannot measure it.
-	public static int insightFor(double lifetimePoints)
-	{
-		if (lifetimePoints < MIN_LIFETIME)
-		{
-			return 0;
-		}
-		return Math.min(maximum(),
-			(int) Math.floor(PER_DECADE * Math.log10(lifetimePoints / SCALE_FROM)));
 	}
 
 	// Running out and having bought everything are the same event.
@@ -57,11 +44,6 @@ public final class Prestige
 	public static boolean isMaxed(int insightHeld)
 	{
 		return insightHeld >= maximum();
-	}
-
-	public static double lifetimeForInsight(int insight)
-	{
-		return SCALE_FROM * Math.pow(10d, insight / PER_DECADE);
 	}
 
 	public static boolean canPrestige(double lifetimePoints)
@@ -76,6 +58,6 @@ public final class Prestige
 
 	public static int gainFrom(double lifetimePoints, int insightHeld)
 	{
-		return Math.max(0, insightFor(lifetimePoints) - insightHeld);
+		return canPrestige(lifetimePoints) && !isMaxed(insightHeld) ? PER_RESET : 0;
 	}
 }

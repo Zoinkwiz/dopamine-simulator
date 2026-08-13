@@ -1118,7 +1118,7 @@ public class DopamineSimulatorPlugin extends Plugin
 			}
 
 			int gained = Prestige.gainFrom(lifetime, state.getInsight());
-			state.prestige(Prestige.insightFor(lifetime));
+			state.prestige(gained);
 
 			Card mastery = CardOrigins.prestigeCard(state.getPrestigeCount());
 			if (mastery != null)

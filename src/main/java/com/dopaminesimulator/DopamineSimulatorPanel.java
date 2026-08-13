@@ -1870,14 +1870,9 @@ public class DopamineSimulatorPanel extends PluginPanel
 		{
 			why = "Clears points and upgrade levels.";
 		}
-		else if (maxed)
-		{
-			why = "Every insight there is has been earned, so this adds none. Resetting"
-				+ " still hands back every rank to spend again.";
-		}
 		else
 		{
-			why = "This run has not beaten your best, so it adds no insight. Resetting"
+			why = "Every insight there is has been earned, so this adds none. Resetting"
 				+ " still hands back every rank to spend again.";
 		}
 		block.add(hint(why + " Cards, stars, dust and collections are kept."));
@@ -1888,19 +1883,10 @@ public class DopamineSimulatorPanel extends PluginPanel
 		go.setMaximumSize(new Dimension(Integer.MAX_VALUE, 24));
 		go.setToolTipText(maxed
 			? "Every insight there is has been earned. Resetting refunds your ranks."
-			: "Insight is your best run, not a running total."
-				+ " Only a better run adds more.");
+			: "Every reset past " + BigNumbers.format(Prestige.MIN_LIFETIME)
+				+ " earned is worth " + Prestige.PER_RESET + " insight.");
 		go.addActionListener(e -> plugin.prestige());
 		block.add(go);
-
-		if (gain == 0 && !maxed)
-		{
-			block.add(Box.createVerticalStrut(4));
-			block.add(hint("Reach " + BigNumbers.format(Prestige.lifetimeForInsight(insight + 1))
-				+ " in one run for the next insight. "
-				+ BigNumbers.format(Prestige.lifetimeForInsight(insight + 1) - lifetime)
-				+ " to go."));
-		}
 		return block;
 	}
 

@@ -225,9 +225,9 @@ public class DopamineState
 		return unlockedBacks.contains(id);
 	}
 
-	public void prestige(int runInsight)
+	public void prestige(int gainedInsight)
 	{
-		insight = Math.max(insight, runInsight);
+		insight += gainedInsight;
 		prestigeCount++;
 		points = 0d;
 		lifetimePoints = 0d;
