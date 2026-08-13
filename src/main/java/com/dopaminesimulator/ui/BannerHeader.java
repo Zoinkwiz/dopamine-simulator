@@ -50,9 +50,11 @@ public class BannerHeader extends JComponent
 	private final int hardPity;
 	private final double rate;
 	private final String remaining;
+	private final int ownedStars;
+	private final int ownedCopies;
 
 	public BannerHeader(Card featured, Rarity rarity, String name, BufferedImage art,
-		int pity, int hardPity, double rate, String remaining)
+		int pity, int hardPity, double rate, String remaining, int ownedStars, int ownedCopies)
 	{
 		this.featured = featured;
 		this.rarity = rarity;
@@ -62,6 +64,8 @@ public class BannerHeader extends JComponent
 		this.hardPity = hardPity;
 		this.rate = rate;
 		this.remaining = remaining;
+		this.ownedStars = ownedStars;
+		this.ownedCopies = ownedCopies;
 		setPreferredSize(new Dimension(0, HEIGHT));
 		setMaximumSize(new Dimension(Integer.MAX_VALUE, HEIGHT));
 		setMinimumSize(new Dimension(0, HEIGHT));
@@ -93,7 +97,15 @@ public class BannerHeader extends JComponent
 		FontMetrics small = g.getFontMetrics();
 		Skin.text(g, Skin.elide(small, featured.getName(), room), PAD, 38, Skin.WHITE);
 
-		drawStars(g, PAD, 49, WishReveal.starsFor(rarity));
+		int stars = WishReveal.starsFor(rarity);
+		drawStars(g, PAD, 49, stars);
+
+		int afterStars = PAD + (int) (stars * 12d) + 5;
+		String owned = ownedCopies <= 0 ? "not owned"
+			: ownedStars >= Rarity.MAX_STARS ? "MAXED"
+			: "you have " + ownedStars + "★ (" + ownedCopies + ")";
+		Skin.text(g, Skin.elide(small, owned, Math.max(0, room - afterStars + PAD)),
+			afterStars, 53, ownedStars >= Rarity.MAX_STARS ? Skin.GOLD : Skin.FADED);
 
 		String chance = String.format("%.1f%%", rate * 100d);
 		Skin.text(g, chance, PAD, 66, Skin.WHITE);

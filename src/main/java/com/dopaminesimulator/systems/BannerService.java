@@ -168,7 +168,8 @@ public class BannerService
 
 	public boolean canPull(DopamineState state, Rarity rarity)
 	{
-		return state.getPoints() >= pullCost(rarity);
+		return state.getPoints() >= pullCost(rarity)
+			&& state.getStars(featured(state, rarity).getId()) < Rarity.MAX_STARS;
 	}
 
 	public Card pull(DopamineState state, Rarity rarity, CardSet targetSet, RewardQueue rewards)

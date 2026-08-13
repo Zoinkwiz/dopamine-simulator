@@ -670,27 +670,38 @@ public class DopamineSimulatorPanel extends PluginPanel
 				() -> SwingUtilities.invokeLater(this::refresh));
 		}
 
+		int ownedCopies = state.getCopies(featured.getId());
+		int ownedStars = state.getStars(featured.getId());
+		boolean maxed = ownedStars >= Rarity.MAX_STARS;
+
 		long now = System.currentTimeMillis();
 		BannerHeader header = new BannerHeader(featured, rarity, banner.bannerName(rarity),
 			art, pity, BannerService.HARD_PITY, banner.rateAt(pity),
-			SeasonClock.remaining(SeasonClock.bannerEndsAt(now), now));
+			SeasonClock.remaining(SeasonClock.bannerEndsAt(now), now), ownedStars, ownedCopies);
 		header.setAlignmentX(Component.LEFT_ALIGNMENT);
-		header.setToolTipText(featured.getName() + " from " + featured.getSet().getDisplayName());
+		header.setToolTipText(featured.getName() + " from " + featured.getSet().getDisplayName()
+			+ (ownedCopies > 0 ? ". You own " + ownedCopies
+			+ (ownedCopies == 1 ? " copy" : " copies") + " (" + ownedStars + "★)."
+			: ". You do not own it yet."));
 		block.add(header);
 		block.add(Box.createVerticalStrut(4));
 
-		String detail = "A win takes " + featured.getName() + " straight to "
+		String detail = maxed
+			? featured.getName() + " is already at " + Rarity.MAX_STARS + "★. Pulls open again"
+			+ " when the banner rotates."
+			: "A win takes " + featured.getName() + " straight to "
 			+ banner.featuredStars(rarity) + " stars, and every pull opens a "
 			+ banner.packFor(rarity).getDisplayName() + " regardless.";
 		BufferedImage icon = art;
 
 		ShopRow one = new ShopRow(
 			"Pull",
-			"Wins it to " + banner.featuredStars(rarity) + "★",
+			maxed ? "Maxed at " + Rarity.MAX_STARS + "★" : "Wins it to "
+				+ banner.featuredStars(rarity) + "★",
 			cost,
 			rarity.getColour(),
 			"1",
-			state.getPoints() >= cost,
+			!maxed && state.getPoints() >= cost,
 			state.getPoints() / cost,
 			r -> plugin.pullBanner(rarity, selectedSet, 1));
 		one.setIcon(icon);
@@ -700,11 +711,11 @@ public class DopamineSimulatorPanel extends PluginPanel
 
 		ShopRow ten = new ShopRow(
 			"Pull x10",
-			"Ten pulls at once",
+			maxed ? "Maxed at " + Rarity.MAX_STARS + "★" : "Ten pulls at once",
 			cost * 10,
 			rarity.getColour(),
 			"10",
-			state.getPoints() >= cost * 10,
+			!maxed && state.getPoints() >= cost * 10,
 			state.getPoints() / (cost * 10),
 			r -> plugin.pullBanner(rarity, selectedSet, 10));
 		ten.setIcon(icon);
