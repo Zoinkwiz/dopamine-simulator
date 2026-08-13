@@ -34,28 +34,28 @@ public enum InsightPerk
 		5, 1, new Color(0xFF, 0xC8, 0x45)),
 
 	QUICK_STUDY("Quick Study", "Start each run with source levels",
-		5, 2, new Color(0x42, 0xA5, 0xF5)),
+		5, 1, new Color(0x42, 0xA5, 0xF5)),
 
 	MUSCLE_MEMORY("Muscle Memory", "Start each run with click levels",
 		4, 1, new Color(0xFF, 0x98, 0x1F)),
 
 	HAGGLER("Haggler", "Packs cost less",
-		5, 2, new Color(0x66, 0xBB, 0x6A)),
+		5, 1, new Color(0x66, 0xBB, 0x6A)),
 
 	GRINDSTONE("Grindstone", "More dust from spare copies",
-		5, 2, new Color(0x9E, 0x9E, 0x9E)),
+		5, 1, new Color(0x9E, 0x9E, 0x9E)),
 
 	LUSTRE("Lustre", "Higher shiny chance",
-		5, 3, new Color(0xAB, 0x47, 0xBC)),
+		5, 1, new Color(0xAB, 0x47, 0xBC)),
 
 	GLEAM("Gleam", "Higher gilded chance",
-		5, 2, new Color(0xFF, 0xB3, 0x00)),
+		5, 1, new Color(0xFF, 0xB3, 0x00)),
 
 	LANDMARKS("Landmarks", "Milestones are worth more",
-		5, 2, new Color(0x26, 0xC6, 0xDA)),
+		5, 1, new Color(0x26, 0xC6, 0xDA)),
 
 	BANQUET("Banquet", "Dishes appear more often",
-		4, 3, new Color(0xFF, 0x70, 0x43));
+		4, 1, new Color(0xFF, 0x70, 0x43));
 
 	private final String displayName;
 	private final String description;
@@ -98,7 +98,7 @@ public enum InsightPerk
 			case QUICK_STUDY:
 				return "+" + rank * 2 + " levels";
 			case MUSCLE_MEMORY:
-				return "+" + rank * 5 + " click levels";
+				return "+" + rank * 2 + " click levels";
 			case HAGGLER:
 				return "-" + rank * 6 + "% cost";
 			case GRINDSTONE:
@@ -121,6 +121,6 @@ public enum InsightPerk
 
 	static double seedPoints(int rank)
 	{
-		return rank <= 0 ? 0d : Math.pow(10d, 3 + rank);
+		return rank <= 0 ? 0d : Math.pow(10d, 1 + rank);
 	}
 }

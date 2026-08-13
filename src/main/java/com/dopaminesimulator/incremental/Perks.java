@@ -49,7 +49,7 @@ public final class Perks
 
 	public static int headStartClickLevels(DopamineState state)
 	{
-		return rank(state, InsightPerk.MUSCLE_MEMORY) * 5;
+		return rank(state, InsightPerk.MUSCLE_MEMORY) * 2;
 	}
 
 	public static double packCost(DopamineState state)
