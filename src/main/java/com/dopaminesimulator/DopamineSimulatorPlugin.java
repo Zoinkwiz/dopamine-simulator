@@ -609,6 +609,10 @@ public class DopamineSimulatorPlugin extends Plugin
 
 	private void rollForSurge()
 	{
+		if (!config.serveGnomeFood())
+		{
+			return;
+		}
 		DopamineState state = engine.getState();
 		long now = System.currentTimeMillis();
 
@@ -1267,12 +1271,14 @@ public class DopamineSimulatorPlugin extends Plugin
 
 	public void flash(Reward reward)
 	{
+		boolean rank = reward.getType() == RewardType.FEAT
+			|| reward.getType() == RewardType.ACHIEVEMENT;
 		PackRevealOverlay reveal = revealOverlay;
-		if (reveal != null)
+		if (reveal != null && (!rank || config.showRankPopups()))
 		{
 			reveal.push(reward);
 		}
-		if (reward.getType() == RewardType.FEAT || reward.getType() == RewardType.ACHIEVEMENT)
+		if (rank)
 		{
 			String line = "<col=ffb300>" + reward.getTitle() + "</col> - " + reward.getDetail();
 			clientThread.invokeLater(() ->

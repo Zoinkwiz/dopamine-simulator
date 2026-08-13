@@ -194,6 +194,18 @@ public interface DopamineSimulatorConfig extends Config
 		return true;
 	}
 
+	@ConfigItem(
+		keyName = "serveGnomeFood",
+		name = "Serve gnome food",
+		description = "Randomly offer gnome dishes like crunchies and worm holes to click for bonuses",
+		section = worldSection,
+		position = 24
+	)
+	default boolean serveGnomeFood()
+	{
+		return true;
+	}
+
 	@ConfigSection(
 		name = "Notifications",
 		description = "How rewards are announced",
@@ -235,6 +247,18 @@ public interface DopamineSimulatorConfig extends Config
 	default ChatRarityThreshold minimumChatRarity()
 	{
 		return ChatRarityThreshold.RARE;
+	}
+
+	@ConfigItem(
+		keyName = "showRankPopups",
+		name = "Show rank popups",
+		description = "Show a banner over the game when you earn a feat or achievement rank",
+		section = notificationSection,
+		position = 13
+	)
+	default boolean showRankPopups()
+	{
+		return true;
 	}
 
 	enum ChatRarityThreshold
