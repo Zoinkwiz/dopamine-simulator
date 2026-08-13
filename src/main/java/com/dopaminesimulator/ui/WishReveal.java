@@ -257,7 +257,7 @@ public final class WishReveal
 		}
 		double t = sinceStrike / (double) SHOCKWAVE_MS;
 		double eased = 1d - Math.pow(1d - t, 3d);
-		int radius = (int) (20 + eased * 260 * scale);
+		int radius = (int) (35 + eased * 450 * scale);
 		int fade = (int) (230 * (1d - t) * alpha);
 		if (fade <= 0)
 		{
@@ -317,7 +317,7 @@ public final class WishReveal
 			g.rotate(ring == 0 ? age / 3600d : -age / 2200d);
 
 			int shards = ring == 0 ? RAYS : RAYS / 2;
-			double reach = (ring == 0 ? 210d : 138d) * eased;
+			double reach = (ring == 0 ? 364d : 240d) * eased;
 			for (int i = 0; i < shards; i++)
 			{
 				double angle = Math.PI * 2d * i / shards + (ring == 0 ? 0d : Math.PI / shards);
@@ -357,7 +357,7 @@ public final class WishReveal
 			g.setStroke(new BasicStroke(2f));
 			for (int channel = 0; channel < split.length; channel++)
 			{
-				int radius = (int) (60 + offset * 190 * eased) + channel * 3;
+				int radius = (int) (104 + offset * 330 * eased) + channel * 3;
 				g.setColor(withAlpha(split[channel], fade));
 				g.drawOval(cx - radius, cy - radius, radius * 2, radius * 2);
 			}
@@ -371,7 +371,7 @@ public final class WishReveal
 		g.translate(cx, cy);
 		g.rotate(age / 3600d);
 
-		double reach = 210d * eased;
+		double reach = 364d * eased;
 		for (int i = 0; i < RAYS; i++)
 		{
 			double angle = Math.PI * 2d * i / RAYS;
@@ -396,7 +396,7 @@ public final class WishReveal
 		for (int i = 0; i < 3; i++)
 		{
 			double offset = (age / 900d + i / 3d) % 1d;
-			int radius = (int) (60 + offset * 190 * eased);
+			int radius = (int) (104 + offset * 330 * eased);
 			int fade = (int) (90 * (1d - offset) * alpha);
 			if (fade <= 0)
 			{
@@ -414,10 +414,10 @@ public final class WishReveal
 		{
 			double seed = i * 2.399963d;
 			double drift = ((age / 2600d) + i / (double) MOTES) % 1d;
-			double radius = 70 + (i % 5) * 26;
+			double radius = 121 + (i % 5) * 45;
 			double angle = seed + age / 5200d;
 			int x = (int) (cx + Math.cos(angle) * radius);
-			int y = (int) (cy + Math.sin(angle) * radius - drift * 120);
+			int y = (int) (cy + Math.sin(angle) * radius - drift * 210);
 			int size = 2 + (i % 3);
 			int fade = (int) (170 * (1d - drift) * alpha);
 			if (fade <= 0)
