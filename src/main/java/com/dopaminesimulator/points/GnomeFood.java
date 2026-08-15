@@ -34,10 +34,10 @@ public enum GnomeFood
 {
 
 	CHOCCHIP_CRUNCHIES("Chocchip crunchies", ItemID.CHOCCHIP_CRUNCHIES, 30, 0L,
-		"60 clicks, free"),
+		"200 clicks, free"),
 
 	SPICY_CRUNCHIES("Spicy crunchies", ItemID.SPICY_CRUNCHIES, 20, 10_000L,
-		"Clicks pay 5x for 10s"),
+		"Clicks pay 8x for 10s"),
 
 	WORM_HOLE("Worm hole", ItemID.WORM_HOLE, 16, 60_000L,
 		"All sources 4x for 60s"),
@@ -58,7 +58,7 @@ public enum GnomeFood
 	WIZARD_BLIZZARD("Wizard blizzard", ItemID.WIZARD_BLIZZARD, 5, 0L,
 		"Points, amount varies");
 
-	public static final double FRENZY_MULTIPLIER = 5d;
+	public static final double FRENZY_MULTIPLIER = 8d;
 
 	public static final double WORM_HOLE_MULTIPLIER = 4d;
 
