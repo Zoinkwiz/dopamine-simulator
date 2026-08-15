@@ -42,7 +42,7 @@ public enum PointSource
 	IDLING("Bank Standing", "Time with no other income", 2_500d,
 		new Color(0x8D, 0x6E, 0x63), 0.167d, 6_000d),
 	RECOVERY("Eating", "Hitpoints restored", 5_000d,
-		new Color(0xEC, 0x40, 0x7A), 1.65d, 300d),
+		new Color(0xEC, 0x40, 0x7A), 0.5d, 1_000d),
 	TRAVEL("Travel", "Distance covered", 50_000d,
 		new Color(0x66, 0xBB, 0x6A), 0.4d, 2_500d),
 	WEALTH("Wealth", "Value of loot", 500_000d,
