@@ -877,7 +877,7 @@ public class DopamineSimulatorPlugin extends Plugin
 			{
 				return;
 			}
-			if (count == 1)
+			if (count == 1 && config.autoReveal())
 			{
 				for (Card card : packService.buy(engine.getState(), tier, targetSet, rewards))
 				{
@@ -901,7 +901,10 @@ public class DopamineSimulatorPlugin extends Plugin
 			}
 
 			revealHighlights(batch.claimAll());
-			summarise(tier, pulled);
+			if (count > 1)
+			{
+				summarise(tier, pulled);
+			}
 			persist();
 			refreshPanel();
 		});
@@ -1048,7 +1051,7 @@ public class DopamineSimulatorPlugin extends Plugin
 			{
 				return;
 			}
-			if (count == 1)
+			if (count == 1 && config.autoReveal())
 			{
 				bannerService.pull(engine.getState(), rarity, targetSet, rewards);
 				persist();
