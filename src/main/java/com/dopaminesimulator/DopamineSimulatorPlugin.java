@@ -609,10 +609,6 @@ public class DopamineSimulatorPlugin extends Plugin
 
 	private void rollForSurge()
 	{
-		if (!config.serveGnomeFood())
-		{
-			return;
-		}
 		DopamineState state = engine.getState();
 		long now = System.currentTimeMillis();
 
@@ -635,13 +631,16 @@ public class DopamineSimulatorPlugin extends Plugin
 	{
 		clickState.serve(food, System.currentTimeMillis());
 
-		long seconds = ClickState.SERVE_WINDOW_MS / 1000L;
-		client.addChatMessage(ChatMessageType.GAMEMESSAGE, "",
-			food.isTrap()
-				? "<col=ff4040>" + food.getDisplayName() + "</col>! " + food.getBlurb()
-					+ ". Leave it alone."
-				: "<col=ffb300>" + food.getDisplayName() + "</col>! " + food.getBlurb()
-					+ ", if you click it within " + seconds + "s.", null);
+		if (config.gnomeFoodAnnouncements())
+		{
+			long seconds = ClickState.SERVE_WINDOW_MS / 1000L;
+			client.addChatMessage(ChatMessageType.GAMEMESSAGE, "",
+				food.isTrap()
+					? "<col=ff4040>" + food.getDisplayName() + "</col>! " + food.getBlurb()
+						+ ". Leave it alone."
+					: "<col=ffb300>" + food.getDisplayName() + "</col>! " + food.getBlurb()
+						+ ", if you click it within " + seconds + "s.", null);
+		}
 		refreshPanel();
 	}
 

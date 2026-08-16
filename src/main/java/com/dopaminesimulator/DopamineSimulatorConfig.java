@@ -195,13 +195,14 @@ public interface DopamineSimulatorConfig extends Config
 	}
 
 	@ConfigItem(
-		keyName = "serveGnomeFood",
-		name = "Serve gnome food",
-		description = "Randomly offer gnome dishes like crunchies and worm holes to click for bonuses",
+		keyName = "gnomeFoodAnnouncements",
+		name = "Gnome food announcements",
+		description = "Announce served gnome dishes with a chat message and an infobox. Dishes"
+			+ " still appear on the overlay either way",
 		section = worldSection,
 		position = 24
 	)
-	default boolean serveGnomeFood()
+	default boolean gnomeFoodAnnouncements()
 	{
 		return true;
 	}

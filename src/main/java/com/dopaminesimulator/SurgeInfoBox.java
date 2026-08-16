@@ -84,7 +84,7 @@ public class SurgeInfoBox extends InfoBox
 	public boolean render()
 	{
 		long now = System.currentTimeMillis();
-		return config.showPackInfobox()
+		return config.showPackInfobox() && config.gnomeFoodAnnouncements()
 			&& (clickState.isPlated(now) || clickState.isSurging(now)
 				|| clickState.isSoured(now));
 	}
