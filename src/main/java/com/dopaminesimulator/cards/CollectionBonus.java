@@ -50,12 +50,13 @@ public final class CollectionBonus
 		feed(PointSource.RECOVERY, CardSet.SLAYER, CardSet.COOKING, CardSet.HERBLORE,
 			CardSet.FARMING);
 		feed(PointSource.TRAVEL, CardSet.DIARIES, CardSet.AGILITY, CardSet.SAILING,
-			CardSet.AREAS);
+			CardSet.AREAS, CardSet.CLUE_DROPS);
 		feed(PointSource.WEALTH, CardSet.ITEMS, CardSet.RAIDS_DROPS, CardSet.THIEVING,
 			CardSet.HUNTER);
 		feed(PointSource.CLICK, CardSet.MINIGAMES, CardSet.CRAFTING, CardSet.FLETCHING,
-			CardSet.FIREMAKING);
-		feed(PointSource.IDLING, CardSet.QUESTS, CardSet.FISHING, CardSet.WOODCUTTING);
+			CardSet.FIREMAKING, CardSet.MINIGAME_REWARDS);
+		feed(PointSource.IDLING, CardSet.QUESTS, CardSet.FISHING, CardSet.WOODCUTTING,
+			CardSet.OTHER_COLLECTIONLOG);
 
 		feed(PointSource.SUFFERING, CardSet.PRAYER, CardSet.DEFENCE, CardSet.CONSTRUCTION,
 			CardSet.SPELLS_ARCEUUS);
